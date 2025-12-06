@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar_community/isar.dart';
 import '../models.dart';
 import '../providers.dart';
 import 'map_screen.dart';
@@ -28,24 +29,25 @@ class GlobalSearchDelegate extends SearchDelegate {
   Widget _buildList(BuildContext context) {
     if (query.isEmpty) return const SizedBox();
 
-    final store = ref.read(objectBoxProvider).store;
+    final isar = ref.read(isarProvider);
     // 模糊搜索：标题包含 query
-    final results = store.box<Grenade>().getAll().where((g) {
-      return g.title.toLowerCase().contains(query.toLowerCase());
-    }).toList();
+    final results = isar.grenades
+        .filter()
+        .titleContains(query, caseSensitive: false)
+        .findAllSync();
 
     return ListView.builder(
       itemCount: results.length,
       itemBuilder: (ctx, index) {
         final g = results[index];
-        final mapName = g.layer.target?.map.target?.name ?? "";
+        g.layer.loadSync();
+        g.layer.value?.map.loadSync();
+        final mapName = g.layer.value?.map.value?.name ?? "";
         return ListTile(
           leading: const Icon(Icons.ads_click),
           title: Text(g.title),
-          subtitle: Text(mapName,
-              style: const TextStyle(color: Colors.orange)), // 地图名后缀
+          subtitle: Text(mapName, style: const TextStyle(color: Colors.orange)),
           onTap: () {
-            // 直接跳转详情
             Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -63,11 +65,10 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final store = ref.watch(objectBoxProvider).store;
-    final maps = store.box<GameMap>().getAll();
+    final isar = ref.watch(isarProvider);
+    final maps = isar.gameMaps.where().findAllSync();
 
     return Scaffold(
-      // --- 1. 搜索栏 (作为 Appbar Title) ---
       appBar: AppBar(
         title: GestureDetector(
           onTap: () =>
@@ -88,7 +89,6 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      // --- 2. 侧边栏 ---
       drawer: Drawer(
         child: ListView(
           children: [
@@ -99,10 +99,9 @@ class HomeScreen extends ConsumerWidget {
                             fontSize: 24, fontWeight: FontWeight.bold)))),
             ListTile(
               leading: const Icon(Icons.share),
-              title: const Text("分享 / 导入"), // 修改文案
+              title: const Text("分享 / 导入"),
               onTap: () {
-                Navigator.pop(context); // 收起侧边栏
-                // 跳转到新的分享页面
+                Navigator.pop(context);
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const ShareScreen()));
               },
@@ -110,7 +109,6 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
-      // --- 3. 地图大图卡片 ---
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: maps.length,
@@ -128,10 +126,10 @@ class HomeScreen extends ConsumerWidget {
                 height: 120,
                 decoration: BoxDecoration(
                     image: DecorationImage(
-                  image: AssetImage(map.backgroundPath), // 使用大图背景
+                  image: AssetImage(map.backgroundPath),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
-                      Colors.black.withOpacity(0.4), BlendMode.darken),
+                      Colors.black.withValues(alpha: 0.4), BlendMode.darken),
                 )),
                 child: Center(
                   child: Row(
@@ -141,7 +139,7 @@ class HomeScreen extends ConsumerWidget {
                         map.iconPath,
                         width: 40,
                         height: 40,
-                      ), // 地图 Logo
+                      ),
                       const SizedBox(width: 16),
                       Text(map.name,
                           style: const TextStyle(

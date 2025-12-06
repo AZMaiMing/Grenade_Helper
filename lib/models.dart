@@ -1,6 +1,8 @@
-import 'package:objectbox/objectbox.dart';
+import 'package:isar_community/isar.dart';
 
-// --- 1. 常量定义 (修复报错的关键) ---
+part 'models.g.dart';
+
+// --- 1. 常量定义 ---
 
 class GrenadeType {
   static const int smoke = 0;
@@ -23,38 +25,38 @@ class MediaType {
 
 // --- 2. 数据库实体定义 ---
 
-@Entity()
+@collection
 class GameMap {
-  @Id()
-  int id = 0;
+  Id id = Isar.autoIncrement;
 
   String name;
-  String backgroundPath; // 大图背景 (新增)
-  String iconPath; // 标志图标 (新增)
+  String backgroundPath;
+  String iconPath;
 
-  @Backlink()
-  final layers = ToMany<MapLayer>();
+  // Isar 使用 IsarLinks 来管理一对多关系
+  final layers = IsarLinks<MapLayer>();
 
   GameMap({
     required this.name,
-    this.backgroundPath = "", // 给个默认值防止旧数据报错
+    this.backgroundPath = "",
     this.iconPath = "",
   });
 }
 
-@Entity()
+@collection
 class MapLayer {
-  @Id()
-  int id = 0;
+  Id id = Isar.autoIncrement;
 
   String name;
   String assetPath;
   int sortOrder;
 
-  final map = ToOne<GameMap>();
+  // 反向链接到 GameMap
+  @Backlink(to: 'layers')
+  final map = IsarLink<GameMap>();
 
-  @Backlink()
-  final grenades = ToMany<Grenade>();
+  // 一对多: MapLayer -> Grenades
+  final grenades = IsarLinks<Grenade>();
 
   MapLayer({
     required this.name,
@@ -63,29 +65,27 @@ class MapLayer {
   });
 }
 
-@Entity()
+@collection
 class Grenade {
-  @Id()
-  int id = 0;
+  Id id = Isar.autoIncrement;
 
   String title;
-  int type; // 对应 GrenadeType
-  int team; // 对应 TeamType
+  int type; // GrenadeType
+  int team; // TeamType
   bool isFavorite;
+  bool isNewImport;
+  DateTime createdAt;
+  DateTime updatedAt;
 
-  // --- 新增字段 ---
-  bool isNewImport; // 是否为新导入 (红点)
-  DateTime createdAt; // 创建时间
-  DateTime updatedAt; // 最后编辑时间
-
-  // 坐标 (0.0 ~ 1.0)
   double xRatio;
   double yRatio;
 
-  final layer = ToOne<MapLayer>();
+  // 反向链接到 MapLayer
+  @Backlink(to: 'grenades')
+  final layer = IsarLink<MapLayer>();
 
-  @Backlink()
-  final steps = ToMany<GrenadeStep>();
+  // 一对多: Grenade -> Steps
+  final steps = IsarLinks<GrenadeStep>();
 
   Grenade({
     required this.title,
@@ -101,37 +101,38 @@ class Grenade {
         updatedAt = updated ?? DateTime.now();
 }
 
-@Entity()
+@collection
 class GrenadeStep {
-  @Id()
-  int id = 0;
+  Id id = Isar.autoIncrement;
 
-  String title; // 步骤标题 (如: 站位)
+  String title;
   String description;
-  int stepIndex; // 排序用
+  int stepIndex;
 
-  // 关联多个媒体文件 (实现单一步骤多图)
-  @Backlink()
-  final medias = ToMany<StepMedia>();
+  // 反向链接到 Grenade
+  @Backlink(to: 'steps')
+  final grenade = IsarLink<Grenade>();
 
-  final grenade = ToOne<Grenade>();
+  // 一对多: Step -> Medias
+  final medias = IsarLinks<StepMedia>();
 
   GrenadeStep({
-    this.title = "", // 默认为空
+    this.title = "",
     required this.description,
     required this.stepIndex,
   });
 }
 
-@Entity()
+@collection
 class StepMedia {
-  @Id()
-  int id = 0;
+  Id id = Isar.autoIncrement;
 
-  String localPath; // 本地路径
-  int type; // 0:Image, 1:Video (对应 MediaType)
+  String localPath;
+  int type; // MediaType
 
-  final step = ToOne<GrenadeStep>();
+  // 反向链接到 GrenadeStep
+  @Backlink(to: 'medias')
+  final step = IsarLink<GrenadeStep>();
 
   StepMedia({
     required this.localPath,

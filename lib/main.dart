@@ -1,24 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'objectbox.dart';
+import 'package:isar_community/isar.dart';
+import 'package:path_provider/path_provider.dart';
 import 'models.dart';
 import 'providers.dart';
-import 'screens/home_screen.dart'; // 引用首页
+import 'screens/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. 初始化数据库
-  final objectBox = await ObjectBox.create();
+  // 1. 初始化 Isar 数据库
+  final dir = await getApplicationDocumentsDirectory();
+  final isar = await Isar.open(
+    [
+      GameMapSchema,
+      MapLayerSchema,
+      GrenadeSchema,
+      GrenadeStepSchema,
+      StepMediaSchema
+    ],
+    directory: dir.path,
+  );
 
   // 2. 检查并预填充地图数据
-  await _initMapData(objectBox.store);
+  await _initMapData(isar);
 
   runApp(
-    // 3. 注入 Riverpod 和 ObjectBox
+    // 3. 注入 Riverpod 和 Isar
     ProviderScope(
       overrides: [
-        objectBoxProvider.overrideWithValue(objectBox),
+        isarProvider.overrideWithValue(isar),
       ],
       child: const MyApp(),
     ),
@@ -26,18 +37,16 @@ Future<void> main() async {
 }
 
 /// 数据预填充逻辑：支持多楼层
-Future<void> _initMapData(store) async {
-  final mapBox = store.box<GameMap>();
-
+Future<void> _initMapData(Isar isar) async {
   // 如果数据库为空，则写入默认数据
-  if (mapBox.isEmpty()) {
+  if (await isar.gameMaps.count() == 0) {
     print("检测到首次运行，正在写入地图数据...");
 
     final mapsConfig = [
       {
         "name": "Mirage",
-        "key": "mirage", // 用于拼接文件名的 key
-        "floors": ["mirage.png"], // 平面图文件名
+        "key": "mirage",
+        "floors": ["mirage.png"],
         "floorNames": ["Default"]
       },
       {
@@ -76,7 +85,6 @@ Future<void> _initMapData(store) async {
         "floors": ["train.png"],
         "floorNames": ["Default"]
       },
-      // --- 多楼层地图 ---
       {
         "name": "Nuke",
         "key": "nuke",
@@ -91,27 +99,33 @@ Future<void> _initMapData(store) async {
       },
     ];
 
-    for (var config in mapsConfig) {
-      final key = config['key'] as String;
-      final map = GameMap(
+    await isar.writeTxn(() async {
+      for (var config in mapsConfig) {
+        final key = config['key'] as String;
+        final map = GameMap(
           name: config['name'] as String,
           backgroundPath: 'assets/backgrounds/${key}_bg.png',
-          iconPath: 'assets/icons/${key}_icon.svg');
-      final files = config['floors'] as List<String>;
-      final layerNames = config['layerNames'] as List<String>?;
-
-      for (int i = 0; i < files.length; i++) {
-        final layer = MapLayer(
-          // 如果没有自定义层名，就叫 "默认"
-          name: layerNames != null ? layerNames[i] : "默认",
-          assetPath: "assets/maps/${files[i]}",
-          sortOrder: i,
+          iconPath: 'assets/icons/${key}_icon.svg',
         );
-        // 建立关联
-        map.layers.add(layer);
+        await isar.gameMaps.put(map);
+
+        final floors = config['floors'] as List<String>;
+        final floorNames = config['floorNames'] as List<String>;
+
+        for (int i = 0; i < floors.length; i++) {
+          final layer = MapLayer(
+            name: floorNames[i],
+            assetPath: "assets/maps/${floors[i]}",
+            sortOrder: i,
+          );
+          await isar.mapLayers.put(layer);
+
+          // 建立关联
+          map.layers.add(layer);
+        }
+        await map.layers.save();
       }
-      mapBox.put(map);
-    }
+    });
     print("地图数据写入完成！");
   }
 }
@@ -134,7 +148,7 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const HomeScreen(), // 指向首页
+      home: const HomeScreen(),
     );
   }
 }

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar_community/isar.dart';
 import '../models.dart';
 import '../providers.dart';
-import '../services/data_service.dart'; // 确保引入了 DataService
+import '../services/data_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ShareScreen extends ConsumerWidget {
@@ -10,10 +11,10 @@ class ShareScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final store = ref.watch(objectBoxProvider).store;
-    final maps = store.box<GameMap>().getAll();
-    final grenades = store.box<Grenade>().getAll();
-    final dataService = DataService(store);
+    final isar = ref.watch(isarProvider);
+    final maps = isar.gameMaps.where().findAllSync();
+    final grenades = isar.grenades.where().findAllSync();
+    final dataService = DataService(isar);
 
     return DefaultTabController(
       length: 3,
@@ -21,7 +22,6 @@ class ShareScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text("导入与分享"),
           actions: [
-            // 导入按钮
             IconButton(
               icon: const Icon(Icons.file_download, color: Colors.greenAccent),
               tooltip: "导入数据",
@@ -52,13 +52,8 @@ class ShareScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
-            // Tab 1: 分享单个道具
             _buildSingleGrenadeList(context, grenades, dataService),
-
-            // Tab 2: 分享整张地图
             _buildMapList(context, maps, dataService),
-
-            // Tab 3: 分享全部
             _buildAllDataView(context, grenades.length, dataService),
           ],
         ),
@@ -66,7 +61,6 @@ class ShareScreen extends ConsumerWidget {
     );
   }
 
-  // 1. 单个道具列表
   Widget _buildSingleGrenadeList(
       BuildContext context, List<Grenade> list, DataService service) {
     if (list.isEmpty) return const Center(child: Text("暂无道具数据"));
@@ -76,10 +70,13 @@ class ShareScreen extends ConsumerWidget {
       separatorBuilder: (_, __) => const Divider(color: Colors.white10),
       itemBuilder: (ctx, index) {
         final g = list[index];
+        g.layer.loadSync();
+        g.layer.value?.map.loadSync();
+        final mapName = g.layer.value?.map.value?.name ?? "";
+        final layerName = g.layer.value?.name ?? "";
         return ListTile(
           title: Text(g.title),
-          subtitle: Text(
-              "${g.layer.target?.map.target?.name} - ${g.layer.target?.name}"),
+          subtitle: Text("$mapName - $layerName"),
           trailing: IconButton(
             icon: const Icon(Icons.share, color: Colors.blueAccent),
             onPressed: () async {
@@ -91,7 +88,6 @@ class ShareScreen extends ConsumerWidget {
     );
   }
 
-  // 2. 地图列表
   Widget _buildMapList(
       BuildContext context, List<GameMap> maps, DataService service) {
     return ListView.builder(
@@ -99,28 +95,26 @@ class ShareScreen extends ConsumerWidget {
       itemCount: maps.length,
       itemBuilder: (ctx, index) {
         final map = maps[index];
-        // 计算该地图下的道具数量
+        map.layers.loadSync();
         int count = 0;
         for (var layer in map.layers) {
+          layer.grenades.loadSync();
           count += layer.grenades.length;
         }
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: SvgPicture.asset(map.iconPath,
-                width: 40, height: 40 // 建议加上白色滤镜，更好看
-                ),
+            leading: SvgPicture.asset(map.iconPath, width: 40, height: 40),
             title: Text(map.name, style: const TextStyle(color: Colors.white)),
             subtitle: Text("包含 $count 个道具",
                 style: const TextStyle(color: Colors.grey)),
             trailing: ElevatedButton.icon(
-              icon: const Icon(Icons.folder_open, size: 16), // 图标改成文件夹
+              icon: const Icon(Icons.folder_open, size: 16),
               label: const Text("导出"),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
               onPressed: () async {
                 if (count == 0) return;
-                // 调用新的导出方法
                 await service.exportData(context, scopeType: 1, singleMap: map);
               },
             ),
@@ -130,7 +124,6 @@ class ShareScreen extends ConsumerWidget {
     );
   }
 
-  // 3. 全部数据
   Widget _buildAllDataView(
       BuildContext context, int count, DataService service) {
     return Center(
@@ -144,7 +137,7 @@ class ShareScreen extends ConsumerWidget {
           ElevatedButton.icon(
             onPressed: () async {
               if (count == 0) return;
-              await service.exportData(context, scopeType: 2); // 2: All
+              await service.exportData(context, scopeType: 2);
             },
             icon: const Icon(Icons.share),
             label: const Text("一键分享全部数据 (.cs2pkg)",

@@ -97,18 +97,23 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     _loadData();
   }
 
-  void _loadData() {
-    final store = ref.read(objectBoxProvider).store;
-    grenade = store.box<Grenade>().get(widget.grenadeId);
+  void _loadData() async {
+    final isar = ref.read(isarProvider);
+    grenade = await isar.grenades.get(widget.grenadeId);
     if (grenade != null) {
+      grenade!.steps.loadSync();
+      for (var step in grenade!.steps) {
+        step.medias.loadSync();
+      }
       _titleController.text = grenade!.title;
     }
     setState(() {});
   }
 
-  void _updateGrenade({String? title, int? type, int? team, bool? isFavorite}) {
+  void _updateGrenade(
+      {String? title, int? type, int? team, bool? isFavorite}) async {
     if (grenade == null) return;
-    final store = ref.read(objectBoxProvider).store;
+    final isar = ref.read(isarProvider);
 
     if (title != null) grenade!.title = title;
     if (type != null) grenade!.type = type;
@@ -116,7 +121,9 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     if (isFavorite != null) grenade!.isFavorite = isFavorite;
 
     grenade!.updatedAt = DateTime.now();
-    store.box<Grenade>().put(grenade!);
+    await isar.writeTxn(() async {
+      await isar.grenades.put(grenade!);
+    });
     _loadData();
   }
 
@@ -131,9 +138,11 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text("取消")),
                 TextButton(
-                  onPressed: () {
-                    final store = ref.read(objectBoxProvider).store;
-                    store.box<Grenade>().remove(grenade!.id);
+                  onPressed: () async {
+                    final isar = ref.read(isarProvider);
+                    await isar.writeTxn(() async {
+                      await isar.grenades.delete(grenade!.id);
+                    });
                     Navigator.pop(ctx);
                     Navigator.pop(context);
                   },
@@ -251,24 +260,33 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
 
   Future<void> _saveStep(String title, String desc,
       {String? mediaPath, int? mediaType}) async {
-    final store = ref.read(objectBoxProvider).store;
+    final isar = ref.read(isarProvider);
 
     final step = GrenadeStep(
       title: title,
       description: desc,
       stepIndex: grenade!.steps.length,
     );
-    step.grenade.target = grenade;
 
-    if (mediaPath != null && mediaType != null) {
-      final media = StepMedia(localPath: mediaPath, type: mediaType);
-      media.step.target = step;
-      step.medias.add(media);
-    }
+    await isar.writeTxn(() async {
+      await isar.grenadeSteps.put(step);
+      step.grenade.value = grenade;
+      await step.grenade.save();
 
-    store.box<GrenadeStep>().put(step);
-    grenade!.updatedAt = DateTime.now();
-    store.box<Grenade>().put(grenade!);
+      if (mediaPath != null && mediaType != null) {
+        final media = StepMedia(localPath: mediaPath, type: mediaType);
+        await isar.stepMedias.put(media);
+        media.step.value = step;
+        await media.step.save();
+        step.medias.add(media);
+        await step.medias.save();
+      }
+
+      grenade!.steps.add(step);
+      await grenade!.steps.save();
+      grenade!.updatedAt = DateTime.now();
+      await isar.grenades.put(grenade!);
+    });
     _loadData();
   }
 
@@ -285,12 +303,16 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
   Future<void> _appendMediaToStep(GrenadeStep step, bool isImage) async {
     final path = await _pickAndProcessMedia(isImage);
     if (path != null) {
-      final store = ref.read(objectBoxProvider).store;
+      final isar = ref.read(isarProvider);
       final media = StepMedia(
           localPath: path, type: isImage ? MediaType.image : MediaType.video);
-      media.step.target = step;
-      step.medias.add(media);
-      store.box<StepMedia>().put(media);
+      await isar.writeTxn(() async {
+        await isar.stepMedias.put(media);
+        media.step.value = step;
+        await media.step.save();
+        step.medias.add(media);
+        await step.medias.save();
+      });
       setState(() {});
     }
   }
@@ -411,13 +433,15 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                final store = ref.read(objectBoxProvider).store;
+              onPressed: () async {
+                final isar = ref.read(isarProvider);
                 step.title = titleController.text;
                 step.description = descController.text;
-                store.box<GrenadeStep>().put(step);
-                grenade!.updatedAt = DateTime.now();
-                store.box<Grenade>().put(grenade!);
+                await isar.writeTxn(() async {
+                  await isar.grenadeSteps.put(step);
+                  grenade!.updatedAt = DateTime.now();
+                  await isar.grenades.put(grenade!);
+                });
                 Navigator.pop(ctx);
                 _loadData();
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -460,11 +484,13 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
               await File(savePath).writeAsBytes(bytes);
 
               // 更新媒体路径
-              final store = ref.read(objectBoxProvider).store;
+              final isar = ref.read(isarProvider);
               media.localPath = savePath;
-              store.box<StepMedia>().put(media);
-              grenade!.updatedAt = DateTime.now();
-              store.box<Grenade>().put(grenade!);
+              await isar.writeTxn(() async {
+                await isar.stepMedias.put(media);
+                grenade!.updatedAt = DateTime.now();
+                await isar.grenades.put(grenade!);
+              });
 
               if (mounted) {
                 Navigator.pop(context);
@@ -597,11 +623,13 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
           if (oldIndex < newIndex) newIndex -= 1;
           final item = steps.removeAt(oldIndex);
           steps.insert(newIndex, item);
-          final store = ref.read(objectBoxProvider).store;
+          final isar = ref.read(isarProvider);
           for (int i = 0; i < steps.length; i++) {
             steps[i].stepIndex = i;
           }
-          store.box<GrenadeStep>().putMany(steps);
+          isar.writeTxnSync(() {
+            isar.grenadeSteps.putAllSync(steps);
+          });
           setState(() {});
         },
         children: steps.map((step) => _buildStepCard(step, isEditing)).toList(),
@@ -658,9 +686,11 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
               top: 5,
               right: 5,
               child: GestureDetector(
-                onTap: () {
-                  final store = ref.read(objectBoxProvider).store;
-                  store.box<StepMedia>().remove(media.id);
+                onTap: () async {
+                  final isar = ref.read(isarProvider);
+                  await isar.writeTxn(() async {
+                    await isar.stepMedias.delete(media.id);
+                  });
                   _loadData();
                 },
                 child: Container(
@@ -739,9 +769,11 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 20, color: Colors.red),
-                    onPressed: () {
-                      final store = ref.read(objectBoxProvider).store;
-                      store.box<GrenadeStep>().remove(step.id);
+                    onPressed: () async {
+                      final isar = ref.read(isarProvider);
+                      await isar.writeTxn(() async {
+                        await isar.grenadeSteps.delete(step.id);
+                      });
                       _loadData();
                     },
                   ),

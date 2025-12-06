@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:isar_community/isar.dart';
 import '../models.dart';
 import '../providers.dart';
-import '../objectbox.g.dart';
 import 'grenade_detail_screen.dart';
 
 // --- 页面级状态管理 ---
@@ -13,24 +14,22 @@ final selectedLayerIndexProvider = StateProvider.autoDispose<int>((ref) => 0);
 
 final _filteredGrenadesProvider =
     StreamProvider.autoDispose.family<List<Grenade>, int>((ref, layerId) {
-  final box = ref.watch(objectBoxProvider).store.box<Grenade>();
+  final isar = ref.watch(isarProvider);
   final teamFilter = ref.watch(teamFilterProvider);
   final onlyFav = ref.watch(onlyFavoritesProvider);
   final selectedTypes = ref.watch(typeFilterProvider);
 
-  return box
-      .query(Grenade_.layer.equals(layerId))
-      .watch(triggerImmediately: true)
-      .map((q) {
-    final allGrenades = q.find();
+  return isar.grenades
+      .filter()
+      .layer((q) => q.idEqualTo(layerId))
+      .watch(fireImmediately: true)
+      .map((allGrenades) {
     return allGrenades.where((g) {
       if (!selectedTypes.contains(g.type)) return false;
-      // 筛选队伍
       if (teamFilter == TeamType.onlyAll && g.team != TeamType.all)
         return false;
       if (teamFilter == TeamType.ct && g.team != TeamType.ct) return false;
       if (teamFilter == TeamType.t && g.team != TeamType.t) return false;
-      // TeamType.all 显示全部，不过滤
       if (onlyFav && !g.isFavorite) return false;
       return true;
     }).toList();
@@ -110,6 +109,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
+    widget.gameMap.layers.loadSync();
     final defaultIndex = widget.gameMap.layers.length > 1 ? 1 : 0;
     Future.microtask(() =>
         ref.read(selectedLayerIndexProvider.notifier).state = defaultIndex);
@@ -139,9 +139,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _createGrenade(layerId);
   }
 
-  void _createGrenade(int layerId) {
-    final store = ref.read(objectBoxProvider).store;
-    final layer = store.box<MapLayer>().get(layerId)!;
+  void _createGrenade(int layerId) async {
+    final isar = ref.read(isarProvider);
+    final layer = await isar.mapLayers.get(layerId);
+    if (layer == null) return;
     final grenade = Grenade(
       title: "新道具",
       type: GrenadeType.smoke,
@@ -150,8 +151,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       yRatio: _tempTapPosition!.dy,
       isNewImport: false,
     );
-    grenade.layer.target = layer;
-    final id = store.box<Grenade>().put(grenade);
+    int id = 0;
+    await isar.writeTxn(() async {
+      id = await isar.grenades.put(grenade);
+      grenade.layer.value = layer;
+      await grenade.layer.save();
+    });
     setState(() {
       _tempTapPosition = null;
     });
@@ -163,14 +168,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _onSearchResultSelected(Grenade g) {
-    final targetLayerId = g.layer.targetId;
-    final layers = widget.gameMap.layers;
+    g.layer.loadSync();
+    final targetLayerId = g.layer.value?.id;
+    widget.gameMap.layers.loadSync();
+    final layers = widget.gameMap.layers.toList();
     final targetIndex = layers.indexWhere((l) => l.id == targetLayerId);
     if (targetIndex != -1 &&
         targetIndex != ref.read(selectedLayerIndexProvider)) {
       ref.read(selectedLayerIndexProvider.notifier).state = targetIndex;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("已跳转至 ${g.layer.target?.name ?? '目标楼层'}"),
+        content: Text("已跳转至 ${g.layer.value?.name ?? '目标楼层'}"),
         duration: const Duration(milliseconds: 800),
         behavior: SnackBarBehavior.floating,
       ));
@@ -178,10 +185,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _handleGrenadeTap(g, isEditing: false);
   }
 
-  void _handleGrenadeTap(Grenade g, {required bool isEditing}) {
+  void _handleGrenadeTap(Grenade g, {required bool isEditing}) async {
     if (g.isNewImport) {
       g.isNewImport = false;
-      ref.read(objectBoxProvider).store.box<Grenade>().put(g);
+      final isar = ref.read(isarProvider);
+      await isar.writeTxn(() async {
+        await isar.grenades.put(g);
+      });
     }
     Navigator.push(
         context,
@@ -369,9 +379,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  void _createGrenadeAtCluster(GrenadeCluster cluster, int layerId) {
-    final store = ref.read(objectBoxProvider).store;
-    final layer = store.box<MapLayer>().get(layerId)!;
+  void _createGrenadeAtCluster(GrenadeCluster cluster, int layerId) async {
+    final isar = ref.read(isarProvider);
+    final layer = await isar.mapLayers.get(layerId);
+    if (layer == null) return;
     final grenade = Grenade(
         title: "新道具",
         type: GrenadeType.smoke,
@@ -379,8 +390,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         xRatio: cluster.xRatio,
         yRatio: cluster.yRatio,
         isNewImport: false);
-    grenade.layer.target = layer;
-    final id = store.box<Grenade>().put(grenade);
+    int id = 0;
+    await isar.writeTxn(() async {
+      id = await isar.grenades.put(grenade);
+      grenade.layer.value = layer;
+      await grenade.layer.save();
+    });
     Navigator.push(
         context,
         MaterialPageRoute(
@@ -388,13 +403,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 GrenadeDetailScreen(grenadeId: id, isEditing: true)));
   }
 
-  void _deleteGrenade(Grenade g) {
-    final store = ref.read(objectBoxProvider).store;
-    for (final step in g.steps) {
-      store.box<StepMedia>().removeMany(step.medias.map((m) => m.id).toList());
-    }
-    store.box<GrenadeStep>().removeMany(g.steps.map((s) => s.id).toList());
-    store.box<Grenade>().remove(g.id);
+  void _deleteGrenade(Grenade g) async {
+    final isar = ref.read(isarProvider);
+    g.steps.loadSync();
+    await isar.writeTxn(() async {
+      for (final step in g.steps) {
+        step.medias.loadSync();
+        await isar.stepMedias.deleteAll(step.medias.map((m) => m.id).toList());
+      }
+      await isar.grenadeSteps.deleteAll(g.steps.map((s) => s.id).toList());
+      await isar.grenades.delete(g.id);
+    });
   }
 
   void _startMoveCluster(GrenadeCluster cluster) {
@@ -422,7 +441,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _handleMoveClusterTap(
-      TapUpDetails details, double width, double height) {
+      TapUpDetails details, double width, double height) async {
     if (_draggingCluster == null) return;
     final newX = details.localPosition.dx / width;
     final newY = details.localPosition.dy / height;
@@ -436,14 +455,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
-    final store = ref.read(objectBoxProvider).store;
-    final box = store.box<Grenade>();
-    for (final g in _draggingCluster!.grenades) {
-      g.xRatio = newX;
-      g.yRatio = newY;
-      g.updatedAt = DateTime.now();
-      box.put(g);
-    }
+    final isar = ref.read(isarProvider);
+    await isar.writeTxn(() async {
+      for (final g in _draggingCluster!.grenades) {
+        g.xRatio = newX;
+        g.yRatio = newY;
+        g.updatedAt = DateTime.now();
+        await isar.grenades.put(g);
+      }
+    });
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("✓ 点位已移动"),
@@ -464,14 +484,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       });
       return;
     }
-    final store = ref.read(objectBoxProvider).store;
-    final box = store.box<Grenade>();
-    for (final g in _draggingCluster!.grenades) {
-      g.xRatio = _dragOffset!.dx;
-      g.yRatio = _dragOffset!.dy;
-      g.updatedAt = DateTime.now();
-      box.put(g);
-    }
+    final isar = ref.read(isarProvider);
+    isar.writeTxnSync(() {
+      for (final g in _draggingCluster!.grenades) {
+        g.xRatio = _dragOffset!.dx;
+        g.yRatio = _dragOffset!.dy;
+        g.updatedAt = DateTime.now();
+        isar.grenades.putSync(g);
+      }
+    });
     setState(() {
       _draggingCluster = null;
       _dragOffset = null;
@@ -711,7 +732,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final onlyFav = ref.watch(onlyFavoritesProvider);
     final selectedTypes = ref.watch(typeFilterProvider);
 
-    final layers = widget.gameMap.layers;
+    widget.gameMap.layers.loadSync();
+    final layers = widget.gameMap.layers.toList();
     final currentLayer = (layers.isNotEmpty && layerIndex < layers.length)
         ? layers[layerIndex]
         : (layers.isNotEmpty ? layers.last : null);
@@ -721,14 +743,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final grenadesAsync = ref.watch(_filteredGrenadesProvider(currentLayer.id));
 
     // 搜索数据：从数据库查询该地图所有楼层的道具
-    final store = ref.read(objectBoxProvider).store;
+    final isar = ref.read(isarProvider);
     final allMapGrenades = <Grenade>[];
-    for (final layer in widget.gameMap.layers) {
-      allMapGrenades.addAll(store
-          .box<Grenade>()
-          .query(Grenade_.layer.equals(layer.id))
-          .build()
-          .find());
+    for (final layer in layers) {
+      allMapGrenades.addAll(isar.grenades
+          .filter()
+          .layer((q) => q.idEqualTo(layer.id))
+          .findAllSync());
     }
 
     return Scaffold(
@@ -933,6 +954,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                                             (context, index) {
                                                           final option = options
                                                               .elementAt(index);
+                                                          option.layer
+                                                              .loadSync();
                                                           return ListTile(
                                                               title: Text(
                                                                   option.title,
@@ -940,7 +963,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                                                       color: Colors
                                                                           .white)),
                                                               subtitle: Text(
-                                                                  "${option.layer.target?.name} • ${_getTypeName(option.type)}",
+                                                                  "${option.layer.value?.name ?? ''} • ${_getTypeName(option.type)}",
                                                                   style: const TextStyle(
                                                                       color: Colors
                                                                           .grey,
