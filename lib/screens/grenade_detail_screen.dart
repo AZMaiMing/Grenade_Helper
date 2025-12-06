@@ -615,6 +615,72 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     }
   }
 
+  // 构建单个媒体项（图片或视频）
+  Widget _buildMediaItem(StepMedia media, bool isEditing) {
+    return Center(
+      child: Stack(
+        children: [
+          SizedBox(
+            width: MediaQuery.of(context).size.width - 48,
+            height: 250,
+            child: media.type == MediaType.image
+                ? GestureDetector(
+                    onTap: () => _showFullscreenImage(media.localPath),
+                    child: Image.file(
+                      File(media.localPath),
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : VideoPlayerWidget(file: File(media.localPath)),
+          ),
+          if (isEditing) ...[
+            // 编辑图片按钮
+            if (media.type == MediaType.image)
+              Positioned(
+                top: 5,
+                right: 40,
+                child: GestureDetector(
+                  onTap: () => _editImage(media),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.edit,
+                        size: 14, color: Colors.orangeAccent),
+                  ),
+                ),
+              ),
+            // 删除按钮
+            Positioned(
+              top: 5,
+              right: 5,
+              child: GestureDetector(
+                onTap: () {
+                  final store = ref.read(objectBoxProvider).store;
+                  store.box<StepMedia>().remove(media.id);
+                  _loadData();
+                },
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.delete,
+                      size: 14, color: Colors.redAccent),
+                ),
+              ),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
   Widget _buildStepCard(GrenadeStep step, bool isEditing) {
     return Card(
       key: ValueKey(step.id),
@@ -685,71 +751,14 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
           ),
           const Divider(color: Colors.white10),
           if (step.medias.isNotEmpty)
-            SizedBox(
-              height: 250,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: step.medias.length,
-                itemBuilder: (ctx, idx) {
-                  final media = step.medias[idx];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 2),
-                    child: Stack(
-                      children: [
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.85,
-                          child: media.type == MediaType.image
-                              ? GestureDetector(
-                                  onTap: () =>
-                                      _showFullscreenImage(media.localPath),
-                                  child: Image.file(File(media.localPath),
-                                      fit: BoxFit.cover),
-                                )
-                              : VideoPlayerWidget(file: File(media.localPath)),
-                        ),
-                        if (isEditing) ...[
-                          // 编辑图片按钮
-                          if (media.type == MediaType.image)
-                            Positioned(
-                              top: 5,
-                              right: 40,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.black54,
-                                radius: 14,
-                                child: IconButton(
-                                  icon: const Icon(Icons.edit,
-                                      size: 14, color: Colors.orangeAccent),
-                                  padding: EdgeInsets.zero,
-                                  onPressed: () => _editImage(media),
-                                ),
-                              ),
-                            ),
-                          // 删除按钮
-                          Positioned(
-                            top: 5,
-                            right: 5,
-                            child: CircleAvatar(
-                              backgroundColor: Colors.black54,
-                              radius: 14,
-                              child: IconButton(
-                                icon: const Icon(Icons.delete,
-                                    size: 14, color: Colors.redAccent),
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  final store =
-                                      ref.read(objectBoxProvider).store;
-                                  store.box<StepMedia>().remove(media.id);
-                                  setState(() {});
-                                },
-                              ),
-                            ),
-                          ),
-                        ]
-                      ],
-                    ),
-                  );
-                },
-              ),
+            // 图片/视频垂直排列
+            Column(
+              children: step.medias
+                  .map((media) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildMediaItem(media, isEditing),
+                      ))
+                  .toList(),
             )
           else if (isEditing)
             Container(

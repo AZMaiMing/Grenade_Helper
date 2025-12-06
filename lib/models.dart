@@ -10,9 +10,10 @@ class GrenadeType {
 }
 
 class TeamType {
-  static const int all = 0;
-  static const int ct = 1; // 警
-  static const int t = 2;  // 匪
+  static const int all = 0; // 显示全部（不过滤）
+  static const int ct = 1; // 仅警
+  static const int t = 2; // 仅匪
+  static const int onlyAll = 3; // 仅通用（双方都可用）
 }
 
 class MediaType {
@@ -29,7 +30,7 @@ class GameMap {
 
   String name;
   String backgroundPath; // 大图背景 (新增)
-  String iconPath;       // 标志图标 (新增)
+  String iconPath; // 标志图标 (新增)
 
   @Backlink()
   final layers = ToMany<MapLayer>();

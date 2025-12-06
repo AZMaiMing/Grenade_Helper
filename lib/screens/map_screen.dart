@@ -25,7 +25,12 @@ final _filteredGrenadesProvider =
     final allGrenades = q.find();
     return allGrenades.where((g) {
       if (!selectedTypes.contains(g.type)) return false;
-      if (teamFilter != TeamType.all && g.team != teamFilter) return false;
+      // 筛选队伍
+      if (teamFilter == TeamType.onlyAll && g.team != TeamType.all)
+        return false;
+      if (teamFilter == TeamType.ct && g.team != TeamType.ct) return false;
+      if (teamFilter == TeamType.t && g.team != TeamType.t) return false;
+      // TeamType.all 显示全部，不过滤
       if (onlyFav && !g.isFavorite) return false;
       return true;
     }).toList();
@@ -53,6 +58,13 @@ class GrenadeCluster {
 
   bool get hasNewImport => grenades.any((g) => g.isNewImport);
   bool get hasFavorite => grenades.any((g) => g.isFavorite);
+
+  // 检查是否包含多种类型的道具
+  bool get hasMultipleTypes {
+    if (grenades.length <= 1) return false;
+    final firstType = grenades.first.type;
+    return grenades.any((g) => g.type != firstType);
+  }
 }
 
 List<GrenadeCluster> clusterGrenades(List<Grenade> grenades,
@@ -623,7 +635,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           blurRadius: 4,
                           spreadRadius: 1)
                   ]),
-              child: Icon(icon, size: 10, color: color)),
+              child: Icon(cluster.hasMultipleTypes ? Icons.layers : icon,
+                  size: 10,
+                  color:
+                      cluster.hasMultipleTypes ? Colors.purpleAccent : color)),
           if (count > 1)
             Positioned(
                 right: -3,
@@ -754,10 +769,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   _buildFilterChip("全部", TeamType.all, teamFilter, Colors.grey),
                   const SizedBox(width: 8),
                   _buildFilterChip(
-                      "CT (警)", TeamType.ct, teamFilter, Colors.blueAccent),
+                      "通用", TeamType.onlyAll, teamFilter, Colors.white),
                   const SizedBox(width: 8),
                   _buildFilterChip(
-                      "T (匪)", TeamType.t, teamFilter, Colors.amber),
+                      "CT", TeamType.ct, teamFilter, Colors.blueAccent),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("T", TeamType.t, teamFilter, Colors.amber),
                   const SizedBox(width: 20),
                   FilterChip(
                       label: const Icon(Icons.star,
