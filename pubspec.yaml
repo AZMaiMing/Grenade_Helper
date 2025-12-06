@@ -1,0 +1,54 @@
+name: grenade_helper
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+flutter:
+  uses-material-design: true 
+  
+  assets:
+    - assets/maps/
+    - assets/backgrounds/
+    - assets/icons/
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # --- 状态管理 (回退到稳定的 2.x) ---
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.3.5
+
+  # --- 数据库 (使用稳定的 4.x) ---
+  objectbox: ^4.0.3
+  objectbox_flutter_libs: ^4.0.3
+
+  # --- 地图交互 ---
+  photo_view: ^0.15.0
+
+  # --- 文件与工具 ---
+  path_provider: ^2.1.2
+  path: ^1.9.0
+  image_picker: ^1.0.7
+  uuid: ^4.3.3
+  pro_image_editor: ^9.13.0
+  file_picker: ^8.0.0      # 选择文件
+  intl: ^0.19.0            # 时间格式化
+  # --- 分享 (保持较新版本) ---
+  archive: ^3.6.1 # 4.0 API变动太大，3.6.1 更稳
+  share_plus: ^10.0.0 # 10.0 兼容性比 12.0 更好，不需要太新的 Kotlin
+  video_player: ^2.10.1
+  chewie: ^1.13.0
+  flutter_svg: ^2.0.10
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # --- 代码生成器 (关键：版本要匹配) ---
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.0 
+  objectbox_generator: ^4.0.3
