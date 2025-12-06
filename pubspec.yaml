@@ -52,3 +52,9 @@ dev_dependencies:
   build_runner: ^2.4.9
   riverpod_generator: ^2.4.0 
   objectbox_generator: ^4.0.3
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
