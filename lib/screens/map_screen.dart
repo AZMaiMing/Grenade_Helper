@@ -765,21 +765,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                    color: Colors.black87,
+                    color: Colors.black.withValues(alpha: 0.3), // 背景半透明
                     shape: BoxShape.circle,
-                    border: Border.all(color: color, width: 2),
+                    border: Border.all(
+                        color: color.withValues(alpha: 0.5), // 边框轻微透明
+                        width: 2),
                     boxShadow: [
                       if (cluster.hasFavorite)
                         BoxShadow(
-                            color: color.withOpacity(0.6),
+                            color: color.withValues(alpha: 0.4),
                             blurRadius: 4,
                             spreadRadius: 1)
                     ]),
                 child: Icon(cluster.hasMultipleTypes ? Icons.layers : icon,
                     size: 10,
-                    color: cluster.hasMultipleTypes
-                        ? Colors.purpleAccent
-                        : color)),
+                    color:
+                        (cluster.hasMultipleTypes ? Colors.purpleAccent : color)
+                            .withValues(alpha: 0.8))), // 图标保持较高可见度
             if (count > 1)
               Positioned(
                   right: -3,
