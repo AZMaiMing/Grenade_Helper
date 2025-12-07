@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:photo_view/photo_view.dart';
@@ -549,6 +550,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
+  /// 处理鼠标滚轮缩放（以鼠标指针为中心）
+  void _handleMouseWheelZoom(
+      PointerScrollEvent event, BoxConstraints constraints) {
+    // 确保有有效的RenderBox和当前的缩放值
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final double scrollDelta = event.scrollDelta.dy;
+    if (scrollDelta == 0) return;
+
+    // 计算缩放因子
+    final double zoomFactor = scrollDelta > 0 ? 0.9 : 1.1;
+
+    // 获取当前状态
+    final double currentScale = _photoViewController.scale ?? 1.0;
+    final Offset currentPosition = _photoViewController.position;
+
+    // 计算目标缩放
+    final minScale = 0.8;
+    final maxScale = 5.0;
+    final double newScale =
+        (currentScale * zoomFactor).clamp(minScale, maxScale);
+
+    if ((newScale - currentScale).abs() < 0.0001) return;
+
+    // 获取视口中心和鼠标位置（相对于视口中心）
+    final Size size = renderBox.size;
+    final Offset viewportCenter = size.center(Offset.zero);
+    final Offset cursorPosition = event.localPosition - viewportCenter;
+
+    // 核心变焦公式：
+    final double scaleRatio = newScale / currentScale;
+    final Offset newPosition =
+        cursorPosition * (1 - scaleRatio) + currentPosition * scaleRatio;
+
+    _photoViewController.scale = newScale;
+    _photoViewController.position = newPosition;
+  }
+
   Color _getTeamColor(int team) {
     switch (team) {
       case TeamType.ct:
@@ -873,76 +913,90 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       body: LayoutBuilder(builder: (context, constraints) {
         return Stack(children: [
           Positioned.fill(
-              child: PhotoView.customChild(
-            key: ValueKey(currentLayer.id),
-            controller: _photoViewController,
-            initialScale: PhotoViewComputedScale.covered,
-            minScale: PhotoViewComputedScale.contained * 0.8,
-            maxScale: PhotoViewComputedScale.covered * 5.0,
-            child: StreamBuilder<PhotoViewControllerValue>(
-              stream: _photoViewController.outputStateStream,
-              builder: (context, snapshot) {
-                final double scale = snapshot.data?.scale ?? 1.0;
-                // Calculate scale factor (inverse of zoom)
-                // Base scalar is 1.0, decreases as we zoom in
-                final double markerScale = 1.0 / scale;
-                // Clamp scale to prevent markers getting too small or too big if needed
-                // For now we use direct inverse scaling to keep visual size constant
+              child: Listener(
+                  onPointerSignal: (event) {
+                    if (event is PointerScrollEvent) {
+                      _handleMouseWheelZoom(event, constraints);
+                    }
+                  },
+                  child: PhotoView.customChild(
+                    key: ValueKey(currentLayer.id),
+                    controller: _photoViewController,
+                    initialScale: PhotoViewComputedScale.covered,
+                    minScale: PhotoViewComputedScale.contained * 0.8,
+                    maxScale: PhotoViewComputedScale.covered * 5.0,
+                    child: StreamBuilder<PhotoViewControllerValue>(
+                      stream: _photoViewController.outputStateStream,
+                      builder: (context, snapshot) {
+                        final double scale = snapshot.data?.scale ?? 1.0;
+                        // Calculate scale factor (inverse of zoom)
+                        // Base scalar is 1.0, decreases as we zoom in
+                        final double markerScale = 1.0 / scale;
+                        // Clamp scale to prevent markers getting too small or too big if needed
+                        // For now we use direct inverse scaling to keep visual size constant
 
-                return GestureDetector(
-                    onTapUp: (d) => _handleTap(d, constraints.maxWidth,
-                        constraints.maxHeight, currentLayer.id),
-                    child: Stack(children: [
-                      Image.asset(currentLayer.assetPath,
-                          width: constraints.maxWidth,
-                          height: constraints.maxHeight,
-                          fit: BoxFit.contain),
-                      ...grenadesAsync.when(
-                          data: (list) {
-                            final clusters = clusterGrenades(list);
-                            return clusters.map((c) => _buildClusterMarker(
-                                c,
-                                constraints,
-                                isEditMode,
-                                currentLayer.id,
-                                markerScale));
-                          },
-                          error: (_, __) => [],
-                          loading: () => []),
-                      if (_draggingCluster != null && _dragOffset != null)
-                        Positioned(
-                            left: _dragOffset!.dx * constraints.maxWidth -
-                                14 * markerScale,
-                            top: _dragOffset!.dy * constraints.maxHeight -
-                                14 * markerScale,
-                            child: Transform.scale(
-                              scale: markerScale,
-                              child: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                      color: Colors.orange.withOpacity(0.8),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                          color: Colors.white, width: 2)),
-                                  child: const Icon(Icons.place,
-                                      size: 16, color: Colors.white)),
-                            )),
-                      if (_tempTapPosition != null)
-                        Positioned(
-                            left: _tempTapPosition!.dx * constraints.maxWidth -
-                                12 * markerScale,
-                            top: _tempTapPosition!.dy * constraints.maxHeight -
-                                12 * markerScale,
-                            child: Transform.scale(
-                              scale: markerScale,
-                              child: const Icon(Icons.add_circle,
-                                  color: Colors.greenAccent, size: 24),
-                            )),
-                    ]));
-              },
-            ),
-          )),
+                        return GestureDetector(
+                            onTapUp: (d) => _handleTap(d, constraints.maxWidth,
+                                constraints.maxHeight, currentLayer.id),
+                            child: Stack(children: [
+                              Image.asset(currentLayer.assetPath,
+                                  width: constraints.maxWidth,
+                                  height: constraints.maxHeight,
+                                  fit: BoxFit.contain),
+                              ...grenadesAsync.when(
+                                  data: (list) {
+                                    final clusters = clusterGrenades(list);
+                                    return clusters.map((c) =>
+                                        _buildClusterMarker(
+                                            c,
+                                            constraints,
+                                            isEditMode,
+                                            currentLayer.id,
+                                            markerScale));
+                                  },
+                                  error: (_, __) => [],
+                                  loading: () => []),
+                              if (_draggingCluster != null &&
+                                  _dragOffset != null)
+                                Positioned(
+                                    left:
+                                        _dragOffset!.dx * constraints.maxWidth -
+                                            14 * markerScale,
+                                    top: _dragOffset!.dy *
+                                            constraints.maxHeight -
+                                        14 * markerScale,
+                                    child: Transform.scale(
+                                      scale: markerScale,
+                                      child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: BoxDecoration(
+                                              color: Colors.orange
+                                                  .withOpacity(0.8),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                  color: Colors.white,
+                                                  width: 2)),
+                                          child: const Icon(Icons.place,
+                                              size: 16, color: Colors.white)),
+                                    )),
+                              if (_tempTapPosition != null)
+                                Positioned(
+                                    left: _tempTapPosition!.dx *
+                                            constraints.maxWidth -
+                                        12 * markerScale,
+                                    top: _tempTapPosition!.dy *
+                                            constraints.maxHeight -
+                                        12 * markerScale,
+                                    child: Transform.scale(
+                                      scale: markerScale,
+                                      child: const Icon(Icons.add_circle,
+                                          color: Colors.greenAccent, size: 24),
+                                    )),
+                            ]));
+                      },
+                    ),
+                  ))),
           // 顶部UI
           Positioned(
               top: 0,
