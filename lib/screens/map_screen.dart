@@ -106,10 +106,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   GrenadeCluster? _draggingCluster;
   Offset? _dragOffset;
   bool _isMovingCluster = false;
+  late final PhotoViewController _photoViewController;
 
   @override
   void initState() {
     super.initState();
+    _photoViewController = PhotoViewController();
     widget.gameMap.layers.loadSync();
     final defaultIndex = widget.gameMap.layers.length > 1 ? 1 : 0;
     Future.microtask(() {
@@ -121,6 +123,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   void dispose() {
+    _photoViewController.dispose();
     // 离开地图时清除悬浮窗状态
     globalOverlayState?.clearMap();
     // 通知独立悬浮窗清除地图
@@ -654,82 +657,92 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildClusterMarker(GrenadeCluster cluster, BoxConstraints constraints,
-      bool isEditMode, int layerId) {
+      bool isEditMode, int layerId, double markerScale) {
     final color = _getTeamColor(cluster.primaryTeam);
     final icon = _getTypeIcon(cluster.primaryType);
     final count = cluster.grenades.length;
+
+    // Base size is 20, scaled by markerScale
+    final scaledSize = 20.0 * markerScale;
+    final scaledHalfSize = scaledSize / 2;
+
     return Positioned(
-      left: cluster.xRatio * constraints.maxWidth - 10,
-      top: cluster.yRatio * constraints.maxHeight - 10,
-      child: GestureDetector(
-        onTap: () => _handleClusterTap(cluster, layerId),
-        onLongPressStart: isEditMode
-            ? (_) {
-                setState(() {
-                  _draggingCluster = cluster;
-                  _dragOffset = Offset(cluster.xRatio, cluster.yRatio);
-                });
-              }
-            : null,
-        onLongPressMoveUpdate: isEditMode
-            ? (details) {
-                setState(() {
-                  _dragOffset = Offset(
-                      details.localPosition.dx / constraints.maxWidth +
-                          cluster.xRatio -
-                          10 / constraints.maxWidth,
-                      details.localPosition.dy / constraints.maxHeight +
-                          cluster.yRatio -
-                          10 / constraints.maxHeight);
-                });
-              }
-            : null,
-        onLongPressEnd: isEditMode
-            ? (_) =>
-                _onClusterDragEnd(constraints.maxWidth, constraints.maxHeight)
-            : null,
-        child: Stack(clipBehavior: Clip.none, children: [
-          Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                  color: Colors.black87,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color, width: 2),
-                  boxShadow: [
-                    if (cluster.hasFavorite)
-                      BoxShadow(
-                          color: color.withOpacity(0.6),
-                          blurRadius: 4,
-                          spreadRadius: 1)
-                  ]),
-              child: Icon(cluster.hasMultipleTypes ? Icons.layers : icon,
-                  size: 10,
-                  color:
-                      cluster.hasMultipleTypes ? Colors.purpleAccent : color)),
-          if (count > 1)
-            Positioned(
-                right: -3,
-                top: -3,
-                child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                        color: Colors.orange, shape: BoxShape.circle),
-                    child: Text('$count',
-                        style: const TextStyle(
-                            fontSize: 8,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)))),
-          if (cluster.hasNewImport)
-            Positioned(
-                left: -2,
-                top: -2,
-                child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                        color: Colors.red, shape: BoxShape.circle))),
-        ]),
+      left: cluster.xRatio * constraints.maxWidth - scaledHalfSize,
+      top: cluster.yRatio * constraints.maxHeight - scaledHalfSize,
+      child: Transform.scale(
+        scale: markerScale,
+        alignment: Alignment.center,
+        child: GestureDetector(
+          onTap: () => _handleClusterTap(cluster, layerId),
+          onLongPressStart: isEditMode
+              ? (_) {
+                  setState(() {
+                    _draggingCluster = cluster;
+                    _dragOffset = Offset(cluster.xRatio, cluster.yRatio);
+                  });
+                }
+              : null,
+          onLongPressMoveUpdate: isEditMode
+              ? (details) {
+                  setState(() {
+                    _dragOffset = Offset(
+                        details.localPosition.dx / constraints.maxWidth +
+                            cluster.xRatio -
+                            10 / constraints.maxWidth,
+                        details.localPosition.dy / constraints.maxHeight +
+                            cluster.yRatio -
+                            10 / constraints.maxHeight);
+                  });
+                }
+              : null,
+          onLongPressEnd: isEditMode
+              ? (_) =>
+                  _onClusterDragEnd(constraints.maxWidth, constraints.maxHeight)
+              : null,
+          child: Stack(clipBehavior: Clip.none, children: [
+            Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                    color: Colors.black87,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 2),
+                    boxShadow: [
+                      if (cluster.hasFavorite)
+                        BoxShadow(
+                            color: color.withOpacity(0.6),
+                            blurRadius: 4,
+                            spreadRadius: 1)
+                    ]),
+                child: Icon(cluster.hasMultipleTypes ? Icons.layers : icon,
+                    size: 10,
+                    color: cluster.hasMultipleTypes
+                        ? Colors.purpleAccent
+                        : color)),
+            if (count > 1)
+              Positioned(
+                  right: -3,
+                  top: -3,
+                  child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                          color: Colors.orange, shape: BoxShape.circle),
+                      child: Text('$count',
+                          style: const TextStyle(
+                              fontSize: 8,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)))),
+            if (cluster.hasNewImport)
+              Positioned(
+                  left: -2,
+                  top: -2,
+                  child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                          color: Colors.red, shape: BoxShape.circle))),
+          ]),
+        ),
       ),
     );
   }
@@ -862,46 +875,73 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Positioned.fill(
               child: PhotoView.customChild(
             key: ValueKey(currentLayer.id),
+            controller: _photoViewController,
             initialScale: PhotoViewComputedScale.covered,
             minScale: PhotoViewComputedScale.contained * 0.8,
             maxScale: PhotoViewComputedScale.covered * 5.0,
-            child: GestureDetector(
-                onTapUp: (d) => _handleTap(d, constraints.maxWidth,
-                    constraints.maxHeight, currentLayer.id),
-                child: Stack(children: [
-                  Image.asset(currentLayer.assetPath,
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
-                      fit: BoxFit.contain),
-                  ...grenadesAsync.when(
-                      data: (list) {
-                        final clusters = clusterGrenades(list);
-                        return clusters.map((c) => _buildClusterMarker(
-                            c, constraints, isEditMode, currentLayer.id));
-                      },
-                      error: (_, __) => [],
-                      loading: () => []),
-                  if (_draggingCluster != null && _dragOffset != null)
-                    Positioned(
-                        left: _dragOffset!.dx * constraints.maxWidth - 14,
-                        top: _dragOffset!.dy * constraints.maxHeight - 14,
-                        child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.8),
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2)),
-                            child: const Icon(Icons.place,
-                                size: 16, color: Colors.white))),
-                  if (_tempTapPosition != null)
-                    Positioned(
-                        left: _tempTapPosition!.dx * constraints.maxWidth - 12,
-                        top: _tempTapPosition!.dy * constraints.maxHeight - 12,
-                        child: const Icon(Icons.add_circle,
-                            color: Colors.greenAccent, size: 24)),
-                ])),
+            child: StreamBuilder<PhotoViewControllerValue>(
+              stream: _photoViewController.outputStateStream,
+              builder: (context, snapshot) {
+                final double scale = snapshot.data?.scale ?? 1.0;
+                // Calculate scale factor (inverse of zoom)
+                // Base scalar is 1.0, decreases as we zoom in
+                final double markerScale = 1.0 / scale;
+                // Clamp scale to prevent markers getting too small or too big if needed
+                // For now we use direct inverse scaling to keep visual size constant
+
+                return GestureDetector(
+                    onTapUp: (d) => _handleTap(d, constraints.maxWidth,
+                        constraints.maxHeight, currentLayer.id),
+                    child: Stack(children: [
+                      Image.asset(currentLayer.assetPath,
+                          width: constraints.maxWidth,
+                          height: constraints.maxHeight,
+                          fit: BoxFit.contain),
+                      ...grenadesAsync.when(
+                          data: (list) {
+                            final clusters = clusterGrenades(list);
+                            return clusters.map((c) => _buildClusterMarker(
+                                c,
+                                constraints,
+                                isEditMode,
+                                currentLayer.id,
+                                markerScale));
+                          },
+                          error: (_, __) => [],
+                          loading: () => []),
+                      if (_draggingCluster != null && _dragOffset != null)
+                        Positioned(
+                            left: _dragOffset!.dx * constraints.maxWidth -
+                                14 * markerScale,
+                            top: _dragOffset!.dy * constraints.maxHeight -
+                                14 * markerScale,
+                            child: Transform.scale(
+                              scale: markerScale,
+                              child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                      color: Colors.orange.withOpacity(0.8),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: Colors.white, width: 2)),
+                                  child: const Icon(Icons.place,
+                                      size: 16, color: Colors.white)),
+                            )),
+                      if (_tempTapPosition != null)
+                        Positioned(
+                            left: _tempTapPosition!.dx * constraints.maxWidth -
+                                12 * markerScale,
+                            top: _tempTapPosition!.dy * constraints.maxHeight -
+                                12 * markerScale,
+                            child: Transform.scale(
+                              scale: markerScale,
+                              child: const Icon(Icons.add_circle,
+                                  color: Colors.greenAccent, size: 24),
+                            )),
+                    ]));
+              },
+            ),
           )),
           // 顶部UI
           Positioned(
