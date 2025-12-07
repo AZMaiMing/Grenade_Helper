@@ -23,6 +23,8 @@ Isar? globalIsar;
 
 // 悬浮窗控制器
 WindowController? overlayWindowController;
+// 主窗口控制器（用于接收子窗口消息）
+WindowController? mainWindowController;
 
 /// 窗口类型常量
 class WindowType {
@@ -211,6 +213,11 @@ Future<void> _runOverlayWindow(
           onClose: () async {
             final position = await windowManager.getPosition();
             await settingsService.setOverlayPosition(position.dx, position.dy);
+            // 通知主窗口我已关闭
+            try {
+              final mainWindow = await WindowController.fromWindowId('0');
+              await mainWindow.invokeMethod('overlay_closed');
+            } catch (_) {}
             await windowManager.close();
           },
           onMinimize: () async {
@@ -350,19 +357,21 @@ class _MainAppState extends State<MainApp> {
       HotkeyAction.toggleOverlay,
       _toggleOverlay,
     );
+
+    // 获取主窗口控制器并监听来自其他窗口的消息
+    mainWindowController = await WindowController.fromCurrentEngine();
+    await mainWindowController?.setWindowMethodHandler((call) async {
+      if (call.method == 'overlay_closed') {
+        // 悬浮窗已关闭，更新状态
+        // 使用 hideOverlay 更新 WindowService 状态（托盘菜单）和清理 controller
+        await globalWindowService?.hideOverlay();
+      }
+      return null;
+    });
   }
 
   Future<void> _toggleOverlay() async {
-    if (overlayWindowController != null) {
-      // 已存在，关闭它
-      try {
-        await overlayWindowController!.invokeMethod('close');
-      } catch (_) {}
-      overlayWindowController = null;
-    } else {
-      // 不存在，创建新窗口
-      await _showOverlay();
-    }
+    await globalWindowService?.toggleOverlay();
   }
 
   Future<void> _showOverlay() async {
