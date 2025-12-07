@@ -130,7 +130,6 @@ Future<void> _runOverlayWindow(
     if (savedX != null && savedY != null) {
       await windowManager.setPosition(Offset(savedX, savedY));
     }
-    await windowManager.show();
   });
 
   // 初始化数据库（使用与主窗口相同的数据库）
@@ -213,12 +212,12 @@ Future<void> _runOverlayWindow(
           onClose: () async {
             final position = await windowManager.getPosition();
             await settingsService.setOverlayPosition(position.dx, position.dy);
-            // 通知主窗口我已关闭
+            // 通知主窗口我已隐藏
             try {
               final mainWindow = await WindowController.fromWindowId('0');
-              await mainWindow.invokeMethod('overlay_closed');
+              await mainWindow.invokeMethod('overlay_hidden');
             } catch (_) {}
-            await windowManager.close();
+            await windowManager.hide();
           },
           onMinimize: () async {
             await windowManager.hide();
@@ -361,34 +360,31 @@ class _MainAppState extends State<MainApp> {
     // 获取主窗口控制器并监听来自其他窗口的消息
     mainWindowController = await WindowController.fromCurrentEngine();
     await mainWindowController?.setWindowMethodHandler((call) async {
-      if (call.method == 'overlay_closed') {
-        // 悬浮窗已关闭，更新状态
-        // 使用 hideOverlay 更新 WindowService 状态（托盘菜单）和清理 controller
+      if (call.method == 'overlay_closed' || call.method == 'overlay_hidden') {
+        // 悬浮窗已隐藏/关闭，更新状态
         await globalWindowService?.hideOverlay();
       }
       return null;
     });
+
+    // 1秒后预加载悬浮窗
+    Future.delayed(const Duration(seconds: 1), () {
+      _preloadOverlay();
+    });
   }
 
-  Future<void> _toggleOverlay() async {
-    await globalWindowService?.toggleOverlay();
-  }
-
-  Future<void> _showOverlay() async {
+  /// 预加载悬浮窗（不显示）
+  Future<void> _preloadOverlay() async {
     if (overlayWindowController != null) return;
 
-    // 获取保存的位置
     final savedX = globalSettingsService?.getOverlayX() ?? 100.0;
     final savedY = globalSettingsService?.getOverlayY() ?? 100.0;
-
-    // 获取当前地图信息（如果有的话）
     final currentMap = globalOverlayState?.currentMap;
     final currentLayer = globalOverlayState?.currentLayer;
 
-    // 创建新窗口，在参数中包含当前地图信息
     overlayWindowController = await WindowController.create(
       WindowConfiguration(
-        hiddenAtLaunch: true,
+        hiddenAtLaunch: true, // 启动时隐藏
         arguments: jsonEncode({
           'type': WindowType.overlay,
           'x': savedX,
@@ -399,19 +395,29 @@ class _MainAppState extends State<MainApp> {
       ),
     );
 
-    await overlayWindowController!.show();
-
-    // 延迟后同步地图状态，确保窗口已准备好
+    // 延迟后同步地图状态
     await Future.delayed(const Duration(milliseconds: 500));
     _syncMapToOverlay();
   }
 
+  Future<void> _toggleOverlay() async {
+    await globalWindowService?.toggleOverlay();
+  }
+
+  Future<void> _showOverlay() async {
+    if (overlayWindowController == null) {
+      // 如果还没加载（比如刚启动就按快捷键），则现在加载并显示
+      await _preloadOverlay();
+    }
+    // 显示并聚焦
+    await overlayWindowController!.show();
+    // DesktopMultiWindow controller doesn't have focus(), show handles it or use windowManager inside overlay
+  }
+
   Future<void> _hideOverlay() async {
     if (overlayWindowController == null) return;
-    try {
-      await overlayWindowController!.invokeMethod('close');
-    } catch (_) {}
-    overlayWindowController = null;
+    // 仅隐藏，不关闭
+    await overlayWindowController!.hide();
   }
 
   /// 同步地图信息到悬浮窗
@@ -433,8 +439,14 @@ class _MainAppState extends State<MainApp> {
     }
   }
 
-  void _onExitApp() {
-    _hideOverlay();
+  void _onExitApp() async {
+    // 真正退出时，清理悬浮窗
+    if (overlayWindowController != null) {
+      try {
+        await overlayWindowController!.invokeMethod('close');
+      } catch (_) {}
+      overlayWindowController = null;
+    }
     globalHotkeyService?.dispose();
   }
 
