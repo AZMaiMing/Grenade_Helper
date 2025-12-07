@@ -51,10 +51,10 @@ class _OverlayWindowState extends State<OverlayWindow> {
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
+    return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
-      onKey: _handleRawKeyEvent,
+      onKeyEvent: _handleKeyEvent,
       child: Material(
         color: const Color(0xFF1B1E23), // 填充整个窗口的背景色
         child: Container(
@@ -536,36 +536,22 @@ class _OverlayWindowState extends State<OverlayWindow> {
 
   // === 快捷键处理 ===
 
-  void _handleRawKeyEvent(RawKeyEvent event) {
-    if (event is! RawKeyDownEvent) return;
+  // === 快捷键处理 ===
+
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return;
 
     final key = event.logicalKey;
 
     // 忽略单独的修饰键事件
     if (_isModifierKey(key)) return;
 
-    // 从事件本身获取修饰键状态
-    // Alt 键在 Windows 上可能需要特殊处理
-    bool hasAlt = event.isAltPressed;
-
-    // 如果标准方法检测不到 Alt，尝试检查物理键状态
-    if (!hasAlt) {
-      // 检查当前按下的物理键中是否有 Alt
-      final pressedKeys = HardwareKeyboard.instance.physicalKeysPressed;
-      hasAlt = pressedKeys.contains(PhysicalKeyboardKey.altLeft) ||
-          pressedKeys.contains(PhysicalKeyboardKey.altRight);
-    }
-
-    // 还可以检查逻辑键
-    if (!hasAlt) {
-      final logicalKeys = HardwareKeyboard.instance.logicalKeysPressed;
-      hasAlt = logicalKeys.contains(LogicalKeyboardKey.alt) ||
-          logicalKeys.contains(LogicalKeyboardKey.altLeft) ||
-          logicalKeys.contains(LogicalKeyboardKey.altRight);
-    }
-
-    final hasCtrl = event.isControlPressed;
-    final hasShift = event.isShiftPressed;
+    // 简单的修饰键检查，仅依赖当前事件
+    // 由于多窗口环境下 HardwareKeyboard 状态不可靠，这里不再强制检查全局状态
+    // 而且我们已经将常用快捷键改为不依赖修饰键 (7/8/9/0)
+    final hasAlt = HardwareKeyboard.instance.isAltPressed;
+    final hasCtrl = HardwareKeyboard.instance.isControlPressed;
+    final hasShift = HardwareKeyboard.instance.isShiftPressed;
 
     // 调试输出
     print(

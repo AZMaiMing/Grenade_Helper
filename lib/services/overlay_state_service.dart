@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:isar_community/isar.dart';
 import '../models.dart';
 
 /// 悬浮窗状态服务 - 管理悬浮窗与主窗口的状态同步
 class OverlayStateService extends ChangeNotifier {
+  final Isar isar;
+
   // 当前选中的地图和楼层
   GameMap? _currentMap;
   MapLayer? _currentLayer;
@@ -26,7 +30,16 @@ class OverlayStateService extends ChangeNotifier {
   // 记忆：最后查看的道具 ID（按地图分组）
   final Map<int, int> _lastViewedGrenadeByMap = {};
 
-  OverlayStateService();
+  // 数据监听订阅
+  StreamSubscription<void>? _grenadeSubscription;
+
+  OverlayStateService(this.isar);
+
+  @override
+  void dispose() {
+    _grenadeSubscription?.cancel();
+    super.dispose();
+  }
 
   // Getters
   GameMap? get currentMap => _currentMap;
@@ -50,8 +63,20 @@ class OverlayStateService extends ChangeNotifier {
 
   /// 设置当前地图（从 MapScreen 调用）
   void setCurrentMap(GameMap map, MapLayer layer) {
+    // 只有当 ID 变化时才重新设置，避免重复刷新
+    if (_currentMap?.id == map.id && _currentLayer?.id == layer.id) {
+      // 更新引用以防万一
+      _currentMap = map;
+      _currentLayer = layer;
+      return;
+    }
+
     _currentMap = map;
     _currentLayer = layer;
+
+    // 设置监听器
+    _setupWatcher();
+
     _loadGrenades();
 
     // 恢复上次查看的道具位置
@@ -71,6 +96,8 @@ class OverlayStateService extends ChangeNotifier {
 
   /// 清除地图上下文（离开 MapScreen 时）
   void clearMap() {
+    _grenadeSubscription?.cancel();
+
     // 保存当前查看的道具
     if (_currentMap != null && currentGrenade != null) {
       _lastViewedGrenadeByMap[_currentMap!.id] = currentGrenade!.id;
@@ -85,8 +112,24 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _setupWatcher() {
+    _grenadeSubscription?.cancel();
+    if (_currentLayer != null) {
+      // 监听当前楼层的道具变化
+      _grenadeSubscription = isar.grenades
+          .filter()
+          .layer((q) => q.idEqualTo(_currentLayer!.id))
+          .watch(fireImmediately: false)
+          .listen((_) {
+        // 数据变化时重新加载
+        print('OverlayStateService: Data changed, reloading...');
+        _loadGrenades(notify: true);
+      });
+    }
+  }
+
   /// 加载当前楼层的道具
-  void _loadGrenades() {
+  void _loadGrenades({bool notify = false}) {
     if (_currentLayer == null) {
       _allGrenades.clear();
       _filteredGrenades.clear();
@@ -105,6 +148,10 @@ class OverlayStateService extends ChangeNotifier {
     }
 
     _applyFilters();
+
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   /// 应用过滤器

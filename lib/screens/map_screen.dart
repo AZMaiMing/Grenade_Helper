@@ -145,6 +145,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         overlayWindowController!.invokeMethod('set_map', {
           'map_id': mapId,
           'layer_id': layerId,
+        }).catchError((_) {
+          // 忽略通信错误（例如窗口已关闭）
         });
       } catch (_) {}
     }
@@ -153,7 +155,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _notifyOverlayWindowClearMap() {
     if (overlayWindowController != null) {
       try {
-        overlayWindowController!.invokeMethod('clear_map');
+        overlayWindowController!.invokeMethod('clear_map').catchError((_) {
+          // 忽略通信错误
+        });
       } catch (_) {}
     }
   }

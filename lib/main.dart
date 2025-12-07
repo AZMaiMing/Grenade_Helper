@@ -90,7 +90,7 @@ Future<void> _runMainWindow() async {
 
     globalHotkeyService = HotkeyService(globalSettingsService!);
     globalWindowService = WindowService(globalSettingsService!);
-    globalOverlayState = OverlayStateService();
+    globalOverlayState = OverlayStateService(isar);
   }
 
   runApp(
@@ -150,7 +150,7 @@ Future<void> _runOverlayWindow(
   await settingsService.init();
 
   // 初始化状态服务
-  final overlayState = OverlayStateService();
+  final overlayState = OverlayStateService(isar);
 
   // 从参数中加载初始地图信息（如果有的话）
   final initialMapId = args?['map_id'] as int?;
