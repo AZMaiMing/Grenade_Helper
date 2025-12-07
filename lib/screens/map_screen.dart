@@ -133,6 +133,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _updateOverlayState(int layerIndex) {
+    print("DEBUG: _updateOverlayState called with index $layerIndex");
     widget.gameMap.layers.loadSync();
     final layers = widget.gameMap.layers.toList();
     if (layerIndex < layers.length) {
@@ -143,25 +144,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  void _notifyOverlayWindowSetMap(int mapId, int layerId) {
+  void _notifyOverlayWindowSetMap(int mapId, int layerId,
+      {int retryCount = 0}) {
+    print(
+        "DEBUG: _notifyOverlayWindowSetMap called. Controller is ${overlayWindowController == null ? 'NULL' : 'NOT NULL'}");
     if (overlayWindowController != null) {
       try {
-        overlayWindowController!.invokeMethod('set_map', {
-          'map_id': mapId,
-          'layer_id': layerId,
-        }).catchError((_) {
-          // 忽略通信错误（例如窗口已关闭）
+        overlayWindowController!
+            .invokeMethod('set_map', {
+              'map_id': mapId,
+              'layer_id': layerId,
+            })
+            .then((_) => print("DEBUG: invokeMethod success"))
+            .catchError((e) {
+              print("DEBUG: invokeMethod error: $e");
+              if (retryCount < 3) {
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  _notifyOverlayWindowSetMap(mapId, layerId,
+                      retryCount: retryCount + 1);
+                });
+              }
+            });
+      } catch (e) {
+        print("DEBUG: Exception: $e");
+      }
+    } else {
+      if (retryCount < 5) {
+        print("DEBUG: Controller null, retry $retryCount");
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _notifyOverlayWindowSetMap(mapId, layerId,
+              retryCount: retryCount + 1);
         });
-      } catch (_) {}
+      }
     }
   }
 
   void _notifyOverlayWindowClearMap() {
     if (overlayWindowController != null) {
       try {
-        overlayWindowController!.invokeMethod('clear_map').catchError((_) {
-          // 忽略通信错误
-        });
+        overlayWindowController!.invokeMethod('clear_map').catchError((_) {});
       } catch (_) {}
     }
   }
