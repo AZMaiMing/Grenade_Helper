@@ -8,12 +8,16 @@ class HotkeyService {
   final Map<HotkeyAction, HotKey> _registeredHotkeys = {};
   final Map<HotkeyAction, void Function()> _handlers = {};
 
+  // 悬浮窗专用热键（动态注册）
+  final Map<HotkeyAction, HotKey> _overlayHotkeys = {};
+  bool _overlayHotkeysRegistered = false;
+
   HotkeyService(this._settings);
 
-  /// 初始化并注册所有快捷键
+  /// 初始化并注册核心快捷键（Alt+G 等始终生效的）
   Future<void> init() async {
     if (!SettingsService.isDesktop) return;
-    await _registerAllHotkeys();
+    await _registerCoreHotkeys();
   }
 
   /// 注册动作处理器
@@ -26,22 +30,77 @@ class HotkeyService {
     _handlers.remove(action);
   }
 
-  /// 注册所有快捷键
-  Future<void> _registerAllHotkeys() async {
+  /// 注册核心热键（始终生效，如 Alt+G）
+  Future<void> _registerCoreHotkeys() async {
     final hotkeys = _settings.getHotkeys();
-    for (final entry in hotkeys.entries) {
-      await _registerHotkey(entry.key, entry.value);
+    // 只注册带修饰键的核心热键
+    final coreActions = [
+      HotkeyAction.toggleOverlay,
+    ];
+    for (final action in coreActions) {
+      final config = hotkeys[action];
+      if (config != null && config.modifiers.isNotEmpty) {
+        await _registerHotkey(action, config, _registeredHotkeys);
+      }
     }
   }
 
-  /// 注册单个快捷键
-  Future<void> _registerHotkey(HotkeyAction action, HotkeyConfig config) async {
-    // 先注销旧的
-    if (_registeredHotkeys.containsKey(action)) {
-      await hotKeyManager.unregister(_registeredHotkeys[action]!);
-      _registeredHotkeys.remove(action);
+  /// 注册悬浮窗热键（悬浮窗显示时调用）
+  Future<void> registerOverlayHotkeys() async {
+    if (_overlayHotkeysRegistered) return;
+
+    final hotkeys = _settings.getHotkeys();
+    final overlayActions = [
+      HotkeyAction.prevGrenade,
+      HotkeyAction.nextGrenade,
+      HotkeyAction.prevStep,
+      HotkeyAction.nextStep,
+      HotkeyAction.toggleSmoke,
+      HotkeyAction.toggleFlash,
+      HotkeyAction.toggleMolotov,
+      HotkeyAction.toggleHE,
+      // 方向键导航
+      HotkeyAction.navigateUp,
+      HotkeyAction.navigateDown,
+      HotkeyAction.navigateLeft,
+      HotkeyAction.navigateRight,
+    ];
+
+    for (final action in overlayActions) {
+      final config = hotkeys[action];
+      if (config != null) {
+        await _registerHotkey(action, config, _overlayHotkeys,
+            allowNoModifier: true);
+      }
     }
 
+    _overlayHotkeysRegistered = true;
+    print('Overlay hotkeys registered: ${_overlayHotkeys.length} keys');
+  }
+
+  /// 注销悬浮窗热键（悬浮窗隐藏时调用）
+  Future<void> unregisterOverlayHotkeys() async {
+    if (!_overlayHotkeysRegistered) return;
+
+    for (final hotKey in _overlayHotkeys.values) {
+      try {
+        await hotKeyManager.unregister(hotKey);
+      } catch (e) {
+        print('Failed to unregister overlay hotkey: $e');
+      }
+    }
+    _overlayHotkeys.clear();
+    _overlayHotkeysRegistered = false;
+    print('Overlay hotkeys unregistered');
+  }
+
+  /// 注册单个快捷键
+  Future<void> _registerHotkey(
+    HotkeyAction action,
+    HotkeyConfig config,
+    Map<HotkeyAction, HotKey> targetMap, {
+    bool allowNoModifier = false,
+  }) async {
     // 转换修饰键
     final modifiers = <HotKeyModifier>[];
     for (final mod in config.modifiers) {
@@ -64,13 +123,15 @@ class HotkeyService {
       }
     }
 
-    // 只有带修饰键的快捷键才注册为全局热键
-    // 方向键等无修饰键的快捷键通过悬浮窗内部的 KeyboardListener 处理
-    if (modifiers.isEmpty) return;
+    // 如果不允许无修饰键且没有修饰键，则跳过
+    if (!allowNoModifier && modifiers.isEmpty) return;
 
     // 转换 LogicalKeyboardKey 到 PhysicalKeyboardKey
     final physicalKey = _logicalToPhysical(config.key);
-    if (physicalKey == null) return;
+    if (physicalKey == null) {
+      print('No physical key mapping for: ${config.key.keyLabel}');
+      return;
+    }
 
     try {
       final hotKey = HotKey(
@@ -82,11 +143,12 @@ class HotkeyService {
       await hotKeyManager.register(
         hotKey,
         keyDownHandler: (hotKey) {
+          print('Global hotkey triggered: $action');
           _handlers[action]?.call();
         },
       );
 
-      _registeredHotkeys[action] = hotKey;
+      targetMap[action] = hotKey;
     } catch (e) {
       print('Failed to register hotkey for $action: $e');
     }
@@ -94,8 +156,8 @@ class HotkeyService {
 
   /// LogicalKeyboardKey 转 PhysicalKeyboardKey
   PhysicalKeyboardKey? _logicalToPhysical(LogicalKeyboardKey logical) {
-    // 常用键映射
     final mapping = <int, PhysicalKeyboardKey>{
+      // 字母键
       LogicalKeyboardKey.keyA.keyId: PhysicalKeyboardKey.keyA,
       LogicalKeyboardKey.keyB.keyId: PhysicalKeyboardKey.keyB,
       LogicalKeyboardKey.keyC.keyId: PhysicalKeyboardKey.keyC,
@@ -122,6 +184,7 @@ class HotkeyService {
       LogicalKeyboardKey.keyX.keyId: PhysicalKeyboardKey.keyX,
       LogicalKeyboardKey.keyY.keyId: PhysicalKeyboardKey.keyY,
       LogicalKeyboardKey.keyZ.keyId: PhysicalKeyboardKey.keyZ,
+      // 数字键
       LogicalKeyboardKey.digit0.keyId: PhysicalKeyboardKey.digit0,
       LogicalKeyboardKey.digit1.keyId: PhysicalKeyboardKey.digit1,
       LogicalKeyboardKey.digit2.keyId: PhysicalKeyboardKey.digit2,
@@ -132,6 +195,7 @@ class HotkeyService {
       LogicalKeyboardKey.digit7.keyId: PhysicalKeyboardKey.digit7,
       LogicalKeyboardKey.digit8.keyId: PhysicalKeyboardKey.digit8,
       LogicalKeyboardKey.digit9.keyId: PhysicalKeyboardKey.digit9,
+      // 功能键
       LogicalKeyboardKey.escape.keyId: PhysicalKeyboardKey.escape,
       LogicalKeyboardKey.f1.keyId: PhysicalKeyboardKey.f1,
       LogicalKeyboardKey.f2.keyId: PhysicalKeyboardKey.f2,
@@ -145,6 +209,19 @@ class HotkeyService {
       LogicalKeyboardKey.f10.keyId: PhysicalKeyboardKey.f10,
       LogicalKeyboardKey.f11.keyId: PhysicalKeyboardKey.f11,
       LogicalKeyboardKey.f12.keyId: PhysicalKeyboardKey.f12,
+      // 导航键
+      LogicalKeyboardKey.pageUp.keyId: PhysicalKeyboardKey.pageUp,
+      LogicalKeyboardKey.pageDown.keyId: PhysicalKeyboardKey.pageDown,
+      LogicalKeyboardKey.home.keyId: PhysicalKeyboardKey.home,
+      LogicalKeyboardKey.end.keyId: PhysicalKeyboardKey.end,
+      // 括号键
+      LogicalKeyboardKey.bracketLeft.keyId: PhysicalKeyboardKey.bracketLeft,
+      LogicalKeyboardKey.bracketRight.keyId: PhysicalKeyboardKey.bracketRight,
+      // 方向键
+      LogicalKeyboardKey.arrowUp.keyId: PhysicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowDown.keyId: PhysicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowLeft.keyId: PhysicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowRight.keyId: PhysicalKeyboardKey.arrowRight,
     };
     return mapping[logical.keyId];
   }
@@ -152,7 +229,11 @@ class HotkeyService {
   /// 更新单个快捷键
   Future<void> updateHotkey(HotkeyAction action, HotkeyConfig config) async {
     await _settings.saveHotkey(action, config);
-    await _registerHotkey(action, config);
+    // 如果是悬浮窗热键，需要重新注册
+    if (_overlayHotkeys.containsKey(action)) {
+      await unregisterOverlayHotkeys();
+      await registerOverlayHotkeys();
+    }
   }
 
   /// 清理所有快捷键
@@ -160,6 +241,7 @@ class HotkeyService {
     for (final hotKey in _registeredHotkeys.values) {
       await hotKeyManager.unregister(hotKey);
     }
+    await unregisterOverlayHotkeys();
     _registeredHotkeys.clear();
     _handlers.clear();
   }

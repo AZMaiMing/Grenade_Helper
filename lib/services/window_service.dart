@@ -4,10 +4,12 @@ import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:path/path.dart' as path;
 import 'settings_service.dart';
+import 'hotkey_service.dart';
 
 /// 窗口服务 - 管理主窗口和悬浮窗、系统托盘
 class WindowService with TrayListener, WindowListener {
   final SettingsService _settings;
+  HotkeyService? _hotkeyService;
 
   bool _isOverlayVisible = false;
   bool _isMainWindowVisible = true;
@@ -19,6 +21,11 @@ class WindowService with TrayListener, WindowListener {
   void Function()? onExitApp;
 
   WindowService(this._settings);
+
+  /// 设置热键服务引用
+  void setHotkeyService(HotkeyService service) {
+    _hotkeyService = service;
+  }
 
   bool get isOverlayVisible => _isOverlayVisible;
   bool get isMainWindowVisible => _isMainWindowVisible;
@@ -165,6 +172,8 @@ class WindowService with TrayListener, WindowListener {
   Future<void> showOverlay() async {
     _isOverlayVisible = true;
     await _updateTrayMenu();
+    // 注册悬浮窗全局热键
+    await _hotkeyService?.registerOverlayHotkeys();
     onShowOverlay?.call();
   }
 
@@ -172,6 +181,8 @@ class WindowService with TrayListener, WindowListener {
   Future<void> hideOverlay() async {
     _isOverlayVisible = false;
     await _updateTrayMenu();
+    // 注销悬浮窗全局热键
+    await _hotkeyService?.unregisterOverlayHotkeys();
     onHideOverlay?.call();
   }
 

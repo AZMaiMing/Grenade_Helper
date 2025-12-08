@@ -32,6 +32,15 @@ class WindowType {
   static const String overlay = 'overlay';
 }
 
+/// 发送命令给悬浮窗（通过 IPC）
+void _sendOverlayCommand(String command) {
+  if (overlayWindowController != null) {
+    overlayWindowController!.invokeMethod(command).catchError((_) {
+      // 忽略通信错误（例如窗口已关闭）
+    });
+  }
+}
+
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -93,6 +102,48 @@ Future<void> _runMainWindow() async {
     globalHotkeyService = HotkeyService(globalSettingsService!);
     globalWindowService = WindowService(globalSettingsService!);
     globalOverlayState = OverlayStateService(isar);
+
+    // 连接热键服务和窗口服务
+    globalWindowService!.setHotkeyService(globalHotkeyService!);
+
+    // 注册悬浮窗热键处理器（通过 IPC 发送命令给悬浮窗）
+    globalHotkeyService!.registerHandler(HotkeyAction.prevGrenade, () {
+      _sendOverlayCommand('prev_grenade');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.nextGrenade, () {
+      _sendOverlayCommand('next_grenade');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.prevStep, () {
+      _sendOverlayCommand('prev_step');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.nextStep, () {
+      _sendOverlayCommand('next_step');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.toggleSmoke, () {
+      _sendOverlayCommand('toggle_smoke');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.toggleFlash, () {
+      _sendOverlayCommand('toggle_flash');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.toggleMolotov, () {
+      _sendOverlayCommand('toggle_molotov');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.toggleHE, () {
+      _sendOverlayCommand('toggle_he');
+    });
+    // 方向键导航
+    globalHotkeyService!.registerHandler(HotkeyAction.navigateUp, () {
+      _sendOverlayCommand('navigate_up');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.navigateDown, () {
+      _sendOverlayCommand('navigate_down');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.navigateLeft, () {
+      _sendOverlayCommand('navigate_left');
+    });
+    globalHotkeyService!.registerHandler(HotkeyAction.navigateRight, () {
+      _sendOverlayCommand('navigate_right');
+    });
   }
 
   runApp(
@@ -187,6 +238,44 @@ Future<void> _runOverlayWindow(
         final position = await windowManager.getPosition();
         await settingsService.setOverlayPosition(position.dx, position.dy);
         await windowManager.close();
+        return 'ok';
+      // === 悬浮窗操作命令（由全局热键触发）===
+      case 'prev_grenade':
+        overlayState.prevGrenade();
+        return 'ok';
+      case 'next_grenade':
+        overlayState.nextGrenade();
+        return 'ok';
+      case 'prev_step':
+        overlayState.prevStep();
+        return 'ok';
+      case 'next_step':
+        overlayState.nextStep();
+        return 'ok';
+      case 'toggle_smoke':
+        overlayState.toggleFilter(GrenadeType.smoke);
+        return 'ok';
+      case 'toggle_flash':
+        overlayState.toggleFilter(GrenadeType.flash);
+        return 'ok';
+      case 'toggle_molotov':
+        overlayState.toggleFilter(GrenadeType.molotov);
+        return 'ok';
+      case 'toggle_he':
+        overlayState.toggleFilter(GrenadeType.he);
+        return 'ok';
+      // 方向键导航
+      case 'navigate_up':
+        overlayState.navigateDirection(NavigationDirection.up);
+        return 'ok';
+      case 'navigate_down':
+        overlayState.navigateDirection(NavigationDirection.down);
+        return 'ok';
+      case 'navigate_left':
+        overlayState.navigateDirection(NavigationDirection.left);
+        return 'ok';
+      case 'navigate_right':
+        overlayState.navigateDirection(NavigationDirection.right);
         return 'ok';
       default:
         return null;
