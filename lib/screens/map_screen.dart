@@ -165,23 +165,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  /// 将局部坐标（相对于 GestureDetector/Stack）转换为原始图片坐标比例 (0-1)
-  /// 参数 localPosition 是手势事件的 localPosition，已经是相对于内容的坐标
-  /// 参数 containerWidth/containerHeight 是容器尺寸
-  Offset? _getLocalPositionFromLocal(
-      Offset localPosition, double containerWidth, double containerHeight) {
-    // 计算图片实际显示区域
-    final bounds = _getImageBounds(containerWidth, containerHeight);
-
-    // 将局部坐标转换为相对于图片区域的偏移
-    final tapX = localPosition.dx - bounds.offsetX;
-    final tapY = localPosition.dy - bounds.offsetY;
-
-    // 转换为比例
-    return Offset(tapX / bounds.width, tapY / bounds.height);
-  }
-
-  /// 从全局坐标获取图片比例坐标 (用于拖拽等场景)
+  /// 将屏幕全局坐标转换为原始图片坐标比例 (0-1)
   /// 返回 null 如果坐标无效
   Offset? _getLocalPosition(Offset globalPosition) {
     // 1. 获取 Stack 的 RenderBox
@@ -190,13 +174,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (box == null) return null;
 
     // 2. 将全局坐标转换为 Stack 的局部坐标
+    // 这会自动处理 PhotoView 的缩放和平移变换，以及屏幕位置
+    // 注意：因为 GlobalKey 放在 Stack 上，而 Stack 是 PhotoView 的 child，
+    // 所以这里的 localPosition 已经是经过 PhotoView 逆变换后的坐标
     final localPosition = box.globalToLocal(globalPosition);
 
     // 3. 获取 Container 尺寸（Stack 的尺寸）
     final size = box.size;
 
-    // 4. 使用新方法计算
-    return _getLocalPositionFromLocal(localPosition, size.width, size.height);
+    // 4. 计算图片实际显示区域
+    final bounds = _getImageBounds(size.width, size.height);
+
+    // 5. 将局部坐标转换为相对于图片区域的偏移
+    final tapX = localPosition.dx - bounds.offsetX;
+    final tapY = localPosition.dy - bounds.offsetY;
+
+    // 6. 转换为比例
+    return Offset(tapX / bounds.width, tapY / bounds.height);
   }
 
   void _updateOverlayState(int layerIndex) {
@@ -263,10 +257,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final isEditMode = ref.read(isEditModeProvider);
     if (!isEditMode) return;
 
-    // 直接使用 localPosition - 这是相对于 GestureDetector 的坐标
-    // PhotoView.customChild 的 child 内部的手势已经处于未变换的坐标空间
-    final localRatio =
-        _getLocalPositionFromLocal(details.localPosition, width, height);
+    // 使用 GlobalKey 和全局坐标获取精确的本地比例
+    final localRatio = _getLocalPosition(details.globalPosition);
 
     if (localRatio == null) {
       return;
@@ -592,9 +584,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       TapUpDetails details, double width, double height) async {
     if (_draggingCluster == null) return;
 
-    // 直接使用 localPosition 获取精确的坐标比例
-    final localRatio =
-        _getLocalPositionFromLocal(details.localPosition, width, height);
+    // 使用 GlobalKey 和全局坐标获取精确的本地比例
+    final localRatio = _getLocalPosition(details.globalPosition);
     if (localRatio == null) return;
 
     final newX = localRatio.dx;
