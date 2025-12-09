@@ -70,7 +70,8 @@ class GrenadeCluster {
 }
 
 List<GrenadeCluster> clusterGrenades(List<Grenade> grenades,
-    {double threshold = 0.03}) {
+    {double threshold = 0.0}) {
+  // 禁用合并：阈值设为 0
   if (grenades.isEmpty) return [];
   final List<GrenadeCluster> clusters = [];
   final List<Grenade> remaining = List.from(grenades);
