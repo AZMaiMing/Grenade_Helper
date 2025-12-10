@@ -110,6 +110,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Offset? _dragOffset;
   Offset? _dragAnchorOffset; // 拖拽锚点偏移
   bool _isMovingCluster = false;
+  Grenade? _movingSingleGrenade; // 单个道具移动状态
   late final PhotoViewController _photoViewController;
   final GlobalKey _stackKey = GlobalKey(); // 添加 GlobalKey
 
@@ -251,7 +252,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _handleTap(
       TapUpDetails details, double width, double height, int layerId) {
-    if (_isMovingCluster) {
+    if (_isMovingCluster || _movingSingleGrenade != null) {
       _handleMoveClusterTap(details, width, height);
       return;
     }
@@ -340,7 +341,90 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 GrenadeDetailScreen(grenadeId: g.id, isEditing: isEditing)));
   }
 
-  void _handleClusterTap(GrenadeCluster cluster, int layerId) {
+  void _handleClusterTap(GrenadeCluster cluster, int layerId) async {
+    // 处理合并：如果正在移动单个道具，点击现有点位则合并进去
+    if (_movingSingleGrenade != null) {
+      if (cluster.grenades.any((g) => g.id == _movingSingleGrenade!.id)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("不能合并到自己所在的点位"),
+            behavior: SnackBarBehavior.floating, // 添加浮动样式，避免被其他遮挡
+            duration: Duration(seconds: 1)));
+        return;
+      }
+
+      final isar = ref.read(isarProvider);
+      await isar.writeTxn(() async {
+        final g = await isar.grenades.get(_movingSingleGrenade!.id);
+        if (g != null) {
+          // 使用 cluster 的坐标进行合并
+          // 为了物理合并，将坐标设为 cluster 中第一个道具的坐标
+          final targetX = cluster.grenades.first.xRatio;
+          final targetY = cluster.grenades.first.yRatio;
+
+          g.xRatio = targetX;
+          g.yRatio = targetY;
+          g.updatedAt = DateTime.now();
+          await isar.grenades.put(g);
+        }
+      });
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("✓ 已合并到既有点位"),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 1)));
+
+      setState(() {
+        _movingSingleGrenade = null;
+      });
+      return;
+    }
+
+    // 处理整组点位合并：如果正在移动点位组，点击现有点位则全部合并进去
+    if (_isMovingCluster && _draggingCluster != null) {
+      // 检查是否包含自身（只要有任意重叠ID即视为由于源点位尚未消失而点击了自己）
+      final draggingIds = _draggingCluster!.grenades.map((g) => g.id).toSet();
+      final targetIds = cluster.grenades.map((g) => g.id).toSet();
+
+      if (draggingIds.intersection(targetIds).isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("不能合并到自己所在的点位"),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 1)));
+        return;
+      }
+
+      final isar = ref.read(isarProvider);
+      await isar.writeTxn(() async {
+        // 使用目标 Cluster 的第一个坐标作为合并基准
+        final targetX = cluster.grenades.first.xRatio;
+        final targetY = cluster.grenades.first.yRatio;
+
+        for (final g in _draggingCluster!.grenades) {
+          final freshG = await isar.grenades.get(g.id);
+          if (freshG != null) {
+            freshG.xRatio = targetX;
+            freshG.yRatio = targetY;
+            freshG.updatedAt = DateTime.now();
+            await isar.grenades.put(freshG);
+          }
+        }
+      });
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("✓ 点位已合并"),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 1)));
+
+      setState(() {
+        _isMovingCluster = false;
+        _draggingCluster = null;
+        _dragOffset = null;
+      });
+      return;
+    }
+
     _showClusterBottomSheet(cluster, layerId);
   }
 
@@ -354,163 +438,275 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
+          // 多选删除模式状态
+          bool isMultiSelectMode = false;
+          Set<int> selectedIds = {};
           final grenades = cluster.grenades;
+
           return DraggableScrollableSheet(
             initialChildSize: 0.4,
             minChildSize: 0.25,
             maxChildSize: 0.7,
             expand: false,
             builder: (_, scrollController) {
-              return Column(
-                children: [
-                  Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                          color: Colors.grey[600],
-                          borderRadius: BorderRadius.circular(2))),
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("该点位共 ${grenades.length} 个道具",
-                            style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
-                        if (isEditMode)
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _startMoveCluster(cluster);
-                              },
-                              icon: const Icon(Icons.open_with, size: 18),
-                              label: const Text("移动"),
-                              style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.cyan,
-                                  side: const BorderSide(color: Colors.cyan)),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _createGrenadeAtCluster(cluster, layerId);
-                              },
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text("添加"),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                  foregroundColor: Colors.white),
-                            ),
-                          ]),
-                      ],
-                    ),
-                  ),
-                  const Divider(color: Colors.white24, height: 1),
-                  Expanded(
-                    child: ListView.builder(
-                      controller: scrollController,
-                      itemCount: grenades.length,
-                      itemBuilder: (_, index) {
-                        final g = grenades[index];
-                        final color = _getTeamColor(g.team);
-                        final icon = _getTypeIcon(g.type);
-                        return Dismissible(
-                          key: ValueKey(g.id),
-                          direction: isEditMode
-                              ? DismissDirection.endToStart
-                              : DismissDirection.none,
-                          background: Container(
-                              color: Colors.red,
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              child: const Icon(Icons.delete,
-                                  color: Colors.white)),
-                          confirmDismiss: (_) async =>
-                              await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                        backgroundColor:
-                                            const Color(0xFF2A2D33),
-                                        title: const Text("确认删除",
-                                            style:
-                                                TextStyle(color: Colors.white)),
-                                        content: Text("确定要删除「${g.title}」吗？",
-                                            style: const TextStyle(
-                                                color: Colors.grey)),
-                                        actions: [
-                                          TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(ctx, false),
-                                              child: const Text("取消")),
-                                          TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(ctx, true),
-                                              child: const Text("删除",
-                                                  style: TextStyle(
-                                                      color: Colors.red)))
-                                        ],
-                                      )) ??
-                              false,
-                          onDismissed: (_) {
-                            _deleteGrenade(g);
-                            setModalState(() {
-                              cluster.grenades.remove(g);
-                            });
-                            if (cluster.grenades.isEmpty)
-                              Navigator.pop(context);
+              return StatefulBuilder(
+                builder: (context, setInnerState) {
+                  return Column(
+                    children: [
+                      // 拖动条
+                      Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                              color: Colors.grey[600],
+                              borderRadius: BorderRadius.circular(2))),
+                      // 头部
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                                isMultiSelectMode
+                                    ? "已选择 ${selectedIds.length} 个"
+                                    : "该点位共 ${grenades.length} 个道具",
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white)),
+                            if (isEditMode)
+                              Row(mainAxisSize: MainAxisSize.min, children: [
+                                // 删除/确认删除按钮
+                                if (isMultiSelectMode)
+                                  TextButton.icon(
+                                    onPressed: selectedIds.isEmpty
+                                        ? null
+                                        : () async {
+                                            final confirm =
+                                                await showDialog<bool>(
+                                              context: context,
+                                              builder: (ctx) => AlertDialog(
+                                                backgroundColor:
+                                                    const Color(0xFF2A2D33),
+                                                title: const Text("批量删除",
+                                                    style: TextStyle(
+                                                        color: Colors.white)),
+                                                content: Text(
+                                                    "确定要删除选中的 ${selectedIds.length} 个道具吗？",
+                                                    style: const TextStyle(
+                                                        color: Colors.grey)),
+                                                actions: [
+                                                  TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                              ctx, false),
+                                                      child: const Text("取消")),
+                                                  TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                              ctx, true),
+                                                      child: const Text("删除",
+                                                          style: TextStyle(
+                                                              color:
+                                                                  Colors.red))),
+                                                ],
+                                              ),
+                                            );
+                                            if (confirm == true) {
+                                              for (final id in selectedIds) {
+                                                final g = grenades.firstWhere(
+                                                    (g) => g.id == id,
+                                                    orElse: () =>
+                                                        grenades.first);
+                                                _deleteGrenade(g);
+                                              }
+                                              setModalState(() {
+                                                grenades.removeWhere((g) =>
+                                                    selectedIds.contains(g.id));
+                                              });
+                                              if (grenades.isEmpty) {
+                                                Navigator.pop(context);
+                                              } else {
+                                                setInnerState(() {
+                                                  isMultiSelectMode = false;
+                                                  selectedIds.clear();
+                                                });
+                                              }
+                                            }
+                                          },
+                                    icon: const Icon(Icons.delete, size: 18),
+                                    label: Text("删除(${selectedIds.length})"),
+                                    style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red),
+                                  )
+                                else
+                                  IconButton(
+                                    onPressed: () {
+                                      setInnerState(() {
+                                        isMultiSelectMode = true;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.delete_outline),
+                                    color: Colors.red,
+                                    tooltip: "批量删除",
+                                    iconSize: 22,
+                                  ),
+                                // 取消多选按钮
+                                if (isMultiSelectMode)
+                                  IconButton(
+                                    onPressed: () {
+                                      setInnerState(() {
+                                        isMultiSelectMode = false;
+                                        selectedIds.clear();
+                                      });
+                                    },
+                                    icon: const Icon(Icons.close),
+                                    color: Colors.grey,
+                                    iconSize: 22,
+                                  ),
+                                // 移动整体按钮
+                                if (!isMultiSelectMode)
+                                  IconButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _startMoveCluster(cluster);
+                                    },
+                                    icon: const Icon(Icons.open_with),
+                                    color: Colors.cyan,
+                                    tooltip: "移动整体",
+                                    iconSize: 22,
+                                  ),
+                                // 添加按钮
+                                if (!isMultiSelectMode)
+                                  IconButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _createGrenadeAtCluster(cluster, layerId);
+                                    },
+                                    icon: const Icon(Icons.add_circle),
+                                    color: Colors.orange,
+                                    tooltip: "添加道具",
+                                    iconSize: 22,
+                                  ),
+                              ]),
+                          ],
+                        ),
+                      ),
+                      const Divider(color: Colors.white24, height: 1),
+                      // 道具列表
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: grenades.length,
+                          itemBuilder: (_, index) {
+                            final g = grenades[index];
+                            final color = _getTeamColor(g.team);
+                            final icon = _getTypeIcon(g.type);
+                            final isSelected = selectedIds.contains(g.id);
+
+                            return ListTile(
+                              leading: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // 多选模式显示复选框
+                                  if (isMultiSelectMode)
+                                    Checkbox(
+                                      value: isSelected,
+                                      onChanged: (val) {
+                                        setInnerState(() {
+                                          if (val == true) {
+                                            selectedIds.add(g.id);
+                                          } else {
+                                            selectedIds.remove(g.id);
+                                          }
+                                        });
+                                      },
+                                      activeColor: Colors.red,
+                                    ),
+                                  // 道具图标
+                                  Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: color, width: 2)),
+                                      child:
+                                          Icon(icon, size: 16, color: color)),
+                                ],
+                              ),
+                              title: Text(g.title,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14)),
+                              subtitle: Text(
+                                  "${_getTypeName(g.type)} • ${_getTeamName(g.team)}",
+                                  style: const TextStyle(
+                                      color: Colors.grey, fontSize: 11)),
+                              trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (g.isFavorite)
+                                      const Icon(Icons.star,
+                                          color: Colors.amber, size: 16),
+                                    if (g.isNewImport)
+                                      Container(
+                                          margin:
+                                              const EdgeInsets.only(left: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 4, vertical: 1),
+                                          decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius:
+                                                  BorderRadius.circular(6)),
+                                          child: const Text("NEW",
+                                              style: TextStyle(
+                                                  fontSize: 8,
+                                                  color: Colors.white))),
+                                    // 单独移动按钮（编辑模式且非多选模式）
+                                    if (isEditMode && !isMultiSelectMode)
+                                      IconButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _startMoveSingleGrenade(g);
+                                        },
+                                        icon: const Icon(Icons.open_with),
+                                        color: Colors.cyan,
+                                        iconSize: 18,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                            minWidth: 32, minHeight: 32),
+                                      ),
+                                    if (!isMultiSelectMode)
+                                      const Icon(Icons.chevron_right,
+                                          color: Colors.grey, size: 20),
+                                  ]),
+                              onTap: isMultiSelectMode
+                                  ? () {
+                                      setInnerState(() {
+                                        if (isSelected) {
+                                          selectedIds.remove(g.id);
+                                        } else {
+                                          selectedIds.add(g.id);
+                                        }
+                                      });
+                                    }
+                                  : () {
+                                      Navigator.pop(context);
+                                      _handleGrenadeTap(g,
+                                          isEditing: isEditMode);
+                                    },
+                            );
                           },
-                          child: ListTile(
-                            leading: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: color, width: 2)),
-                                child: Icon(icon, size: 18, color: color)),
-                            title: Text(g.title,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500)),
-                            subtitle: Text(
-                                "${_getTypeName(g.type)} • ${_getTeamName(g.team)}",
-                                style: const TextStyle(
-                                    color: Colors.grey, fontSize: 12)),
-                            trailing:
-                                Row(mainAxisSize: MainAxisSize.min, children: [
-                              if (g.isFavorite)
-                                const Icon(Icons.star,
-                                    color: Colors.amber, size: 18),
-                              if (g.isNewImport)
-                                Container(
-                                    margin: const EdgeInsets.only(left: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                        color: Colors.red,
-                                        borderRadius: BorderRadius.circular(8)),
-                                    child: const Text("NEW",
-                                        style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.white))),
-                              const Icon(Icons.chevron_right,
-                                  color: Colors.grey),
-                            ]),
-                            onTap: () {
-                              Navigator.pop(context);
-                              _handleGrenadeTap(g, isEditing: isEditMode);
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               );
             },
           );
@@ -581,8 +777,76 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
   }
 
+  /// 开始移动单个道具
+  void _startMoveSingleGrenade(Grenade grenade) {
+    setState(() {
+      _movingSingleGrenade = grenade;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('点击地图移动道具「${grenade.title}」'),
+      backgroundColor: Colors.cyan,
+      duration: const Duration(seconds: 10),
+      action: SnackBarAction(
+          label: "取消",
+          textColor: Colors.white,
+          onPressed: _cancelMoveSingleGrenade),
+    ));
+  }
+
+  void _cancelMoveSingleGrenade() {
+    setState(() {
+      _movingSingleGrenade = null;
+    });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  }
+
   void _handleMoveClusterTap(
       TapUpDetails details, double width, double height) async {
+    // 处理单个道具移动
+    if (_movingSingleGrenade != null) {
+      final localRatio = _getLocalPosition(details.globalPosition);
+      if (localRatio == null) return;
+
+      double newX = localRatio.dx;
+      double newY = localRatio.dy;
+
+      // 边界检查
+      if (newX < 0 || newX > 1 || newY < 0 || newY > 1) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("无法移动到地图外"),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 1)));
+        return;
+      }
+
+      final isar = ref.read(isarProvider);
+
+      String successMessage = "✓ 道具已移动到新位置";
+      Color messageColor = Colors.green;
+
+      // 移除自动吸附逻辑，点击地图空白处只做移动
+
+      await isar.writeTxn(() async {
+        final g = await isar.grenades.get(_movingSingleGrenade!.id);
+        if (g != null) {
+          g.xRatio = newX;
+          g.yRatio = newY;
+          g.updatedAt = DateTime.now();
+          await isar.grenades.put(g);
+        }
+      });
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(successMessage),
+          backgroundColor: messageColor,
+          duration: const Duration(seconds: 1)));
+      setState(() {
+        _movingSingleGrenade = null;
+      });
+      return;
+    }
+
+    // 处理点位整体移动
     if (_draggingCluster == null) return;
 
     // 使用 GlobalKey 和全局坐标获取精确的本地比例
@@ -1182,7 +1446,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               ...grenadesAsync.when(
                                   data: (list) {
                                     final clusterThreshold =
-                                        scale >= 2.0 ? 0.0 : 0.03;
+                                        scale >= 2.0 ? 0.0001 : 0.03;
                                     final clusters = clusterGrenades(list,
                                         threshold: clusterThreshold);
                                     return clusters.map((c) =>
