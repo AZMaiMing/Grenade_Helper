@@ -27,15 +27,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   String? _errorMessage;
-  bool _isWindows = false;
 
   @override
   void initState() {
     super.initState();
-    _isWindows = Platform.isWindows;
-    if (!_isWindows) {
-      _initVideo();
-    }
+    _initVideo();
   }
 
   Future<void> _initVideo() async {
@@ -70,32 +66,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Windows 平台不支持 video_player，显示占位符
-    if (_isWindows) {
-      return Container(
-        color: Colors.black87,
-        height: 200,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.videocam_outlined, size: 48, color: Colors.grey),
-              const SizedBox(height: 12),
-              const Text(
-                '视频播放暂不支持 Windows 平台',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '文件: ${widget.file.path.split(Platform.pathSeparator).last}',
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     if (_errorMessage != null) {
       return Container(
         color: Colors.black,

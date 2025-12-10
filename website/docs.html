@@ -88,21 +88,23 @@
                 <p>由于 iOS 系统限制，安装第三方应用需要通过侧载方式。以下是几种常用的侧载方法：</p>
 
                 <h2>方法一：使用 AltStore（推荐）</h2>
-                <p>AltStore 是目前最流行的 iOS 侧载工具，支持 Windows 和 macOS。</p>
+                <p>AltStore 是目前最流行的 iOS 侧载工具，支持 Windows 和 macOS，操作简单直观。</p>
 
                 <h3>所需软件</h3>
                 <ul>
                     <li><strong>AltServer</strong>：<a href="https://altstore.io/"
                             target="_blank">https://altstore.io/</a></li>
                     <li><strong>iTunes</strong>（Windows 用户需要）：<a href="https://www.apple.com/itunes/download/win64"
-                            target="_blank">Apple 官网下载</a></li>
-                    <li><strong>iCloud</strong>（Windows 用户需要）：<a href="https://support.apple.com/en-us/HT204283"
+                            target="_blank">Apple 官网下载</a>（必须是官网版本，不能用 Microsoft Store 版本）</li>
+                    <li><strong>iCloud</strong>（Windows 用户需要）：<a
+                            href="https://updates.cdn-apple.com/2020/windows/001-39935-20200911-1A70AA56-F448-11EA-8CC0-99D41950005E/iCloudSetup.exe"
                             target="_blank">Apple 官网下载</a></li>
                 </ul>
 
                 <h3>安装步骤</h3>
                 <ol>
                     <li>在电脑上下载并安装 <strong>AltServer</strong></li>
+                    <li>iOS 16+ 用户：前往 设置 → 隐私与安全性 → 开发者模式，开启并重启设备</li>
                     <li>Windows 用户需要同时安装 <strong>iTunes</strong> 和 <strong>iCloud</strong>（必须从 Apple 官网下载，不能用 Microsoft
                         Store 版本）</li>
                     <li>运行 AltServer，它会在系统托盘中显示</li>
@@ -111,15 +113,100 @@
                     <li>点击系统托盘中的 AltServer 图标 → Install AltStore → 选择你的设备</li>
                     <li>输入你的 Apple ID 和密码（用于签名应用）</li>
                     <li>安装完成后，在 iPhone 上打开 <strong>设置 → 通用 → VPN与设备管理</strong>，信任开发者证书</li>
-                    <li>打开 AltStore 应用，点击左上角 + 号，选择下载好的 <code>.ipa</code> 文件进行安装</li>
+                    <li>安装 AltStore 完毕之后，点击 Settings 页面，选择顶部的 Sign in with Apple ID，登录你的 Apple ID</li>
+                    <li>登录完毕之后在 AltStore 中点击左上角 + 号，选择下载好的 <code>.ipa</code> 文件进行安装</li>
                 </ol>
+
+                <h3>注意事项</h3>
+                <ul>
+                    <li>一个个人的 Apple ID 无法签名超过<strong> 10 个应用</strong>，如果超过<strong> 10
+                            个应用</strong>，需要重新签名，且一台设备只能同时安装包括AltStore在内的最多<strong>3个应用</strong>，以下包括<strong>所有的侧载方法</strong>都是如此
+                    </li>
+                    <li>AltStore 相关问题请查阅 <a
+                            href="https://faq.altstore.io/altstore-classic/troubleshooting-guide">AltStore 官网的说明文档</a>
+                    </li>
+                </ul>
 
                 <div class="docs-note">
                     <strong>⚠️ 注意：</strong>使用 AltStore 安装的应用有效期为 7 天，到期后需要重新签名。请保持手机和电脑在同一网络环境下，并保持 AltServer
-                    在后台运行并定期连接手机，可以自动续签。
+                    在后台运行，可以自动续签。
                 </div>
 
-                <h2>方法二：使用 Sideloadly</h2>
+                <h2>方法二：使用 SideStore</h2>
+                <p>SideStore 是 AltStore 的一个分支，最大的特点是<strong>无需电脑即可续签</strong>（只需首次安装时使用电脑）。需要额外安装 LocalDevVPN。</p>
+
+                <h3>前置要求</h3>
+                <ul>
+                    <li>iOS 14.0 或更高版本（支持 iOS 18）</li>
+                    <li>一台 Windows 或 macOS 电脑（仅首次安装需要）</li>
+                    <li>Apple ID（建议使用小号，避免主号被风控）</li>
+                    <li>iOS 16+ 需要开启开发者模式</li>
+                </ul>
+
+                <h3>所需软件</h3>
+                <ul>
+                    <li><strong>SideServer</strong>：<a href="https://sidestore.io/"
+                            target="_blank">https://sidestore.io/</a>（电脑端安装）</li>
+                    <li><strong>LocalDevVPN</strong>：在 App Store 搜索下载（iPhone 端安装）</li>
+                    <li><strong>iTunes</strong>（Windows 用户需要）：<a href="https://www.apple.com/itunes/download/win64"
+                            target="_blank">Apple 官网下载</a></li>
+                </ul>
+
+                <h3>安装步骤</h3>
+                <h4>第一部分：电脑端操作</h4>
+                <ol>
+                    <li>从官网下载 <strong>SideServer</strong> 并安装到电脑</li>
+                    <li><strong>Windows 用户</strong>：确保已安装 iTunes（官网版本），否则 SideServer 无法识别设备</li>
+                    <li>使用数据线将 iPhone 连接到电脑</li>
+                    <li>iPhone 上弹出"信任此电脑"提示时，点击<strong>信任</strong>并输入锁屏密码</li>
+                    <li>运行 SideServer，等待识别到你的设备</li>
+                    <li>SideServer 会自动生成配对文件（Pairing File），这是续签的关键文件</li>
+                    <li>在 SideServer 中点击 <strong>"Install SideStore"</strong> 按钮</li>
+                    <li>输入你的 Apple ID 和密码（用于签名，建议使用小号）</li>
+                    <li>等待安装完成，SideStore 应用会出现在 iPhone 主屏幕上</li>
+                </ol>
+
+                <h4>第二部分：iPhone 端操作</h4>
+                <ol>
+                    <li><strong>iOS 16+ 用户</strong>：前往 <strong>设置 → 隐私与安全性 → 开发者模式</strong>，开启并重启设备</li>
+                    <li>打开 iPhone <strong>设置 → 通用 → VPN与设备管理</strong></li>
+                    <li>找到你的 Apple ID 对应的开发者描述文件，点击<strong>信任</strong></li>
+                    <li>打开 <strong>App Store</strong>，搜索并下载 <strong>LocalDevVPN</strong></li>
+                    <li>打开 <strong>LocalDevVPN</strong> 应用，点击连接开启 VPN</li>
+                    <li>打开 <strong>SideStore</strong>，如提示添加 VPN 配置请点击<strong>允许</strong></li>
+                    <li>使用同一个 Apple ID 登录 SideStore</li>
+                    <li>点击右上角 <strong>+</strong> 号，选择下载好的 <code>.ipa</code> 文件进行安装</li>
+                </ol>
+
+                <h3>续签方法</h3>
+                <p>SideStore 的最大优势是可以在手机上直接续签，无需连接电脑：</p>
+                <ol>
+                    <li>打开 <strong>LocalDevVPN</strong> 应用，开启 VPN</li>
+                    <li>打开 <strong>SideStore</strong> 应用</li>
+                    <li>在"我的应用"页面，点击需要续签的应用旁边的刷新按钮</li>
+                    <li>或者点击右上角菜单，选择"刷新全部"</li>
+                </ol>
+
+                <div class="docs-note">
+                    <strong>💡 提示：</strong>
+                    <ul>
+                        <li>建议在应用到期前 1-2 天进行续签，避免应用过期无法打开</li>
+                        <li>续签时 <strong>无需连接电脑或同一 WiFi</strong></li>
+                        <li>普通 Apple ID 签名的应用有效期为 7 天</li>
+                    </ul>
+                </div>
+
+                <div class="docs-note">
+                    <strong>⚠️ 常见问题：</strong>
+                    <ul>
+                        <li><strong>SideServer 识别不到设备</strong>：确保安装了官网版 iTunes，重新插拔数据线，重启 SideServer</li>
+                        <li><strong>安装时报错 -22421</strong>：Apple ID 被风控，等待几天或更换 Apple ID</li>
+                        <li><strong>应用闪退</strong>：证书已过期，需要重新续签</li>
+                        <li><strong>续签失败显示 "No WiFi or VPN"</strong>：确保 LocalDevVPN 已开启</li>
+                    </ul>
+                </div>
+
+                <h2>方法三：使用 Sideloadly</h2>
                 <p>Sideloadly 是一个简单易用的 IPA 安装工具，无需安装 AltStore。</p>
 
                 <h3>所需软件</h3>
@@ -136,7 +223,7 @@
                     <li>打开 Sideloadly，选择你的设备</li>
                     <li>将 <code>.ipa</code> 文件拖入 Sideloadly 窗口</li>
                     <li>输入你的 Apple ID 和密码</li>
-                    <li>点击 Start 开始安装</li>
+                    <li>点击 Start 开始安装，点击 Start 旁边的刷新按钮，即可开启自动续签</li>
                     <li>安装完成后，在 iPhone 上信任开发者证书</li>
                 </ol>
 
@@ -145,7 +232,7 @@
                     在后台运行并定期连接手机，可以自动续签。
                 </div>
 
-                <h2>方法三：使用爱思助手/3uTools</h2>
+                <h2>方法四：使用爱思助手/3uTools</h2>
                 <p>国内用户可以使用爱思助手或 3uTools，操作更简单。</p>
 
                 <h3>所需软件</h3>
