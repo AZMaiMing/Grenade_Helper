@@ -45,3 +45,6 @@ app.*.map.json
 /android/app/release
 
 /android/app/upload-keystore.jks
+windows.iss
+/windows/installer/
+/website/
