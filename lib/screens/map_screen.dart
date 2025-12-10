@@ -113,6 +113,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Grenade? _movingSingleGrenade; // 单个道具移动状态
   late final PhotoViewController _photoViewController;
   final GlobalKey _stackKey = GlobalKey(); // 添加 GlobalKey
+  bool _isSpawnSidebarExpanded = true; // 出生点侧边栏展开状态
 
   @override
   void initState() {
@@ -1192,7 +1193,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// 构建出生点标记（方形 + 数字）
+  /// 构建出生点标记（方形 + 数字）- 带透明度，可点击创建道具
   Widget _buildSpawnPointMarker(
       SpawnPoint spawn,
       bool isCT,
@@ -1203,10 +1204,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         double height,
         double offsetX,
         double offsetY
-      }) imageBounds) {
+      }) imageBounds,
+      int layerId,
+      bool isEditMode) {
     final color = isCT ? Colors.blueAccent : Colors.amber;
-    // Base size is 22, use FIXED half-size for positioning
-    const double baseHalfSize = 11.0;
+    // Base size is 16, use FIXED half-size for positioning
+    const double baseHalfSize = 8.0;
 
     // 计算标记在 Stack 中的实际位置（考虑图片偏移）
     final left =
@@ -1220,32 +1223,305 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: Transform.scale(
         scale: markerScale,
         alignment: Alignment.center,
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(4),
-            border:
-                Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.4),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              )
-            ],
-          ),
-          child: Center(
-            child: Text(
-              '${spawn.id}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            // 点击出生点显示底部菜单
+            _showSpawnPointBottomSheet(spawn, isCT, layerId);
+          },
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(3),
+                border:
+                    Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  )
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  '${spawn.id}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 显示出生点底部菜单
+  void _showSpawnPointBottomSheet(SpawnPoint spawn, bool isCT, int layerId) {
+    final color = isCT ? Colors.blueAccent : Colors.amber;
+    final teamName = isCT ? "CT" : "T";
+    final isEditMode = ref.read(isEditModeProvider);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E2126),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${spawn.id}',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  "$teamName 出生点 #${spawn.id}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "坐标: (${spawn.x.toStringAsFixed(3)}, ${spawn.y.toStringAsFixed(3)})",
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            const SizedBox(height: 20),
+            if (isEditMode)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    // 在出生点位置创建道具
+                    setState(() {
+                      _tempTapPosition = Offset(spawn.x, spawn.y);
+                    });
+                    _createGrenade(layerId);
+                  },
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text("在此位置创建道具"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  "💡 开启编辑模式可在此位置创建道具",
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建出生点侧边栏（可折叠）
+  Widget _buildSpawnPointSidebar(
+      MapSpawnConfig config, int layerId, bool isEditMode) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 折叠/展开按钮
+        GestureDetector(
+          onTap: () => setState(
+              () => _isSpawnSidebarExpanded = !_isSpawnSidebarExpanded),
+          child: Container(
+            width: 20,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1D21).withOpacity(0.9),
+              border: Border(
+                  left: BorderSide(color: Colors.white.withOpacity(0.1))),
+            ),
+            child: Center(
+              child: Icon(
+                _isSpawnSidebarExpanded
+                    ? Icons.chevron_right
+                    : Icons.chevron_left,
+                color: Colors.greenAccent,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+        // 侧边栏内容
+        if (_isSpawnSidebarExpanded)
+          Container(
+            width: 75,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1D21).withOpacity(0.9),
+            ),
+            child: Column(
+              children: [
+                // 标题
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.place, color: Colors.greenAccent, size: 14),
+                      SizedBox(width: 4),
+                      Text("出生点",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                // 列表
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // CT 标题
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.blueAccent.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text("CT",
+                                style: TextStyle(
+                                    color: Colors.blueAccent,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        // CT 出生点列表
+                        ...config.ctSpawns.map((spawn) => _buildSpawnListItem(
+                            spawn, true, layerId, isEditMode)),
+                        const SizedBox(height: 8),
+                        // T 标题
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text("T",
+                                style: TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        // T 出生点列表
+                        ...config.tSpawns.map((spawn) => _buildSpawnListItem(
+                            spawn, false, layerId, isEditMode)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// 构建出生点列表项
+  Widget _buildSpawnListItem(
+      SpawnPoint spawn, bool isCT, int layerId, bool isEditMode) {
+    final color = isCT ? Colors.blueAccent : Colors.amber;
+    return GestureDetector(
+      onTap: () => _showSpawnPointBottomSheet(spawn, isCT, layerId),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Center(
+                child: Text(
+                  '${spawn.id}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text("#${spawn.id}", style: TextStyle(color: color, fontSize: 10)),
+            Icon(Icons.chevron_right, color: color.withOpacity(0.5), size: 12),
+          ],
         ),
       ),
     );
@@ -1432,16 +1708,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   width: constraints.maxWidth,
                                   height: constraints.maxHeight,
                                   fit: BoxFit.contain),
-                              // 出生点标记
-                              if (showSpawnPoints && spawnConfig != null) ...[
-                                ...spawnConfig.ctSpawns.map((spawn) =>
-                                    _buildSpawnPointMarker(spawn, true,
-                                        constraints, markerScale, imageBounds)),
-                                ...spawnConfig.tSpawns.map((spawn) =>
-                                    _buildSpawnPointMarker(spawn, false,
-                                        constraints, markerScale, imageBounds)),
-                              ],
-                              // 道具点位标记
+                              // 道具点位标记（先渲染，在下层）
                               // 缩放 200% 以上时禁用合并，显示完整细节
                               ...grenadesAsync.when(
                                   data: (list) {
@@ -1460,6 +1727,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   },
                                   error: (_, __) => [],
                                   loading: () => []),
+                              // 出生点标记（后渲染，在上层，但不响应点击）
+                              if (showSpawnPoints && spawnConfig != null)
+                                IgnorePointer(
+                                  child: Stack(
+                                    children: [
+                                      ...spawnConfig.ctSpawns.map((spawn) =>
+                                          _buildSpawnPointMarker(
+                                              spawn,
+                                              true,
+                                              constraints,
+                                              markerScale,
+                                              imageBounds,
+                                              currentLayer.id,
+                                              isEditMode)),
+                                      ...spawnConfig.tSpawns.map((spawn) =>
+                                          _buildSpawnPointMarker(
+                                              spawn,
+                                              false,
+                                              constraints,
+                                              markerScale,
+                                              imageBounds,
+                                              currentLayer.id,
+                                              isEditMode)),
+                                    ],
+                                  ),
+                                ),
                               if (_draggingCluster != null &&
                                   _dragOffset != null)
                                 Positioned(
@@ -1674,6 +1967,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           : null,
                       child: const Icon(Icons.arrow_downward)),
                 ])),
+          // 出生点侧边栏
+          if (showSpawnPoints && spawnConfig != null)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: isEditMode ? 0 : 60,
+              child: _buildSpawnPointSidebar(
+                  spawnConfig, currentLayer.id, isEditMode),
+            ),
           // 底部收藏栏
           if (!isEditMode)
             Positioned(
