@@ -67,37 +67,41 @@ class _OverlayWindowState extends State<OverlayWindow> {
 
   @override
   Widget build(BuildContext context) {
+    final overlayOpacity = widget.overlayState.overlayOpacity;
     return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
-      child: Material(
-        color: const Color(0xFF1B1E23), // 填充整个窗口的背景色
-        child: Container(
-          // 移除固定尺寸，让容器填满窗口
-          constraints: const BoxConstraints(
-            minWidth: 600,
-            minHeight: 750,
-          ),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B1E23).withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: Colors.orange.withValues(alpha: 0.5), width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 30,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildTitleBar(),
-              Expanded(child: _buildContent()),
-              _buildFooter(),
-            ],
+      child: Opacity(
+        opacity: overlayOpacity,
+        child: Material(
+          color: const Color(0xFF1B1E23),
+          child: Container(
+            // 移除固定尺寸，让容器填满窗口
+            constraints: const BoxConstraints(
+              minWidth: 600,
+              minHeight: 750,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B1E23),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.5), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildTitleBar(),
+                Expanded(child: _buildContent()),
+                _buildFooter(),
+              ],
+            ),
           ),
         ),
       ),

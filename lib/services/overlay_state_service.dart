@@ -49,6 +49,21 @@ class OverlayStateService extends ChangeNotifier {
     _videoTogglePlayPauseCallback?.call();
   }
 
+  /// 触发 UI 刷新（用于外部通知设置变更）
+  void refresh() {
+    notifyListeners();
+  }
+
+  // 悬浮窗透明度（用于跨进程 IPC 更新）
+  double _overlayOpacity = 0.9;
+  double get overlayOpacity => _overlayOpacity;
+
+  /// 设置悬浮窗透明度（由 IPC 调用）
+  void setOpacity(double value) {
+    _overlayOpacity = value;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _grenadeSubscription?.cancel();

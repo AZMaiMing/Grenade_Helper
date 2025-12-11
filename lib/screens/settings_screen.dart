@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/settings_service.dart';
 import '../providers.dart';
+import '../main.dart' show sendOverlayCommand;
 
 /// 设置页面
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -163,6 +164,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onChanged: (value) async {
                     setState(() => _overlayOpacity = value);
                     await widget.settingsService!.setOverlayOpacity(value);
+                    // 通知悬浮窗刷新透明度（直接传递值）
+                    sendOverlayCommand('update_opacity', {'opacity': value});
                   },
                 ),
               ),

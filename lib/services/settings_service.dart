@@ -110,6 +110,11 @@ class SettingsService {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  /// 重新加载设置（用于多窗口间同步）
+  Future<void> reload() async {
+    await _prefs?.reload();
+  }
+
   /// 获取所有快捷键配置
   Map<HotkeyAction, HotkeyConfig> getHotkeys() {
     final defaults = _getDefaultHotkeys();

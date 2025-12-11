@@ -36,9 +36,9 @@ class WindowType {
 }
 
 /// 发送命令给悬浮窗（通过 IPC）
-void _sendOverlayCommand(String command) {
+void sendOverlayCommand(String command, [Map<String, dynamic>? args]) {
   if (overlayWindowController != null) {
-    overlayWindowController!.invokeMethod(command).catchError((_) {
+    overlayWindowController!.invokeMethod(command, args).catchError((_) {
       // 忽略通信错误（例如窗口已关闭）
     });
   }
@@ -111,45 +111,45 @@ Future<void> _runMainWindow() async {
 
     // 注册悬浮窗热键处理器（通过 IPC 发送命令给悬浮窗）
     globalHotkeyService!.registerHandler(HotkeyAction.prevGrenade, () {
-      _sendOverlayCommand('prev_grenade');
+      sendOverlayCommand('prev_grenade');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.nextGrenade, () {
-      _sendOverlayCommand('next_grenade');
+      sendOverlayCommand('next_grenade');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.prevStep, () {
-      _sendOverlayCommand('prev_step');
+      sendOverlayCommand('prev_step');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.nextStep, () {
-      _sendOverlayCommand('next_step');
+      sendOverlayCommand('next_step');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.toggleSmoke, () {
-      _sendOverlayCommand('toggle_smoke');
+      sendOverlayCommand('toggle_smoke');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.toggleFlash, () {
-      _sendOverlayCommand('toggle_flash');
+      sendOverlayCommand('toggle_flash');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.toggleMolotov, () {
-      _sendOverlayCommand('toggle_molotov');
+      sendOverlayCommand('toggle_molotov');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.toggleHE, () {
-      _sendOverlayCommand('toggle_he');
+      sendOverlayCommand('toggle_he');
     });
     // 方向键导航
     globalHotkeyService!.registerHandler(HotkeyAction.navigateUp, () {
-      _sendOverlayCommand('navigate_up');
+      sendOverlayCommand('navigate_up');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.navigateDown, () {
-      _sendOverlayCommand('navigate_down');
+      sendOverlayCommand('navigate_down');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.navigateLeft, () {
-      _sendOverlayCommand('navigate_left');
+      sendOverlayCommand('navigate_left');
     });
     globalHotkeyService!.registerHandler(HotkeyAction.navigateRight, () {
-      _sendOverlayCommand('navigate_right');
+      sendOverlayCommand('navigate_right');
     });
     // 视频播放控制
     globalHotkeyService!.registerHandler(HotkeyAction.togglePlayPause, () {
-      _sendOverlayCommand('toggle_play_pause');
+      sendOverlayCommand('toggle_play_pause');
     });
   }
 
@@ -210,6 +210,8 @@ Future<void> _runOverlayWindow(
 
   // 初始化状态服务
   final overlayState = OverlayStateService(isar);
+  // 设置初始透明度
+  overlayState.setOpacity(settingsService.getOverlayOpacity());
 
   // 从参数中加载初始地图信息（如果有的话）
   final initialMapId = args?['map_id'] as int?;
@@ -287,6 +289,11 @@ Future<void> _runOverlayWindow(
       // 视频播放控制
       case 'toggle_play_pause':
         overlayState.triggerVideoTogglePlayPause();
+        return 'ok';
+      // 更新透明度（设置界面调整时，直接通过 IPC 传递值）
+      case 'update_opacity':
+        final opacity = call.arguments?['opacity'] as double? ?? 0.9;
+        overlayState.setOpacity(opacity);
         return 'ok';
       // 获取悬浮窗可见状态（供主窗口轮询）
       case 'get_visibility':
