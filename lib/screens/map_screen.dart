@@ -1735,7 +1735,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               ...grenadesAsync.when(
                                   data: (list) {
                                     final clusterThreshold =
-                                        scale >= 2.0 ? 0.0001 : 0.03;
+                                        scale >= 2.0 ? 0.008 : 0.02;
                                     final clusters = clusterGrenades(list,
                                         threshold: clusterThreshold);
                                     return clusters.map((c) =>
