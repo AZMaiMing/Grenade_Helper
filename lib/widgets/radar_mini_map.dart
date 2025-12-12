@@ -127,6 +127,39 @@ class RadarMiniMap extends StatelessWidget {
     );
   }
 
+  /// 聚合阈值（与 overlay_state_service.dart 保持一致）
+  static const double _clusterThreshold = 0.03;
+
+  /// 将道具按位置聚合成组
+  List<List<Grenade>> _clusterGrenades(List<Grenade> grenades) {
+    if (grenades.isEmpty) return [];
+
+    final List<List<Grenade>> clusters = [];
+    final used = <int>{};
+
+    for (int i = 0; i < grenades.length; i++) {
+      if (used.contains(i)) continue;
+
+      final cluster = <Grenade>[grenades[i]];
+      used.add(i);
+
+      for (int j = i + 1; j < grenades.length; j++) {
+        if (used.contains(j)) continue;
+
+        final dx = (grenades[i].xRatio - grenades[j].xRatio).abs();
+        final dy = (grenades[i].yRatio - grenades[j].yRatio).abs();
+        if (dx * dx + dy * dy < _clusterThreshold * _clusterThreshold) {
+          cluster.add(grenades[j]);
+          used.add(j);
+        }
+      }
+
+      clusters.add(cluster);
+    }
+
+    return clusters;
+  }
+
   List<Widget> _buildOtherPoints() {
     if (currentGrenade == null) return [];
 
@@ -136,33 +169,76 @@ class RadarMiniMap extends StatelessWidget {
     // 使用与 _buildZoomedMap 一致的地图尺寸
     final mapSize = width > height ? width : height;
 
-    return allGrenades.where((g) => g.id != currentGrenade!.id).map((g) {
-      // 计算相对于当前点的偏移（基于地图坐标系）
-      // 其他点相对于当前中心点的位置差，乘以缩放后的地图尺寸
-      final relX = (g.xRatio - centerX) * mapSize * zoomLevel;
-      final relY = (g.yRatio - centerY) * mapSize * zoomLevel;
+    // 过滤掉与当前道具在同一 cluster（位置相近）的所有道具
+    final otherGrenades = allGrenades.where((g) {
+      if (g.id == currentGrenade!.id) return false;
+      // 检查是否与当前道具位置相近（在同一 cluster）
+      final dx = (g.xRatio - centerX).abs();
+      final dy = (g.yRatio - centerY).abs();
+      return dx * dx + dy * dy >= _clusterThreshold * _clusterThreshold;
+    }).toList();
+    final clusters = _clusterGrenades(otherGrenades);
+
+    return clusters.map((cluster) {
+      // 使用第一个道具的位置作为cluster中心
+      final centerGrenade = cluster.first;
+      final relX = (centerGrenade.xRatio - centerX) * mapSize * zoomLevel;
+      final relY = (centerGrenade.yRatio - centerY) * mapSize * zoomLevel;
 
       // 转换为容器坐标（以容器中心为原点）
       final screenX = width / 2 + relX;
       final screenY = height / 2 + relY;
 
       // 如果超出容器可见范围，不显示
-      if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
+      if (screenX < -10 ||
+          screenX > width + 10 ||
+          screenY < -10 ||
+          screenY > height + 10) {
         return const SizedBox.shrink();
       }
 
+      final count = cluster.length;
+      // 确定颜色：如果只有一种类型用该类型颜色，否则用混合色
+      final types = cluster.map((g) => g.type).toSet();
+      final color = types.length == 1
+          ? _getGrenadeColor(types.first)
+          : Colors.white.withValues(alpha: 0.8);
+
+      final size = count > 1 ? 14.0 : 8.0;
+
       return Positioned(
-        left: screenX - 4,
-        top: screenY - 4,
+        left: screenX - size / 2,
+        top: screenY - size / 2,
         child: Container(
-          width: 8,
-          height: 8,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
-            color: _getGrenadeColor(g.type).withValues(alpha: 0.7),
+            color: color.withValues(alpha: 0.8),
             shape: BoxShape.circle,
             border: Border.all(
-                color: Colors.white.withValues(alpha: 0.5), width: 1),
+                color: Colors.white.withValues(alpha: 0.6), width: 1),
+            boxShadow: count > 1
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.4),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    )
+                  ]
+                : null,
           ),
+          child: count > 1
+              ? Center(
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              : null,
         ),
       );
     }).toList();

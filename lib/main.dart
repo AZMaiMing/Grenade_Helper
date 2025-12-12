@@ -575,7 +575,12 @@ class _MainAppState extends ConsumerState<MainApp> {
     }
     // 显示并聚焦
     await overlayWindowController!.show();
-    // DesktopMultiWindow controller doesn't have focus(), show handles it or use windowManager inside overlay
+    // 设置状态（用于轮询检测）
+    if (globalWindowService != null) {
+      globalWindowService!.isOverlayVisible = true;
+    }
+    // 注册热键
+    await globalHotkeyService?.registerOverlayHotkeys();
   }
 
   Future<void> _hideOverlay() async {

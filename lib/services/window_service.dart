@@ -28,6 +28,7 @@ class WindowService with TrayListener, WindowListener {
   }
 
   bool get isOverlayVisible => _isOverlayVisible;
+  set isOverlayVisible(bool value) => _isOverlayVisible = value;
   bool get isMainWindowVisible => _isMainWindowVisible;
 
   /// 初始化窗口管理
