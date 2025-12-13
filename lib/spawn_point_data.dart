@@ -47,4 +47,47 @@ const Map<String, MapSpawnConfig> spawnPointData = {
       SpawnPoint(10, 0.8507, 0.3166)
     ],
   ),
+  'dust 2': MapSpawnConfig(
+    ctSpawns: [
+      SpawnPoint(1, 0.5837, 0.1725),
+      SpawnPoint(2, 0.5777, 0.1965),
+      SpawnPoint(3, 0.6082, 0.167),
+      SpawnPoint(4, 0.6318, 0.174),
+      SpawnPoint(5, 0.6378, 0.1955)
+    ],
+    tSpawns: [
+      SpawnPoint(1, 0.3686, 0.8928),
+      SpawnPoint(2, 0.352, 0.8772),
+      SpawnPoint(3, 0.3831, 0.9094),
+      SpawnPoint(4, 0.4036, 0.9089),
+      SpawnPoint(5, 0.4175, 0.8867),
+      SpawnPoint(6, 0.2992, 0.8983),
+      SpawnPoint(7, 0.2919, 0.8728),
+      SpawnPoint(8, 0.3114, 0.9172),
+      SpawnPoint(9, 0.3297, 0.8972),
+      SpawnPoint(10, 0.3286, 0.8739),
+      SpawnPoint(11, 0.4425, 0.8883),
+      SpawnPoint(12, 0.4319, 0.87),
+      SpawnPoint(13, 0.4547, 0.9072),
+      SpawnPoint(14, 0.4731, 0.8961),
+      SpawnPoint(15, 0.4736, 0.8761)
+    ],
+  ),
+  'inferno': MapSpawnConfig(
+    ctSpawns: [
+      SpawnPoint(1, 0.9139, 0.3579),
+      SpawnPoint(2, 0.9054, 0.3336),
+      SpawnPoint(3, 0.9018, 0.3793),
+      SpawnPoint(4, 0.8761, 0.3829),
+      SpawnPoint(5, 0.8739, 0.3564),
+      SpawnPoint(6, 0.8904, 0.3479)
+    ],
+    tSpawns: [
+      SpawnPoint(1, 0.097, 0.6823),
+      SpawnPoint(2, 0.1166, 0.6814),
+      SpawnPoint(3, 0.0807, 0.6823),
+      SpawnPoint(4, 0.0784, 0.7005),
+      SpawnPoint(5, 0.0807, 0.7155)
+    ],
+  ),
 };
