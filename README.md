@@ -1,6 +1,6 @@
 # Grenade Helper (CS2 投掷物助手)
 
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20iOS%20%7C%20Web-blue)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20iOS-blue)
 ![Flutter](https://img.shields.io/badge/Built%20with-Flutter-02569B)
 ![CS2](https://img.shields.io/badge/Game-CS2-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
