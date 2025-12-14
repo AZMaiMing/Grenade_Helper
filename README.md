@@ -28,11 +28,8 @@
 
 ## 📸 预览 (Screenshots)
 
-> *（建议在此处添加 Overlay 模式的游戏内截图 GIF 或图片）*
-
 | 桌面端悬浮窗 | 手机版预览 | 地图详情 | 道具详情 |
-|:---:|:---:|:---:|
-| ![桌面端悬浮窗](docs/overlay_preview.png) | ![手机版预览](docs/mobile_preview.png) | ![地图详情](docs/map_screen.png) | ![道具详情](docs/grenade_detail.png) |
+| <img src="docs/overlay_preview.png" width="250" /> | <img src="docs/mobile_preview.png" width="250" /> | <img src="docs/map_screen.png" width="250" /> | <img src="docs/grenade_detail.png" width="250" /> |
 
 ---
 
