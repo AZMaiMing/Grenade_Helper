@@ -1646,29 +1646,123 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(widget.gameMap.name,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(currentLayer.name,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        ]),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            Text(widget.gameMap.name,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                height: 36,
+                decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                        color:
+                            Theme.of(context).dividerColor.withOpacity(0.1))),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.search,
+                        color: Theme.of(context).hintColor, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Autocomplete<Grenade>(
+                        optionsBuilder: (textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<Grenade>.empty();
+                          }
+                          return allMapGrenades.where((g) => g.title
+                              .toLowerCase()
+                              .contains(textEditingValue.text.toLowerCase()));
+                        },
+                        displayStringForOption: (g) => g.title,
+                        onSelected: _onSearchResultSelected,
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 8.0,
+                              color: const Color(0xFF2A2D33),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: MediaQuery.of(context).size.width *
+                                    0.6, // Adjust width as needed
+                                constraints:
+                                    const BoxConstraints(maxHeight: 250),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final option = options.elementAt(index);
+                                    option.layer.loadSync();
+                                    return ListTile(
+                                        title: Text(option.title,
+                                            style: const TextStyle(
+                                                color: Colors.white)),
+                                        subtitle: Text(
+                                            "${option.layer.value?.name ?? ''} • ${_getTypeName(option.type)}",
+                                            style: const TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 12)),
+                                        onTap: () => onSelected(option));
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        fieldViewBuilder: (context, controller, focusNode,
+                                onFieldSubmitted) =>
+                            TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color),
+                          decoration: const InputDecoration(
+                            hintText: "搜索...",
+                            hintStyle:
+                                TextStyle(color: Colors.grey, fontSize: 13),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
           Padding(
-              padding: const EdgeInsets.only(right: 16.0),
+              padding: const EdgeInsets.only(right: 12.0),
               child: Row(children: [
-                Text(isEditMode ? "编辑模式" : "浏览模式",
+                Text(isEditMode ? "编辑" : "浏览",
                     style: TextStyle(
                         color: isEditMode ? Colors.redAccent : Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14)),
-                const SizedBox(width: 8),
-                Switch(
-                    value: isEditMode,
-                    activeColor: Colors.redAccent,
-                    inactiveThumbColor: Colors.grey,
-                    inactiveTrackColor: Colors.grey.withOpacity(0.3),
-                    onChanged: (val) =>
-                        ref.read(isEditModeProvider.notifier).state = val),
+                        fontSize: 12)),
+                Transform.scale(
+                  scale: 0.7,
+                  child: Switch(
+                      value: isEditMode,
+                      activeColor: Colors.redAccent,
+                      inactiveThumbColor: Colors.grey,
+                      inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                      onChanged: (val) =>
+                          ref.read(isEditModeProvider.notifier).state = val),
+                ),
               ])),
         ],
         bottom: PreferredSize(
@@ -1844,136 +1938,57 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ))),
           // 顶部UI
           Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(
-                  child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.85),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white12)),
-                                child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      _buildTypeFilterBtn(
-                                          selectedTypes,
-                                          GrenadeType.smoke,
-                                          "烟雾",
-                                          Icons.cloud,
-                                          Colors.grey),
-                                      _buildTypeFilterBtn(
-                                          selectedTypes,
-                                          GrenadeType.flash,
-                                          "闪光",
-                                          Icons.flash_on,
-                                          Colors.yellow),
-                                      _buildTypeFilterBtn(
-                                          selectedTypes,
-                                          GrenadeType.molotov,
-                                          "燃烧",
-                                          Icons.local_fire_department,
-                                          Colors.red),
-                                      _buildTypeFilterBtn(
-                                          selectedTypes,
-                                          GrenadeType.he,
-                                          "手雷",
-                                          Icons.trip_origin,
-                                          Colors.green),
-                                    ])),
-                            const SizedBox(height: 10),
-                            Container(
-                                height: 45,
-                                decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(color: Colors.white24)),
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: Row(children: [
-                                  const Icon(Icons.search,
-                                      color: Colors.grey, size: 20),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                      child: Autocomplete<Grenade>(
-                                    optionsBuilder: (textEditingValue) {
-                                      if (textEditingValue.text.isEmpty)
-                                        return const Iterable<Grenade>.empty();
-                                      return allMapGrenades.where((g) => g.title
-                                          .toLowerCase()
-                                          .contains(textEditingValue.text
-                                              .toLowerCase()));
-                                    },
-                                    displayStringForOption: (g) => g.title,
-                                    onSelected: _onSearchResultSelected,
-                                    optionsViewBuilder:
-                                        (context, onSelected, options) => Align(
-                                            alignment: Alignment.topLeft,
-                                            child: Material(
-                                                elevation: 8.0,
-                                                color: const Color(0xFF2A2D33),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                child: Container(
-                                                    width:
-                                                        constraints.maxWidth -
-                                                            40,
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                            maxHeight: 250),
-                                                    child: ListView.builder(
-                                                        padding:
-                                                            EdgeInsets.zero,
-                                                        shrinkWrap: true,
-                                                        itemCount:
-                                                            options.length,
-                                                        itemBuilder:
-                                                            (context, index) {
-                                                          final option = options
-                                                              .elementAt(index);
-                                                          option.layer
-                                                              .loadSync();
-                                                          return ListTile(
-                                                              title: Text(
-                                                                  option.title,
-                                                                  style: const TextStyle(
-                                                                      color: Colors
-                                                                          .white)),
-                                                              subtitle: Text(
-                                                                  "${option.layer.value?.name ?? ''} • ${_getTypeName(option.type)}",
-                                                                  style: const TextStyle(
-                                                                      color: Colors
-                                                                          .grey,
-                                                                      fontSize:
-                                                                          12)),
-                                                              onTap: () =>
-                                                                  onSelected(
-                                                                      option));
-                                                        })))),
-                                    fieldViewBuilder: (context, controller,
-                                            focusNode, onFieldSubmitted) =>
-                                        TextField(
-                                            controller: controller,
-                                            focusNode: focusNode,
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                            decoration: const InputDecoration(
-                                                hintText: "搜索本图道具...",
-                                                hintStyle: TextStyle(
-                                                    color: Colors.grey),
-                                                border: InputBorder.none)),
-                                  )),
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+                child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.85),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white12)),
+                            child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildTypeFilterBtn(
+                                      selectedTypes,
+                                      GrenadeType.smoke,
+                                      "烟雾",
+                                      Icons.cloud,
+                                      Colors.grey),
+                                  _buildTypeFilterBtn(
+                                      selectedTypes,
+                                      GrenadeType.flash,
+                                      "闪光",
+                                      Icons.flash_on,
+                                      Colors.yellow),
+                                  _buildTypeFilterBtn(
+                                      selectedTypes,
+                                      GrenadeType.molotov,
+                                      "燃烧",
+                                      Icons.local_fire_department,
+                                      Colors.red),
+                                  _buildTypeFilterBtn(
+                                      selectedTypes,
+                                      GrenadeType.he,
+                                      "手雷",
+                                      Icons.trip_origin,
+                                      Colors.green),
                                 ])),
-                          ])))),
+                        const SizedBox(height: 10),
+                        /* Search bar moved to AppBar */
+                      ],
+                    ))),
+          ),
           // 楼层切换
           if (layers.length > 1)
             Positioned(
