@@ -38,7 +38,6 @@ class JoystickBottomSheet extends StatefulWidget {
 
 class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
   Offset _knobPosition = Offset.zero;
-  bool _isDragging = false;
   Timer? _moveTimer;
 
   // 摇杆尺寸
@@ -300,7 +299,6 @@ class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
   }
 
   void _onPanStart(DragStartDetails details) {
-    setState(() => _isDragging = true);
     _startTimer(); // 开始持续移动
   }
 
@@ -326,7 +324,6 @@ class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
   void _onPanEnd(DragEndDetails details) {
     _stopTimer(); // 停止移动
     setState(() {
-      _isDragging = false;
       _knobPosition = Offset.zero;
     });
   }

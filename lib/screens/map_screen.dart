@@ -1008,6 +1008,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     setState(() {
       _dragOffset = Offset(newX, newY);
     });
+
+    // 平移地图使点位居中
+    _centerMapOnPoint(newX, newY);
+  }
+
+  /// 将地图平移使指定比例坐标的点位居中显示
+  void _centerMapOnPoint(double xRatio, double yRatio) {
+    final RenderBox? renderBox =
+        _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final size = renderBox.size;
+    final scale = _photoViewController.scale ?? 1.0;
+
+    // 计算图片边界
+    final bounds = _getImageBounds(size.width, size.height);
+
+    // 计算点位在原始坐标系中的位置
+    final pointX = bounds.offsetX + xRatio * bounds.width;
+    final pointY = bounds.offsetY + yRatio * bounds.height;
+
+    // 视口中心
+    final viewportCenterX = size.width / 2;
+    final viewportCenterY = size.height / 2;
+
+    // 计算需要的偏移量（使点位位于中心）
+    // position 是内容相对于视口中心的偏移，在缩放后的坐标系中
+    final targetPositionX = (viewportCenterX - pointX) * scale;
+    final targetPositionY = (viewportCenterY - pointY) * scale;
+
+    _photoViewController.position = Offset(targetPositionX, targetPositionY);
   }
 
   /// 确认摇杆移动
@@ -1769,10 +1800,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            Text(widget.gameMap.name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(width: 8),
             Expanded(
               child: Container(
                 height: 36,
@@ -1786,6 +1813,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Row(
                   children: [
+                    // 地图名作为搜索栏前缀
+                    Text(
+                      widget.gameMap.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: 1,
+                      height: 16,
+                      color: Theme.of(context).dividerColor.withOpacity(0.3),
+                    ),
                     Icon(Icons.search,
                         color: Theme.of(context).hintColor, size: 16),
                     const SizedBox(width: 6),
@@ -1848,7 +1890,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   .bodyMedium
                                   ?.color),
                           decoration: const InputDecoration(
-                            hintText: "搜索...",
+                            hintText: "搜索道具...",
                             hintStyle:
                                 TextStyle(color: Colors.grey, fontSize: 13),
                             border: InputBorder.none,
