@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icons/app_icon.png" alt="Grenade Helper Logo" width="250">
+</p>
+
 # Grenade Helper (CS2 道具助手)
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20iOS-blue)
