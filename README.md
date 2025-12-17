@@ -1,12 +1,12 @@
-# Grenade Helper (CS2 投掷物助手)
+# Grenade Helper (CS2 道具助手)
 
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android%20%7C%20iOS-blue)
 ![Flutter](https://img.shields.io/badge/Built%20with-Flutter-02569B)
 ![CS2](https://img.shields.io/badge/Game-CS2-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**Grenade Helper** 是一款专为 **Counter-Strike 2** 玩家打造的现代化投掷物教学与辅助工具。不仅仅是教学工具，更是你的实战好帮手。
-不用再在实战中慌乱的查找视频，不需要再进行繁琐无聊的跑图训练，只需要动动手指记录你在视频平台和其他地方看到的道具，就能实时调出直接投掷！
+**Grenade Helper** 是一款专为 **Counter-Strike 2** 玩家打造的现代化道具教学与辅助工具，亦或者也可以叫做道具便签。这不仅仅是教学工具，更是你的实战好帮手。
+不用再在实战中慌乱的查找视频，不需要再进行繁琐无聊的跑图训练，只需要动动手指记录你在视频平台和其他地方看到的道具，就能实时调出，直接投掷！
 核心亮点：**PC端独家 Overlay (画中画) 模式**，让你在游戏中一键呼出，无需切屏，即学即用！
 
 ---
