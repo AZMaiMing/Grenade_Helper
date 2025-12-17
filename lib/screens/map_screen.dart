@@ -1625,6 +1625,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       children: [
                         // CT 标题
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
                               width: 8,
@@ -1649,6 +1650,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         const SizedBox(height: 8),
                         // T 标题
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
                               width: 8,
@@ -1687,38 +1689,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final color = isCT ? Colors.blueAccent : Colors.amber;
     return GestureDetector(
       onTap: () => _showSpawnPointBottomSheet(spawn, isCT, layerId),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 3),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: Center(
-                child: Text(
-                  '${spawn.id}',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: color.withOpacity(0.3), width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Center(
+                  child: Text(
+                    '${spawn.id}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 4),
-            Text("#${spawn.id}", style: TextStyle(color: color, fontSize: 10)),
-            Icon(Icons.chevron_right, color: color.withOpacity(0.5), size: 12),
-          ],
+            ],
+          ),
         ),
       ),
     );
