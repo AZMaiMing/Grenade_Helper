@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
@@ -80,8 +81,24 @@ Future<void> main(List<String> args) async {
 
 /// 运行主窗口
 Future<void> _runMainWindow() async {
-  // 1. 初始化 Isar 数据库
-  final dir = await getApplicationDocumentsDirectory();
+  // 1. 获取数据存储目录
+  String dataPath;
+  if (SettingsService.isDesktop) {
+    // 桌面端：使用自定义路径或默认的应用根目录/data
+    dataPath = await SettingsService.getDataPathBeforeInit();
+  } else {
+    // 移动端：使用应用文档目录
+    final dir = await getApplicationDocumentsDirectory();
+    dataPath = dir.path;
+  }
+
+  // 确保数据目录存在
+  final dataDir = Directory(dataPath);
+  if (!await dataDir.exists()) {
+    await dataDir.create(recursive: true);
+  }
+
+  // 2. 初始化 Isar 数据库
   final isar = await Isar.open(
     [
       GameMapSchema,
@@ -90,7 +107,7 @@ Future<void> _runMainWindow() async {
       GrenadeStepSchema,
       StepMediaSchema
     ],
-    directory: dir.path,
+    directory: dataPath,
   );
   globalIsar = isar;
 
@@ -191,8 +208,15 @@ Future<void> _runOverlayWindow(
     }
   });
 
-  // 初始化数据库（使用与主窗口相同的数据库）
-  final dir = await getApplicationDocumentsDirectory();
+  // 初始化数据库（使用与主窗口相同的数据库和目录）
+  final dataPath = await SettingsService.getDataPathBeforeInit();
+
+  // 确保数据目录存在
+  final dataDir = Directory(dataPath);
+  if (!await dataDir.exists()) {
+    await dataDir.create(recursive: true);
+  }
+
   final isar = await Isar.open(
     [
       GameMapSchema,
@@ -201,7 +225,7 @@ Future<void> _runOverlayWindow(
       GrenadeStepSchema,
       StepMediaSchema
     ],
-    directory: dir.path,
+    directory: dataPath,
     // 使用默认实例名，与主窗口共享数据库
   );
 

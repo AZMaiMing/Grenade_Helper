@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/settings_service.dart';
 import '../providers.dart';
 import '../main.dart' show sendOverlayCommand;
@@ -30,6 +31,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late int _markerMoveMode;
   late double _joystickOpacity;
   late int _joystickSpeed;
+  // 数据存储路径（仅桌面端）
+  String _currentDataPath = '';
+  String _defaultDataPath = '';
 
   bool get _isDesktop =>
       Platform.isWindows || Platform.isMacOS || Platform.isLinux;
@@ -49,6 +53,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _markerMoveMode = widget.settingsService!.getMarkerMoveMode();
       _joystickOpacity = widget.settingsService!.getJoystickOpacity();
       _joystickSpeed = widget.settingsService!.getJoystickSpeed();
+      // 加载数据路径（异步）
+      if (_isDesktop) {
+        _loadDataPath();
+      }
     } else {
       // 默认值
       _hotkeys = {};
@@ -58,6 +66,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _markerMoveMode = 0;
       _joystickOpacity = 0.8;
       _joystickSpeed = 3;
+    }
+  }
+
+  Future<void> _loadDataPath() async {
+    final effectivePath = await widget.settingsService!.getEffectiveDataPath();
+    final defaultPath = await SettingsService.getDefaultDataPath();
+    if (mounted) {
+      setState(() {
+        _currentDataPath = effectivePath;
+        _defaultDataPath = defaultPath;
+      });
     }
   }
 
@@ -292,7 +311,122 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        _buildSection(
+          title: '💾 数据存储',
+          subtitle: '更改数据目录需要重启应用',
+          children: [
+            ListTile(
+              title: const Text('当前数据目录'),
+              subtitle: Text(
+                _currentDataPath.isEmpty ? '加载中...' : _currentDataPath,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _currentDataPath == _defaultDataPath
+                      ? Colors.grey
+                      : Colors.orange,
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_currentDataPath != _defaultDataPath &&
+                      _currentDataPath.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: _resetToDefaultPath,
+                      icon: const Icon(Icons.restore, size: 18),
+                      label: const Text('恢复默认'),
+                      style: TextButton.styleFrom(foregroundColor: Colors.grey),
+                    ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _changeDataDirectory,
+                    icon: const Icon(Icons.folder_open, size: 18),
+                    label: const Text('更改目录'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        color: Colors.amber[700], size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '更改目录后需要手动重启应用。现有数据不会自动迁移，请手动复制数据文件到新目录。',
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.amber[700]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
+    );
+  }
+
+  /// 更改数据目录
+  Future<void> _changeDataDirectory() async {
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: '选择数据存储目录',
+    );
+    if (result == null) return;
+
+    await widget.settingsService!.setCustomDataPath(result);
+    setState(() => _currentDataPath = result);
+
+    if (mounted) {
+      _showRestartDialog();
+    }
+  }
+
+  /// 恢复默认路径
+  Future<void> _resetToDefaultPath() async {
+    await widget.settingsService!.setCustomDataPath(null);
+    setState(() => _currentDataPath = _defaultDataPath);
+
+    if (mounted) {
+      _showRestartDialog();
+    }
+  }
+
+  /// 显示重启提示对话框
+  void _showRestartDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.restart_alt, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text('需要重启'),
+          ],
+        ),
+        content: const Text('数据目录已更改，请手动重启应用以使更改生效。'),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('我知道了'),
+          ),
+        ],
+      ),
     );
   }
 

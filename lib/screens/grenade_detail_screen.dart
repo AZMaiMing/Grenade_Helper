@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:video_player/video_player.dart';
@@ -348,7 +347,10 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
 
   Future<String?> _pickAndProcessMedia(bool isImage) async {
     final picker = ImagePicker();
-    final dir = await getApplicationDocumentsDirectory();
+
+    // 使用当前 isar 实例的目录作为数据存储目录
+    final isar = ref.read(isarProvider);
+    final dataPath = isar.directory ?? '';
 
     if (isImage) {
       final xFile = await picker.pickImage(source: ImageSource.gallery);
@@ -364,7 +366,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
             callbacks: ProImageEditorCallbacks(
               onImageEditingComplete: (Uint8List bytes) async {
                 final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
-                final savePath = p.join(dir.path, fileName);
+                final savePath = p.join(dataPath, fileName);
                 await File(savePath).writeAsBytes(bytes);
                 resultPath = savePath;
                 if (mounted) Navigator.pop(context);
@@ -382,7 +384,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       try {
         final fileName =
             "${DateTime.now().millisecondsSinceEpoch}${p.extension(xFile.path)}";
-        final savePath = p.join(dir.path, fileName);
+        final savePath = p.join(dataPath, fileName);
         await File(xFile.path).copy(savePath);
         return savePath;
       } catch (e) {
@@ -501,7 +503,10 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
   Future<void> _editImage(StepMedia media) async {
     if (media.type != MediaType.image) return;
 
-    final dir = await getApplicationDocumentsDirectory();
+    // 使用当前 isar 实例的目录作为数据存储目录
+    final isar = ref.read(isarProvider);
+    final dataPath = isar.directory ?? '';
+
     final file = File(media.localPath);
     if (!file.existsSync()) return;
 
@@ -516,7 +521,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
             onImageEditingComplete: (Uint8List bytes) async {
               // 保存编辑后的新文件（覆盖原文件或创建新文件）
               final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
-              final savePath = p.join(dir.path, fileName);
+              final savePath = p.join(dataPath, fileName);
               await File(savePath).writeAsBytes(bytes);
 
               // 更新媒体路径

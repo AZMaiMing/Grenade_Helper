@@ -19,21 +19,52 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   bool _isDragging = false;
   bool _isImporting = false;
 
+  // 缓存数据，避免在 build 中使用同步查询
+  List<GameMap> _maps = [];
+  List<Grenade> _grenades = [];
+  DataService? _dataService;
+  bool _isInitialized = false;
+
   bool get _isDesktop =>
       Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
   @override
-  Widget build(BuildContext context) {
-    final isar = ref.watch(isarProvider);
-    final maps = isar.gameMaps.where().findAllSync();
-    final grenades = isar.grenades.where().findAllSync();
-    final dataService = DataService(isar);
+  void initState() {
+    super.initState();
+    // 直接在 initState 中初始化数据服务
+    final isar = ref.read(isarProvider);
+    _dataService = DataService(isar);
+    // 加载数据
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
 
+  void _loadData() {
+    final isar = ref.read(isarProvider);
+    setState(() {
+      _maps = isar.gameMaps.where().findAllSync();
+      _grenades = isar.grenades.where().findAllSync();
+      _isInitialized = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 如果还未初始化完成，显示加载指示器
+    if (!_isInitialized || _dataService == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("导入与分享")),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // 不再在 build 中使用 findAllSync()，使用缓存的数据
     Widget body = TabBarView(
       children: [
-        _buildSingleGrenadeList(context, grenades, dataService),
-        _buildMapList(context, maps, dataService),
-        _buildAllDataView(context, grenades.length, dataService),
+        _buildSingleGrenadeList(context, _grenades, _dataService!),
+        _buildMapList(context, _maps, _dataService!),
+        _buildAllDataView(context, _grenades.length, _dataService!),
       ],
     );
 
@@ -50,7 +81,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
           for (final file in details.files) {
             if (file.path.toLowerCase().endsWith('.cs2pkg')) {
-              final result = await dataService.importFromPath(file.path);
+              final result = await _dataService!.importFromPath(file.path);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -63,6 +94,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
             }
           }
 
+          // 导入完成后刷新数据
+          _loadData();
           setState(() => _isImporting = false);
         },
         child: Stack(
@@ -125,7 +158,9 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
               icon: const Icon(Icons.file_download, color: Colors.greenAccent),
               tooltip: "导入数据",
               onPressed: () async {
-                final result = await dataService.importData();
+                final result = await _dataService!.importData();
+                // 导入完成后刷新数据
+                _loadData();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

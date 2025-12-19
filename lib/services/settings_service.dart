@@ -107,6 +107,7 @@ class SettingsService {
   static const String _keyJoystickSpeed = 'joystick_speed'; // 1-5档
   static const String _keyOverlayNavSpeed =
       'overlay_nav_speed'; // 1-5档（桌面端悬浮窗导航速度）
+  static const String _keyDataPath = 'custom_data_path'; // 自定义数据存储路径
 
   SharedPreferences? _prefs;
 
@@ -279,4 +280,48 @@ class SettingsService {
   /// 标记已显示赞助提醒弹窗
   Future<void> setDonationDialogShown() async =>
       await _prefs?.setBool(_keyDonationDialogShown, true);
+
+  // --- 数据存储路径 ---
+
+  /// 获取自定义数据路径（null表示使用默认路径）
+  String? getCustomDataPath() => _prefs?.getString(_keyDataPath);
+
+  /// 设置自定义数据路径（null表示恢复默认）
+  Future<void> setCustomDataPath(String? path) async {
+    if (path == null) {
+      await _prefs?.remove(_keyDataPath);
+    } else {
+      await _prefs?.setString(_keyDataPath, path);
+    }
+  }
+
+  /// 获取默认数据路径（应用根目录/data）
+  /// 这是一个静态方法，可以在 SettingsService 初始化前调用
+  static Future<String> getDefaultDataPath() async {
+    // 获取应用可执行文件所在目录
+    final exePath = Platform.resolvedExecutable;
+    final appDir = Directory(exePath).parent.path;
+    return '$appDir${Platform.pathSeparator}data';
+  }
+
+  /// 获取实际使用的数据路径
+  /// 如果设置了自定义路径则使用自定义路径，否则使用默认路径
+  Future<String> getEffectiveDataPath() async {
+    final customPath = getCustomDataPath();
+    if (customPath != null && customPath.isNotEmpty) {
+      return customPath;
+    }
+    return await getDefaultDataPath();
+  }
+
+  /// 静态方法：在 SettingsService 初始化前获取数据路径
+  /// 这用于 main.dart 中数据库初始化时调用
+  static Future<String> getDataPathBeforeInit() async {
+    final prefs = await SharedPreferences.getInstance();
+    final customPath = prefs.getString(_keyDataPath);
+    if (customPath != null && customPath.isNotEmpty) {
+      return customPath;
+    }
+    return await getDefaultDataPath();
+  }
 }

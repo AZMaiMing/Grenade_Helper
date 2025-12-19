@@ -163,7 +163,10 @@ class DataService {
     }
 
     final file = File(filePath);
-    final appDocDir = await getApplicationDocumentsDirectory();
+
+    // 使用当前 isar 实例的目录作为数据存储目录
+    // 这样可以避免异步调用 SharedPreferences 可能导致的问题
+    final dataPath = isar.directory ?? '';
 
     // 2. 解压
     final bytes = file.readAsBytesSync();
@@ -195,10 +198,12 @@ class DataService {
         final layerName = item['layerName'];
 
         // 查找地图
-        final map = isar.gameMaps.filter().nameEqualTo(mapName).findFirstSync();
+        // 查找地图
+        final map =
+            await isar.gameMaps.filter().nameEqualTo(mapName).findFirst();
         if (map == null) continue;
 
-        map.layers.loadSync();
+        await map.layers.load();
         MapLayer? layer;
         for (var l in map.layers) {
           if (l.name == layerName) {
@@ -214,7 +219,7 @@ class DataService {
         final xRatio = (item['x'] as num).toDouble();
         final yRatio = (item['y'] as num).toDouble();
 
-        layer.grenades.loadSync();
+        await layer.grenades.load();
         bool exists = layer.grenades.any((g) =>
             g.title == title &&
             (g.xRatio - xRatio).abs() < 0.01 &&
@@ -261,9 +266,9 @@ class DataService {
           for (var mItem in mediasList) {
             final fileName = mItem['path'];
             if (memoryImages.containsKey(fileName)) {
-              final savePath = p.join(appDocDir.path,
+              final savePath = p.join(dataPath,
                   "${DateTime.now().millisecondsSinceEpoch}_$fileName");
-              File(savePath).writeAsBytesSync(memoryImages[fileName]!);
+              await File(savePath).writeAsBytes(memoryImages[fileName]!);
 
               final media = StepMedia(localPath: savePath, type: mItem['type']);
               await isar.stepMedias.put(media);
