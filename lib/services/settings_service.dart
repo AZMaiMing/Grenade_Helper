@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as path;
 
 /// 快捷键配置模型
 class HotkeyConfig {
@@ -314,10 +316,10 @@ class SettingsService {
   /// 获取默认数据路径（应用根目录/data）
   /// 这是一个静态方法，可以在 SettingsService 初始化前调用
   static Future<String> getDefaultDataPath() async {
-    // 获取应用可执行文件所在目录
-    final exePath = Platform.resolvedExecutable;
-    final appDir = Directory(exePath).parent.path;
-    return '$appDir${Platform.pathSeparator}data';
+    // 移动端/桌面端：使用系统提供的应用支持目录
+    // 这避免了在 Windows Program Files 目录下写入数据的权限问题
+    final directory = await getApplicationSupportDirectory();
+    return path.join(directory.path, 'data');
   }
 
   /// 获取实际使用的数据路径

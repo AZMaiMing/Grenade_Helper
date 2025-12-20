@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'package:path/path.dart' as path;
 import 'settings_service.dart';
 import 'hotkey_service.dart';
 
@@ -67,17 +65,7 @@ class WindowService with TrayListener, WindowListener {
     trayManager.addListener(this);
 
     // 设置托盘图标
-    String iconPath;
-    if (Platform.isWindows) {
-      iconPath = path.join(Directory.current.path, 'windows', 'runner',
-          'resources', 'app_icon.ico');
-      // 如果自定义图标不存在，使用默认路径
-      if (!File(iconPath).existsSync()) {
-        iconPath = 'assets/icons/app_icon.png';
-      }
-    } else {
-      iconPath = 'assets/icons/app_icon.png';
-    }
+    String iconPath = 'assets/icons/app_icon.ico';
 
     try {
       await trayManager.setIcon(iconPath);
