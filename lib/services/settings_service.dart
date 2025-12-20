@@ -163,6 +163,11 @@ class SettingsService {
     await _prefs?.setString(_keyHotkeys, jsonEncode(json));
   }
 
+  /// 重置所有快捷键为默认值
+  Future<void> resetHotkeys() async {
+    await _prefs?.remove(_keyHotkeys);
+  }
+
   /// 默认快捷键配置
   Map<HotkeyAction, HotkeyConfig> _getDefaultHotkeys() {
     return {
@@ -305,12 +310,36 @@ class SettingsService {
   String? getCustomDataPath() => _prefs?.getString(_keyDataPath);
 
   /// 设置自定义数据路径（null表示恢复默认）
-  Future<void> setCustomDataPath(String? path) async {
-    if (path == null) {
-      await _prefs?.remove(_keyDataPath);
-    } else {
-      await _prefs?.setString(_keyDataPath, path);
+  /// 使用文件存储而非 SharedPreferences，因为 SP 在 Windows 上强制退出时可能丢失数据
+  Future<void> setCustomDataPath(String? customPath) async {
+    print('[Settings] setCustomDataPath called with: $customPath');
+
+    try {
+      final configFile = await _getConfigFile();
+      if (customPath == null) {
+        if (await configFile.exists()) {
+          await configFile.delete();
+          print('[Settings] Config file deleted');
+        }
+      } else {
+        await configFile.writeAsString(customPath, flush: true);
+        print('[Settings] Config file written: $customPath');
+      }
+    } catch (e) {
+      print('[Settings] Error saving custom path: $e');
     }
+  }
+
+  /// 获取配置文件路径（实例方法）
+  Future<File> _getConfigFile() async {
+    final appSupport = await getApplicationSupportDirectory();
+    return File(path.join(appSupport.path, 'custom_data_path.txt'));
+  }
+
+  /// 获取配置文件路径（静态方法，用于初始化前调用）
+  static Future<File> _getConfigFileStatic() async {
+    final appSupport = await getApplicationSupportDirectory();
+    return File(path.join(appSupport.path, 'custom_data_path.txt'));
   }
 
   /// 获取默认数据路径（应用根目录/data）
@@ -325,21 +354,104 @@ class SettingsService {
   /// 获取实际使用的数据路径
   /// 如果设置了自定义路径则使用自定义路径，否则使用默认路径
   Future<String> getEffectiveDataPath() async {
-    final customPath = getCustomDataPath();
-    if (customPath != null && customPath.isNotEmpty) {
-      return customPath;
+    // 从文件读取自定义路径
+    try {
+      final configFile = await _getConfigFile();
+      if (await configFile.exists()) {
+        final customPath = (await configFile.readAsString()).trim();
+        if (customPath.isNotEmpty) {
+          return customPath;
+        }
+      }
+    } catch (e) {
+      print('[Settings] Error reading config file in getEffectiveDataPath: $e');
     }
     return await getDefaultDataPath();
   }
 
-  /// 静态方法：在 SettingsService 初始化前获取数据路径
-  /// 这用于 main.dart 中数据库初始化时调用
   static Future<String> getDataPathBeforeInit() async {
-    final prefs = await SharedPreferences.getInstance();
-    final customPath = prefs.getString(_keyDataPath);
-    if (customPath != null && customPath.isNotEmpty) {
-      return customPath;
+    String? customPath;
+
+    // 从文件读取自定义路径
+    try {
+      final configFile = await _getConfigFileStatic();
+      if (await configFile.exists()) {
+        customPath = await configFile.readAsString();
+        customPath = customPath.trim();
+        if (customPath.isEmpty) customPath = null;
+      }
+    } catch (e) {
+      print('[Settings] Error reading config file: $e');
     }
-    return await getDefaultDataPath();
+
+    print(
+        '[Settings] getDataPathBeforeInit - customPath from file: $customPath');
+    final String targetDir;
+
+    if (customPath != null && customPath.isNotEmpty) {
+      targetDir = customPath;
+    } else {
+      targetDir = await getDefaultDataPath();
+
+      // --- 关键改进：执行从“旧默认路径”到“新默认路径”的一次性迁移 ---
+      // 只有当用户没有设置自定义路径，且新默认目录下没有数据，但旧目录下有数据时才执行
+      try {
+        final newDir = Directory(targetDir);
+        if (!newDir.existsSync() ||
+            (newDir.listSync().isEmpty &&
+                !File(path.join(targetDir, 'lock')).existsSync())) {
+          // 获取旧的默认路径（安装目录下/data）
+          final exePath = Platform.resolvedExecutable;
+          final appRoot = Directory(exePath).parent.path;
+          final oldPath = path.join(appRoot, 'data');
+
+          if (Directory(oldPath).existsSync()) {
+            print(
+                '[Settings] Detecting legacy data at: $oldPath, migrating...');
+            await moveData(oldPath, targetDir);
+            print('[Settings] Legacy data migration completed.');
+          }
+        }
+      } catch (e) {
+        print('[Settings] Error checking legacy migration: $e');
+      }
+    }
+
+    return targetDir;
+  }
+
+  /// 递归复制目录
+  static Future<void> copyDirectory(
+      Directory source, Directory destination) async {
+    if (!destination.existsSync()) {
+      await destination.create(recursive: true);
+    }
+
+    await for (var entity in source.list(recursive: false)) {
+      if (entity is Directory) {
+        final newDirectory = Directory(
+            path.join(destination.absolute.path, path.basename(entity.path)));
+        await copyDirectory(entity, newDirectory);
+      } else if (entity is File) {
+        await entity.copy(
+            path.join(destination.absolute.path, path.basename(entity.path)));
+      }
+    }
+  }
+
+  /// 迁移数据到新路径
+  static Future<void> moveData(String fromPath, String toPath) async {
+    if (fromPath == toPath) return;
+
+    final sourceDir = Directory(fromPath);
+    if (!sourceDir.existsSync()) return;
+
+    final targetDir = Directory(toPath);
+    if (!targetDir.existsSync()) {
+      await targetDir.create(recursive: true);
+    }
+
+    print('[Settings] Copying data from $fromPath to $toPath');
+    await copyDirectory(sourceDir, targetDir);
   }
 }

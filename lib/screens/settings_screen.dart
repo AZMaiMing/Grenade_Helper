@@ -242,6 +242,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const Divider(height: 1),
             _buildHotkeyTile(HotkeyAction.increaseNavSpeed, '增加导航速度'),
             _buildHotkeyTile(HotkeyAction.decreaseNavSpeed, '减少导航速度'),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: OutlinedButton.icon(
+                onPressed: _resetHotkeysToDefault,
+                icon: const Icon(Icons.restore, size: 18),
+                label: const Text('恢复默认快捷键'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange,
+                  side: const BorderSide(color: Colors.orange),
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -406,7 +419,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '更改目录后需要手动重启应用。现有数据不会自动迁移，请手动复制数据文件到新目录。',
+                        '更改目录后需要手动重启应用。您可以选择自动将现有数据迁移到新目录。',
                         style:
                             TextStyle(fontSize: 12, color: Colors.amber[700]),
                       ),
@@ -428,6 +441,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
     if (result == null) return;
 
+    final oldPath = _currentDataPath;
+    final newPath = result;
+
+    if (mounted && oldPath != newPath) {
+      final shouldMigrate = await _showMigrationDialog();
+      if (shouldMigrate == true) {
+        // 执行迁移
+        await SettingsService.moveData(oldPath, newPath);
+      }
+    }
+
     await widget.settingsService!.setCustomDataPath(result);
     setState(() => _currentDataPath = result);
 
@@ -438,12 +462,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// 恢复默认路径
   Future<void> _resetToDefaultPath() async {
+    final oldPath = _currentDataPath;
+    final newPath = _defaultDataPath;
+
+    if (mounted && oldPath != newPath) {
+      final shouldMigrate = await _showMigrationDialog();
+      if (shouldMigrate == true) {
+        // 执行迁移
+        await SettingsService.moveData(oldPath, newPath);
+      }
+    }
+
     await widget.settingsService!.setCustomDataPath(null);
     setState(() => _currentDataPath = _defaultDataPath);
 
     if (mounted) {
       _showRestartDialog();
     }
+  }
+
+  /// 显示迁移进度的对话框（简化版）
+  Future<bool?> _showMigrationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('迁移现有数据？'),
+        content: const Text('检测到您更改了数据目录。是否将当前目录下的所有数据（数据库、设置、存档等）自动拷贝到新目录下？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('跳过'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('立即迁移'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 显示重启提示对话框
@@ -467,6 +527,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  /// 重置快捷键为默认值
+  Future<void> _resetHotkeysToDefault() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('恢复默认快捷键？'),
+        content: const Text('这将重置所有快捷键为默认配置，确定继续吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && widget.settingsService != null) {
+      await widget.settingsService!.resetHotkeys();
+      setState(() {
+        _hotkeys = widget.settingsService!.getHotkeys();
+      });
+
+      // 通知悬浮窗重新加载热键配置
+      final hotkeysJson = <String, dynamic>{};
+      for (final entry in _hotkeys.entries) {
+        hotkeysJson[entry.key.name] = entry.value.toJson();
+      }
+      sendOverlayCommand('reload_hotkeys', {'hotkeys': hotkeysJson});
+      print('[Settings] Hotkeys reset, notified overlay to reload');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('快捷键已恢复默认')),
+        );
+      }
+    }
   }
 
   Widget _buildSection({
