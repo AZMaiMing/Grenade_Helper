@@ -70,6 +70,7 @@ class DataService {
         'type': g.type,
         'team': g.team,
         'author': g.author,
+        'hasLocalEdits': g.hasLocalEdits,
         'x': g.xRatio,
         'y': g.yRatio,
         'steps': stepsData,
@@ -321,6 +322,8 @@ class DataService {
     existing.type = item['type'];
     existing.team = item['team'];
     existing.author = item['author'] as String?;
+    existing.hasLocalEdits = false; // 重置为 false，保护原作者
+    existing.isImported = true; // 标记为导入的道具
     existing.xRatio = (item['x'] as num).toDouble();
     existing.yRatio = (item['y'] as num).toDouble();
     existing.updatedAt = DateTime.fromMillisecondsSinceEpoch(item['updatedAt']);
@@ -396,7 +399,9 @@ class DataService {
       xRatio: (item['x'] as num).toDouble(),
       yRatio: (item['y'] as num).toDouble(),
       isNewImport: true,
-      uniqueId: uniqueId ?? const Uuid().v4(), // 如果没有 UUID，生成新的
+      hasLocalEdits: false,
+      isImported: true, // 标记为导入的道具
+      uniqueId: uniqueId ?? const Uuid().v4(),
       created: item['createdAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(item['createdAt'])
           : DateTime.now(),

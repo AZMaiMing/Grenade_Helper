@@ -83,6 +83,12 @@ class Grenade {
   /// 作者名称
   String? author;
 
+  /// 标记是否进行了本地实质性编辑（用于保护导入道具的作者名）
+  bool hasLocalEdits;
+
+  /// 标记道具是否为导入的（永不重置，区别于 isNewImport）
+  bool isImported;
+
   /// 唯一标识符，用于跨设备同步和去重
   @Index()
   String? uniqueId;
@@ -100,6 +106,8 @@ class Grenade {
     this.team = 0,
     this.isFavorite = false,
     this.isNewImport = false,
+    this.hasLocalEdits = false,
+    this.isImported = false,
     required this.xRatio,
     required this.yRatio,
     this.uniqueId,

@@ -141,6 +141,16 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
   /// 默认作者名
   static const String _defaultAuthor = '匿名作者';
 
+  /// 标记道具已进行本地实质性编辑
+  Future<void> _markAsLocallyEdited() async {
+    if (grenade == null || grenade!.hasLocalEdits) return;
+    final isar = ref.read(isarProvider);
+    grenade!.hasLocalEdits = true;
+    await isar.writeTxn(() async {
+      await isar.grenades.put(grenade!);
+    });
+  }
+
   void _updateGrenade(
       {String? title,
       int? type,
@@ -323,6 +333,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       grenade!.updatedAt = DateTime.now();
       await isar.grenades.put(grenade!);
     });
+    await _markAsLocallyEdited(); // 标记为本地编辑
     _loadData();
   }
 
@@ -349,6 +360,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
         step.medias.add(media);
         await step.medias.save();
       });
+      await _markAsLocallyEdited(); // 添加媒体算实质性编辑
       setState(() {});
     }
   }
@@ -488,6 +500,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                   grenade!.updatedAt = DateTime.now();
                   await isar.grenades.put(grenade!);
                 });
+                await _markAsLocallyEdited(); // 编辑步骤文字算实质性编辑
                 Navigator.pop(ctx);
                 _loadData();
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -542,6 +555,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
               });
 
               if (mounted) {
+                await _markAsLocallyEdited(); // 编辑图片算实质性编辑
                 Navigator.pop(context);
                 setState(() {});
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -742,6 +756,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                   await isar.writeTxn(() async {
                     await isar.stepMedias.delete(media.id);
                   });
+                  await _markAsLocallyEdited(); // 删除媒体算实质性编辑
                   _loadData();
                 },
                 child: Container(
@@ -934,12 +949,29 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
         grenade!.author?.isNotEmpty == true ? grenade!.author! : _defaultAuthor;
     final isEditing = widget.isEditing;
 
+    // 判断是否可以编辑作者名：
+    // 1. 本地创建的道具（isImported == false）始终可以编辑
+    // 2. 导入的道具（isImported == true）只有进行了本地实质性编辑后才能编辑作者
+    final canEditAuthor = !grenade!.isImported || grenade!.hasLocalEdits;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 20, top: 10),
       child: Column(
         children: [
           GestureDetector(
-            onTap: isEditing ? _editAuthor : null,
+            onTap: isEditing
+                ? (canEditAuthor
+                    ? _editAuthor
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                "此道具为导入内容，需进行实质性编辑（修改文字、编辑图片、添加/删除媒体）后才能修改作者名"),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      })
+                : null,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
@@ -948,7 +980,11 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                     style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 if (isEditing) ...[
                   const SizedBox(width: 4),
-                  const Icon(Icons.edit, size: 12, color: Colors.grey),
+                  Icon(
+                    canEditAuthor ? Icons.edit : Icons.lock_outline,
+                    size: 12,
+                    color: canEditAuthor ? Colors.grey : Colors.grey[600],
+                  ),
                 ],
               ],
             ),

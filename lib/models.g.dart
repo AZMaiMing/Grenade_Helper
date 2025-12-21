@@ -1655,48 +1655,58 @@ const GrenadeSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'isFavorite': PropertySchema(
+    r'hasLocalEdits': PropertySchema(
       id: 2,
+      name: r'hasLocalEdits',
+      type: IsarType.bool,
+    ),
+    r'isFavorite': PropertySchema(
+      id: 3,
       name: r'isFavorite',
       type: IsarType.bool,
     ),
+    r'isImported': PropertySchema(
+      id: 4,
+      name: r'isImported',
+      type: IsarType.bool,
+    ),
     r'isNewImport': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'isNewImport',
       type: IsarType.bool,
     ),
     r'team': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'team',
       type: IsarType.long,
     ),
     r'title': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'title',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'type',
       type: IsarType.long,
     ),
     r'uniqueId': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'uniqueId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'xRatio': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'xRatio',
       type: IsarType.double,
     ),
     r'yRatio': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'yRatio',
       type: IsarType.double,
     )
@@ -1773,15 +1783,17 @@ void _grenadeSerialize(
 ) {
   writer.writeString(offsets[0], object.author);
   writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeBool(offsets[2], object.isFavorite);
-  writer.writeBool(offsets[3], object.isNewImport);
-  writer.writeLong(offsets[4], object.team);
-  writer.writeString(offsets[5], object.title);
-  writer.writeLong(offsets[6], object.type);
-  writer.writeString(offsets[7], object.uniqueId);
-  writer.writeDateTime(offsets[8], object.updatedAt);
-  writer.writeDouble(offsets[9], object.xRatio);
-  writer.writeDouble(offsets[10], object.yRatio);
+  writer.writeBool(offsets[2], object.hasLocalEdits);
+  writer.writeBool(offsets[3], object.isFavorite);
+  writer.writeBool(offsets[4], object.isImported);
+  writer.writeBool(offsets[5], object.isNewImport);
+  writer.writeLong(offsets[6], object.team);
+  writer.writeString(offsets[7], object.title);
+  writer.writeLong(offsets[8], object.type);
+  writer.writeString(offsets[9], object.uniqueId);
+  writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeDouble(offsets[11], object.xRatio);
+  writer.writeDouble(offsets[12], object.yRatio);
 }
 
 Grenade _grenadeDeserialize(
@@ -1791,19 +1803,21 @@ Grenade _grenadeDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Grenade(
-    isFavorite: reader.readBoolOrNull(offsets[2]) ?? false,
-    isNewImport: reader.readBoolOrNull(offsets[3]) ?? false,
-    team: reader.readLongOrNull(offsets[4]) ?? 0,
-    title: reader.readString(offsets[5]),
-    type: reader.readLong(offsets[6]),
-    uniqueId: reader.readStringOrNull(offsets[7]),
-    xRatio: reader.readDouble(offsets[9]),
-    yRatio: reader.readDouble(offsets[10]),
+    hasLocalEdits: reader.readBoolOrNull(offsets[2]) ?? false,
+    isFavorite: reader.readBoolOrNull(offsets[3]) ?? false,
+    isImported: reader.readBoolOrNull(offsets[4]) ?? false,
+    isNewImport: reader.readBoolOrNull(offsets[5]) ?? false,
+    team: reader.readLongOrNull(offsets[6]) ?? 0,
+    title: reader.readString(offsets[7]),
+    type: reader.readLong(offsets[8]),
+    uniqueId: reader.readStringOrNull(offsets[9]),
+    xRatio: reader.readDouble(offsets[11]),
+    yRatio: reader.readDouble(offsets[12]),
   );
   object.author = reader.readStringOrNull(offsets[0]);
   object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.updatedAt = reader.readDateTime(offsets[8]);
+  object.updatedAt = reader.readDateTime(offsets[10]);
   return object;
 }
 
@@ -1823,18 +1837,22 @@ P _grenadeDeserializeProp<P>(
     case 3:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 4:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 0) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 9:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
+      return (reader.readDateTime(offset)) as P;
+    case 11:
+      return (reader.readDouble(offset)) as P;
+    case 12:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2196,6 +2214,16 @@ extension GrenadeQueryFilter
     });
   }
 
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> hasLocalEditsEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hasLocalEdits',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Grenade, Grenade, QAfterFilterCondition> idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2253,6 +2281,16 @@ extension GrenadeQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isFavorite',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> isImportedEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isImported',
         value: value,
       ));
     });
@@ -2926,6 +2964,18 @@ extension GrenadeQuerySortBy on QueryBuilder<Grenade, Grenade, QSortBy> {
     });
   }
 
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortByHasLocalEdits() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasLocalEdits', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortByHasLocalEditsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasLocalEdits', Sort.desc);
+    });
+  }
+
   QueryBuilder<Grenade, Grenade, QAfterSortBy> sortByIsFavorite() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isFavorite', Sort.asc);
@@ -2935,6 +2985,18 @@ extension GrenadeQuerySortBy on QueryBuilder<Grenade, Grenade, QSortBy> {
   QueryBuilder<Grenade, Grenade, QAfterSortBy> sortByIsFavoriteDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isFavorite', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortByIsImported() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isImported', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortByIsImportedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isImported', Sort.desc);
     });
   }
 
@@ -3061,6 +3123,18 @@ extension GrenadeQuerySortThenBy
     });
   }
 
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenByHasLocalEdits() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasLocalEdits', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenByHasLocalEditsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'hasLocalEdits', Sort.desc);
+    });
+  }
+
   QueryBuilder<Grenade, Grenade, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -3082,6 +3156,18 @@ extension GrenadeQuerySortThenBy
   QueryBuilder<Grenade, Grenade, QAfterSortBy> thenByIsFavoriteDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isFavorite', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenByIsImported() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isImported', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenByIsImportedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isImported', Sort.desc);
     });
   }
 
@@ -3197,9 +3283,21 @@ extension GrenadeQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Grenade, Grenade, QDistinct> distinctByHasLocalEdits() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'hasLocalEdits');
+    });
+  }
+
   QueryBuilder<Grenade, Grenade, QDistinct> distinctByIsFavorite() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isFavorite');
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QDistinct> distinctByIsImported() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isImported');
     });
   }
 
@@ -3274,9 +3372,21 @@ extension GrenadeQueryProperty
     });
   }
 
+  QueryBuilder<Grenade, bool, QQueryOperations> hasLocalEditsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'hasLocalEdits');
+    });
+  }
+
   QueryBuilder<Grenade, bool, QQueryOperations> isFavoriteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isFavorite');
+    });
+  }
+
+  QueryBuilder<Grenade, bool, QQueryOperations> isImportedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isImported');
     });
   }
 
