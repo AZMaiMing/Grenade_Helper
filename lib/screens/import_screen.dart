@@ -6,7 +6,9 @@ import 'package:isar_community/isar.dart';
 import '../models.dart';
 import '../providers.dart';
 import '../services/data_service.dart';
+import '../services/cloud_package_service.dart';
 import 'import_history_detail_screen.dart';
+import 'cloud_packages_screen.dart';
 
 class ImportScreen extends ConsumerStatefulWidget {
   const ImportScreen({super.key});
@@ -19,9 +21,11 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
     with SingleTickerProviderStateMixin {
   bool _isDragging = false;
   bool _isImporting = false;
+  bool _isUrlImporting = false;
   DataService? _dataService;
   List<ImportHistory> _histories = [];
   late TabController _tabController;
+  final TextEditingController _urlController = TextEditingController();
 
   bool get _isDesktop =>
       Platform.isWindows || Platform.isMacOS || Platform.isLinux;
@@ -38,6 +42,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _urlController.dispose();
     super.dispose();
   }
 
@@ -89,6 +94,63 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
 
     await _loadHistories(); // 刷新历史列表
     setState(() => _isImporting = false);
+  }
+
+  Future<void> _handleUrlImport() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('请输入 URL'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('请输入有效的 URL'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    setState(() => _isUrlImporting = true);
+
+    try {
+      final filePath = await CloudPackageService.downloadFromUrl(url);
+      if (filePath == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('下载失败，请检查 URL'), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
+
+      final result = await _dataService!.importFromPath(filePath);
+      await _loadHistories();
+      _urlController.clear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result),
+            backgroundColor:
+                result.contains('成功') ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导入失败: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUrlImporting = false);
+      }
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -164,6 +226,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
               ),
             ),
             const SizedBox(height: 32),
+            // URL 导入输入框
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -171,32 +234,84 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "支持的文件格式",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  const Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          ".cs2pkg",
-                          style: TextStyle(
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold),
-                        ),
+                      Icon(Icons.link, size: 18, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Text(
+                        "从 URL 导入",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _urlController,
+                          decoration: InputDecoration(
+                            hintText: '输入 .cs2pkg 文件 URL',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            isDense: true,
+                          ),
+                          onSubmitted: (_) => _handleUrlImport(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _isUrlImporting ? null : _handleUrlImport,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                        ),
+                        child: _isUrlImporting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text("导入"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "支持 GitHub 直链下载",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // 在线道具库入口
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const CloudPackagesScreen()),
+                );
+              },
+              icon: const Icon(Icons.cloud_download),
+              label: const Text("浏览在线道具库（开发中）", style: TextStyle(fontSize: 14)),
+              style: OutlinedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                foregroundColor: Colors.orange,
+                side: const BorderSide(color: Colors.orange),
               ),
             ),
           ],

@@ -1,0 +1,110 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/cloud_package.dart';
+
+/// 云端道具包服务
+class CloudPackageService {
+  // TODO: 替换为你的 GitHub 仓库地址
+  static const String kRepoBaseUrl =
+      'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/grenade_packs/';
+
+  static const String _lastImportedKey = 'cloud_package_last_imported';
+
+  /// 获取云端道具包索引
+  static Future<CloudPackageIndex?> fetchIndex() async {
+    try {
+      final response = await http.get(Uri.parse('${kRepoBaseUrl}index.json'));
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        return CloudPackageIndex.fromJson(json);
+      }
+    } catch (e) {
+      print('获取索引失败: $e');
+    }
+    return null;
+  }
+
+  /// 从 URL 下载 .cs2pkg 文件
+  static Future<String?> downloadPackage(String url) async {
+    try {
+      // 如果是相对路径，拼接仓库基础地址
+      final fullUrl = url.startsWith('http') ? url : '$kRepoBaseUrl$url';
+
+      final response = await http.get(Uri.parse(fullUrl));
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final fileName = url.split('/').last;
+        final filePath = '${tempDir.path}/$fileName';
+        await File(filePath).writeAsBytes(response.bodyBytes);
+        return filePath;
+      }
+    } catch (e) {
+      print('下载失败: $e');
+    }
+    return null;
+  }
+
+  /// 从任意 URL 导入道具包
+  static Future<String?> downloadFromUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final fileName = url.split('/').last.isNotEmpty
+            ? url.split('/').last
+            : 'package.cs2pkg';
+        final filePath = '${tempDir.path}/$fileName';
+        await File(filePath).writeAsBytes(response.bodyBytes);
+        return filePath;
+      }
+    } catch (e) {
+      print('下载失败: $e');
+    }
+    return null;
+  }
+
+  /// 检查包是否已导入过（基于最后修改日期）
+  static Future<bool> isPackageUpToDate(
+      String packageId, String updated) async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastImported = prefs.getString('$_lastImportedKey:$packageId');
+    return lastImported == updated;
+  }
+
+  /// 标记包已导入
+  static Future<void> markPackageImported(
+      String packageId, String updated) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_lastImportedKey:$packageId', updated);
+  }
+
+  /// 获取包的上次导入日期
+  static Future<String?> getLastImportedDate(String packageId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('$_lastImportedKey:$packageId');
+  }
+
+  /// 按地图筛选包列表
+  static List<CloudPackage> filterByMap(
+      List<CloudPackage> packages, String? mapFilter) {
+    if (mapFilter == null || mapFilter == 'all') {
+      return packages;
+    }
+    return packages.where((p) => p.map == null || p.map == mapFilter).toList();
+  }
+
+  /// 获取所有可用地图列表（从包中提取）
+  static List<String> getAvailableMaps(List<CloudPackage> packages) {
+    final maps = <String>{};
+    for (final p in packages) {
+      if (p.map != null && p.map!.isNotEmpty) {
+        maps.add(p.map!);
+      }
+    }
+    return maps.toList()..sort();
+  }
+}
