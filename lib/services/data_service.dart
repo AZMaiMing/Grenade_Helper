@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:uuid/uuid.dart';
 import '../models.dart';
 
 class DataService {
@@ -62,6 +63,7 @@ class DataService {
       }
 
       exportList.add({
+        'uniqueId': g.uniqueId,
         'mapName': g.layer.value?.map.value?.name ?? "Unknown",
         'layerName': g.layer.value?.name ?? "Default",
         'title': g.title,
@@ -189,15 +191,15 @@ class DataService {
     if (jsonData.isEmpty) return "文件格式错误或无数据";
 
     // 3. 写入数据库
-    int count = 0;
-    int skipped = 0;
+    int newCount = 0;
+    int updatedCount = 0;
+    int skippedCount = 0;
 
     await isar.writeTxn(() async {
       for (var item in jsonData) {
         final mapName = item['mapName'];
         final layerName = item['layerName'];
 
-        // 查找地图
         // 查找地图
         final map =
             await isar.gameMaps.filter().nameEqualTo(mapName).findFirst();
@@ -214,84 +216,202 @@ class DataService {
         layer ??= map.layers.isNotEmpty ? map.layers.first : null;
         if (layer == null) continue;
 
-        // 检查重复
+        // 解析导入数据
+        final importedUniqueId = item['uniqueId'] as String?;
         final title = item['title'] as String;
         final xRatio = (item['x'] as num).toDouble();
         final yRatio = (item['y'] as num).toDouble();
+        final importedUpdatedAt = item['updatedAt'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(item['updatedAt'])
+            : DateTime.now();
 
-        await layer.grenades.load();
-        bool exists = layer.grenades.any((g) =>
-            g.title == title &&
-            (g.xRatio - xRatio).abs() < 0.01 &&
-            (g.yRatio - yRatio).abs() < 0.01);
+        // 查找是否存在相同的道具
+        Grenade? existing;
 
-        if (exists) {
-          skipped++;
-          continue;
+        // 优先使用 UUID 查找
+        if (importedUniqueId != null && importedUniqueId.isNotEmpty) {
+          final allGrenades = await isar.grenades.where().findAll();
+          existing = allGrenades
+              .where((g) => g.uniqueId == importedUniqueId)
+              .firstOrNull;
         }
 
-        // 创建 Grenade
-        final g = Grenade(
-          title: title,
-          type: item['type'],
-          team: item['team'],
-          xRatio: xRatio,
-          yRatio: yRatio,
-          isNewImport: true,
-          created: DateTime.fromMillisecondsSinceEpoch(item['createdAt']),
-          updated: DateTime.now(),
-        );
-        await isar.grenades.put(g);
+        // 如果没有 UUID 或未找到，回退到旧的判断方式（标题+坐标）
+        if (existing == null && importedUniqueId == null) {
+          await layer.grenades.load();
+          existing = layer.grenades
+              .where((g) =>
+                  g.title == title &&
+                  (g.xRatio - xRatio).abs() < 0.01 &&
+                  (g.yRatio - yRatio).abs() < 0.01)
+              .firstOrNull;
+        }
 
-        // 设置关联
-        g.layer.value = layer;
-        await g.layer.save();
-
-        // 创建 Steps & Medias
-        final stepsList = item['steps'] as List;
-        for (var sItem in stepsList) {
-          final step = GrenadeStep(
-            title: sItem['title'] ?? "",
-            description: sItem['description'],
-            stepIndex: sItem['index'],
-          );
-          await isar.grenadeSteps.put(step);
-
-          step.grenade.value = g;
-          await step.grenade.save();
-
-          g.steps.add(step);
-
-          final mediasList = sItem['medias'] as List;
-          for (var mItem in mediasList) {
-            final fileName = mItem['path'];
-            if (memoryImages.containsKey(fileName)) {
-              final savePath = p.join(dataPath,
-                  "${DateTime.now().millisecondsSinceEpoch}_$fileName");
-              await File(savePath).writeAsBytes(memoryImages[fileName]!);
-
-              final media = StepMedia(localPath: savePath, type: mItem['type']);
-              await isar.stepMedias.put(media);
-
-              media.step.value = step;
-              await media.step.save();
-
-              step.medias.add(media);
-            }
+        if (existing != null) {
+          // 已存在道具，比较时间戳决定是否更新
+          if (importedUpdatedAt.isAfter(existing.updatedAt)) {
+            // 导入的更新，更新现有道具
+            await _updateExistingGrenade(
+                existing, item, memoryImages, dataPath);
+            updatedCount++;
+          } else {
+            // 导入的更旧，跳过
+            skippedCount++;
           }
-          await step.medias.save();
+        } else {
+          // 创建新道具
+          await _createNewGrenade(
+              item, memoryImages, dataPath, layer, importedUniqueId);
+          newCount++;
         }
-        await g.steps.save();
-        count++;
       }
     });
 
-    if (count == 0 && skipped > 0) {
-      return "所有 $skipped 个道具已存在，无需导入";
-    } else if (skipped > 0) {
-      return "成功导入 $count 个道具，跳过 $skipped 个已存在";
+    // 生成结果消息
+    final List<String> messages = [];
+    if (newCount > 0) messages.add("新增 $newCount 个");
+    if (updatedCount > 0) messages.add("更新 $updatedCount 个");
+    if (skippedCount > 0) messages.add("跳过 $skippedCount 个较旧版本");
+
+    if (messages.isEmpty) {
+      return "没有可导入的道具";
     }
-    return "成功导入 $count 个道具";
+    return "成功导入：${messages.join('，')}";
+  }
+
+  /// 更新现有道具
+  Future<void> _updateExistingGrenade(
+    Grenade existing,
+    Map<String, dynamic> item,
+    Map<String, List<int>> memoryImages,
+    String dataPath,
+  ) async {
+    // 更新基本信息
+    existing.title = item['title'];
+    existing.type = item['type'];
+    existing.team = item['team'];
+    existing.xRatio = (item['x'] as num).toDouble();
+    existing.yRatio = (item['y'] as num).toDouble();
+    existing.updatedAt = DateTime.fromMillisecondsSinceEpoch(item['updatedAt']);
+    existing.isNewImport = true;
+    await isar.grenades.put(existing);
+
+    // 删除旧的 Steps 和 Medias
+    await existing.steps.load();
+    for (final step in existing.steps) {
+      await step.medias.load();
+      // 删除旧媒体文件
+      for (final media in step.medias) {
+        final file = File(media.localPath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+        await isar.stepMedias.delete(media.id);
+      }
+      await isar.grenadeSteps.delete(step.id);
+    }
+    existing.steps.clear();
+    await existing.steps.save();
+
+    // 创建新的 Steps 和 Medias
+    final stepsList = item['steps'] as List;
+    for (var sItem in stepsList) {
+      final step = GrenadeStep(
+        title: sItem['title'] ?? "",
+        description: sItem['description'],
+        stepIndex: sItem['index'],
+      );
+      await isar.grenadeSteps.put(step);
+
+      step.grenade.value = existing;
+      await step.grenade.save();
+
+      existing.steps.add(step);
+
+      final mediasList = sItem['medias'] as List;
+      for (var mItem in mediasList) {
+        final fileName = mItem['path'];
+        if (memoryImages.containsKey(fileName)) {
+          final savePath = p.join(
+              dataPath, "${DateTime.now().millisecondsSinceEpoch}_$fileName");
+          await File(savePath).writeAsBytes(memoryImages[fileName]!);
+
+          final media = StepMedia(localPath: savePath, type: mItem['type']);
+          await isar.stepMedias.put(media);
+
+          media.step.value = step;
+          await media.step.save();
+
+          step.medias.add(media);
+        }
+      }
+      await step.medias.save();
+    }
+    await existing.steps.save();
+  }
+
+  /// 创建新道具
+  Future<void> _createNewGrenade(
+    Map<String, dynamic> item,
+    Map<String, List<int>> memoryImages,
+    String dataPath,
+    MapLayer layer,
+    String? uniqueId,
+  ) async {
+    final g = Grenade(
+      title: item['title'],
+      type: item['type'],
+      team: item['team'],
+      xRatio: (item['x'] as num).toDouble(),
+      yRatio: (item['y'] as num).toDouble(),
+      isNewImport: true,
+      uniqueId: uniqueId ?? const Uuid().v4(), // 如果没有 UUID，生成新的
+      created: DateTime.fromMillisecondsSinceEpoch(item['createdAt']),
+      updated: item['updatedAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(item['updatedAt'])
+          : DateTime.now(),
+    );
+    await isar.grenades.put(g);
+
+    // 设置关联
+    g.layer.value = layer;
+    await g.layer.save();
+
+    // 创建 Steps & Medias
+    final stepsList = item['steps'] as List;
+    for (var sItem in stepsList) {
+      final step = GrenadeStep(
+        title: sItem['title'] ?? "",
+        description: sItem['description'],
+        stepIndex: sItem['index'],
+      );
+      await isar.grenadeSteps.put(step);
+
+      step.grenade.value = g;
+      await step.grenade.save();
+
+      g.steps.add(step);
+
+      final mediasList = sItem['medias'] as List;
+      for (var mItem in mediasList) {
+        final fileName = mItem['path'];
+        if (memoryImages.containsKey(fileName)) {
+          final savePath = p.join(
+              dataPath, "${DateTime.now().millisecondsSinceEpoch}_$fileName");
+          await File(savePath).writeAsBytes(memoryImages[fileName]!);
+
+          final media = StepMedia(localPath: savePath, type: mItem['type']);
+          await isar.stepMedias.put(media);
+
+          media.step.value = step;
+          await media.step.save();
+
+          step.medias.add(media);
+        }
+      }
+      await step.medias.save();
+    }
+    await g.steps.save();
   }
 
   Future<void> _saveToFolder(BuildContext context, String sourcePath) async {

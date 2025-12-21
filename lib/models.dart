@@ -80,6 +80,10 @@ class Grenade {
   double xRatio;
   double yRatio;
 
+  /// 唯一标识符，用于跨设备同步和去重
+  @Index()
+  String? uniqueId;
+
   // 反向链接到 MapLayer
   @Backlink(to: 'grenades')
   final layer = IsarLink<MapLayer>();
@@ -95,6 +99,7 @@ class Grenade {
     this.isNewImport = false,
     required this.xRatio,
     required this.yRatio,
+    this.uniqueId,
     DateTime? created,
     DateTime? updated,
   })  : createdAt = created ?? DateTime.now(),

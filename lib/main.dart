@@ -16,6 +16,7 @@ import 'services/hotkey_service.dart';
 import 'services/window_service.dart';
 import 'services/overlay_state_service.dart';
 import 'services/update_service.dart';
+import 'services/migration_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // 全局服务实例（仅桌面端使用）
@@ -132,8 +133,15 @@ Future<void> _runMainWindow() async {
   );
   globalIsar = isar;
 
-  // 2. 检查并预填充地图数据
+  // 2.1 检查并预填充地图数据
   await _initMapData(isar);
+
+  // 2.2 执行数据迁移（为旧道具生成 UUID）
+  final migrationService = MigrationService(isar);
+  final migratedCount = await migrationService.migrateGrenadeUuids();
+  if (migratedCount > 0) {
+    print('已为 $migratedCount 个旧道具生成 UUID');
+  }
 
   // 2.5 初始化设置服务（所有平台）
   globalSettingsService = SettingsService();

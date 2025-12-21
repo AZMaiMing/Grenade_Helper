@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import '../models.dart';
 import '../providers.dart';
 import '../services/data_service.dart';
@@ -16,17 +14,11 @@ class ShareScreen extends ConsumerStatefulWidget {
 }
 
 class _ShareScreenState extends ConsumerState<ShareScreen> {
-  bool _isDragging = false;
-  bool _isImporting = false;
-
   // 缓存数据，避免在 build 中使用同步查询
   List<GameMap> _maps = [];
   List<Grenade> _grenades = [];
   DataService? _dataService;
   bool _isInitialized = false;
-
-  bool get _isDesktop =>
-      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
   @override
   void initState() {
@@ -54,13 +46,13 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     // 如果还未初始化完成，显示加载指示器
     if (!_isInitialized || _dataService == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("导入与分享")),
+        appBar: AppBar(title: const Text("分享")),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     // 不再在 build 中使用 findAllSync()，使用缓存的数据
-    Widget body = TabBarView(
+    final body = TabBarView(
       children: [
         _buildSingleGrenadeList(context, _grenades, _dataService!),
         _buildMapList(context, _maps, _dataService!),
@@ -68,111 +60,11 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       ],
     );
 
-    // 桌面端添加拖拽支持
-    if (_isDesktop) {
-      body = DropTarget(
-        onDragEntered: (_) => setState(() => _isDragging = true),
-        onDragExited: (_) => setState(() => _isDragging = false),
-        onDragDone: (details) async {
-          setState(() {
-            _isDragging = false;
-            _isImporting = true;
-          });
-
-          for (final file in details.files) {
-            if (file.path.toLowerCase().endsWith('.cs2pkg')) {
-              final result = await _dataService!.importFromPath(file.path);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(result),
-                    backgroundColor:
-                        result.contains("成功") ? Colors.green : Colors.orange,
-                  ),
-                );
-              }
-            }
-          }
-
-          // 导入完成后刷新数据
-          _loadData();
-          setState(() => _isImporting = false);
-        },
-        child: Stack(
-          children: [
-            body,
-            if (_isDragging)
-              Container(
-                color: Colors.black.withOpacity(0.7),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.file_download,
-                        size: 80,
-                        color: Colors.orange.withOpacity(0.8),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        '释放以导入 .cs2pkg 文件',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            if (_isImporting)
-              Container(
-                color: Colors.black.withOpacity(0.7),
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(color: Colors.orange),
-                      SizedBox(height: 16),
-                      Text(
-                        '正在导入...',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("导入与分享"),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.file_download, color: Colors.greenAccent),
-              tooltip: "导入数据",
-              onPressed: () async {
-                final result = await _dataService!.importData();
-                // 导入完成后刷新数据
-                _loadData();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(result),
-                      backgroundColor:
-                          result.contains("成功") ? Colors.green : Colors.orange,
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
+          title: const Text("分享"),
           bottom: const TabBar(
             indicatorColor: Colors.orange,
             labelColor: Colors.orange,
@@ -283,14 +175,12 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              _isDesktop
-                  ? "这将打包所有地图、所有楼层的所有道具及图片视频。\n💡 提示：您也可以直接拖拽 .cs2pkg 文件到此页面进行导入"
-                  : "这将打包所有地图、所有楼层的所有道具及图片视频，生成一个备份文件。",
+              "这将打包所有地图、所有楼层的所有道具及图片视频，生成一个备份文件。",
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey),
             ),
           ),
         ],
@@ -300,19 +190,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   Widget _buildEmptyWithDragHint(String message) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(message, style: const TextStyle(color: Colors.grey)),
-          if (_isDesktop) ...[
-            const SizedBox(height: 16),
-            Text(
-              "💡 拖拽 .cs2pkg 文件到此处可快速导入",
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-          ],
-        ],
-      ),
+      child: Text(message, style: const TextStyle(color: Colors.grey)),
     );
   }
 }

@@ -7,6 +7,7 @@ import '../main.dart';
 import 'map_screen.dart';
 import 'grenade_detail_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'import_screen.dart';
 import 'share_screen.dart';
 import 'settings_screen.dart';
 import 'about_screen.dart';
@@ -115,8 +116,17 @@ class HomeScreen extends ConsumerWidget {
               ],
             )),
             ListTile(
+              leading: const Icon(Icons.file_download),
+              title: const Text("导入"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ImportScreen()));
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.share),
-              title: const Text("分享 / 导入"),
+              title: const Text("分享"),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,

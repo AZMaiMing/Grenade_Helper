@@ -295,8 +295,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 _LinkItem(
                   icon: Icons.volunteer_activism,
                   text: '前往爱发电支持',
-                  onTap: () => _launchUrl(
-                      'https://afdian.com/a/Invis1ble'), // TODO: 替换为你的爱发电链接
+                  onTap: () => _launchUrl('https://afdian.com/a/Invis1ble'),
                 ),
               ],
             ),
