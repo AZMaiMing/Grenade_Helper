@@ -144,3 +144,26 @@ class StepMedia {
     required this.type,
   });
 }
+
+/// 导入历史记录
+@collection
+class ImportHistory {
+  Id id = Isar.autoIncrement;
+
+  String fileName; // 导入的文件名
+  DateTime importedAt; // 导入时间
+  int newCount; // 新增数量
+  int updatedCount; // 更新数量
+  int skippedCount; // 跳过数量
+
+  // 关联导入的道具
+  final grenades = IsarLinks<Grenade>();
+
+  ImportHistory({
+    required this.fileName,
+    required this.importedAt,
+    this.newCount = 0,
+    this.updatedCount = 0,
+    this.skippedCount = 0,
+  });
+}

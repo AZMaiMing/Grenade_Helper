@@ -103,47 +103,56 @@ class DataService {
     encoder.close();
     if (!context.mounted) return;
 
-    // 弹出底部菜单
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
-        height: 200,
-        decoration: const BoxDecoration(
-          color: Color(0xFF2A2D33),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    // 根据平台显示不同的分享选项
+    final isDesktop =
+        Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+
+    if (isDesktop) {
+      // 桌面端：直接显示另存为对话框，支持自定义文件名
+      await _saveToFolderWithCustomName(context, zipPath);
+    } else {
+      // 移动端：弹出底部菜单
+      showModalBottomSheet(
+        context: context,
+        builder: (ctx) => Container(
+          padding: const EdgeInsets.all(20),
+          height: 200,
+          decoration: const BoxDecoration(
+            color: Color(0xFF2A2D33),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const Text("选择导出方式",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.share, color: Colors.blueAccent),
+                title: const Text("系统分享 (微信/QQ)",
+                    style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Share.shareXFiles([XFile(zipPath)], text: "CS2 道具数据分享");
+                },
+              ),
+              ListTile(
+                leading:
+                    const Icon(Icons.folder_open, color: Colors.orangeAccent),
+                title:
+                    const Text("保存到文件夹", style: TextStyle(color: Colors.white)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _saveToFolder(context, zipPath);
+                },
+              ),
+            ],
+          ),
         ),
-        child: Column(
-          children: [
-            const Text("选择导出方式",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.share, color: Colors.blueAccent),
-              title: const Text("系统分享 (微信/QQ)",
-                  style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(ctx);
-                Share.shareXFiles([XFile(zipPath)], text: "CS2 道具数据分享");
-              },
-            ),
-            ListTile(
-              leading:
-                  const Icon(Icons.folder_open, color: Colors.orangeAccent),
-              title:
-                  const Text("保存到手机文件夹", style: TextStyle(color: Colors.white)),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _saveToFolder(context, zipPath);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+      );
+    }
   }
 
   // --- 导入 ---
@@ -165,6 +174,7 @@ class DataService {
     }
 
     final file = File(filePath);
+    final importFileName = p.basename(filePath);
 
     // 使用当前 isar 实例的目录作为数据存储目录
     // 这样可以避免异步调用 SharedPreferences 可能导致的问题
@@ -194,6 +204,7 @@ class DataService {
     int newCount = 0;
     int updatedCount = 0;
     int skippedCount = 0;
+    final List<Grenade> importedGrenades = []; // 收集导入的道具
 
     await isar.writeTxn(() async {
       for (var item in jsonData) {
@@ -253,6 +264,7 @@ class DataService {
             // 导入的更新，更新现有道具
             await _updateExistingGrenade(
                 existing, item, memoryImages, dataPath);
+            importedGrenades.add(existing); // 记录更新的道具
             updatedCount++;
           } else {
             // 导入的更旧，跳过
@@ -260,10 +272,27 @@ class DataService {
           }
         } else {
           // 创建新道具
-          await _createNewGrenade(
+          final newGrenade = await _createNewGrenade(
               item, memoryImages, dataPath, layer, importedUniqueId);
+          importedGrenades.add(newGrenade); // 记录新增的道具
           newCount++;
         }
+      }
+
+      // 4. 记录导入历史（只有成功导入时才记录）
+      if (importedGrenades.isNotEmpty) {
+        final history = ImportHistory(
+          fileName: importFileName,
+          importedAt: DateTime.now(),
+          newCount: newCount,
+          updatedCount: updatedCount,
+          skippedCount: skippedCount,
+        );
+        await isar.importHistorys.put(history);
+
+        // 关联导入的道具
+        history.grenades.addAll(importedGrenades);
+        await history.grenades.save();
       }
     });
 
@@ -351,7 +380,7 @@ class DataService {
   }
 
   /// 创建新道具
-  Future<void> _createNewGrenade(
+  Future<Grenade> _createNewGrenade(
     Map<String, dynamic> item,
     Map<String, List<int>> memoryImages,
     String dataPath,
@@ -366,7 +395,9 @@ class DataService {
       yRatio: (item['y'] as num).toDouble(),
       isNewImport: true,
       uniqueId: uniqueId ?? const Uuid().v4(), // 如果没有 UUID，生成新的
-      created: DateTime.fromMillisecondsSinceEpoch(item['createdAt']),
+      created: item['createdAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(item['createdAt'])
+          : DateTime.now(),
       updated: item['updatedAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(item['updatedAt'])
           : DateTime.now(),
@@ -412,6 +443,7 @@ class DataService {
       await step.medias.save();
     }
     await g.steps.save();
+    return g; // 返回创建的道具
   }
 
   Future<void> _saveToFolder(BuildContext context, String sourcePath) async {
@@ -423,6 +455,82 @@ class DataService {
     try {
       final fileName =
           "cs2_tactics_backup_${DateTime.now().millisecondsSinceEpoch}.cs2pkg";
+      final destination = p.join(outputDirectory, fileName);
+
+      final sourceFile = File(sourcePath);
+      await sourceFile.copy(destination);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("文件已保存至:\n$destination"),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
+        ));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("保存失败: $e"), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  /// 桌面端另存为对话框，支持自定义文件名
+  Future<void> _saveToFolderWithCustomName(
+      BuildContext context, String sourcePath) async {
+    // 生成默认文件名
+    final defaultFileName =
+        "cs2_tactics_${DateTime.now().year}${DateTime.now().month.toString().padLeft(2, '0')}${DateTime.now().day.toString().padLeft(2, '0')}";
+
+    // 显示文件名输入对话框
+    final fileNameController = TextEditingController(text: defaultFileName);
+    final customFileName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("导出文件"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("请输入文件名："),
+            const SizedBox(height: 16),
+            TextField(
+              controller: fileNameController,
+              decoration: const InputDecoration(
+                suffixText: ".cs2pkg",
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("取消"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, fileNameController.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("选择位置"),
+          ),
+        ],
+      ),
+    );
+
+    if (customFileName == null || customFileName.isEmpty) return;
+    if (!context.mounted) return;
+
+    // 选择保存目录
+    String? outputDirectory =
+        await FilePicker.platform.getDirectoryPath(dialogTitle: "请选择保存位置");
+
+    if (outputDirectory == null) return;
+
+    try {
+      final fileName = "$customFileName.cs2pkg";
       final destination = p.join(outputDirectory, fileName);
 
       final sourceFile = File(sourcePath);

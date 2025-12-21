@@ -4480,3 +4480,929 @@ extension StepMediaQueryProperty
     });
   }
 }
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+extension GetImportHistoryCollection on Isar {
+  IsarCollection<ImportHistory> get importHistorys => this.collection();
+}
+
+const ImportHistorySchema = CollectionSchema(
+  name: r'ImportHistory',
+  id: -7648999102201566242,
+  properties: {
+    r'fileName': PropertySchema(
+      id: 0,
+      name: r'fileName',
+      type: IsarType.string,
+    ),
+    r'importedAt': PropertySchema(
+      id: 1,
+      name: r'importedAt',
+      type: IsarType.dateTime,
+    ),
+    r'newCount': PropertySchema(
+      id: 2,
+      name: r'newCount',
+      type: IsarType.long,
+    ),
+    r'skippedCount': PropertySchema(
+      id: 3,
+      name: r'skippedCount',
+      type: IsarType.long,
+    ),
+    r'updatedCount': PropertySchema(
+      id: 4,
+      name: r'updatedCount',
+      type: IsarType.long,
+    )
+  },
+  estimateSize: _importHistoryEstimateSize,
+  serialize: _importHistorySerialize,
+  deserialize: _importHistoryDeserialize,
+  deserializeProp: _importHistoryDeserializeProp,
+  idName: r'id',
+  indexes: {},
+  links: {
+    r'grenades': LinkSchema(
+      id: -1226886671672981149,
+      name: r'grenades',
+      target: r'Grenade',
+      single: false,
+    )
+  },
+  embeddedSchemas: {},
+  getId: _importHistoryGetId,
+  getLinks: _importHistoryGetLinks,
+  attach: _importHistoryAttach,
+  version: '3.3.0',
+);
+
+int _importHistoryEstimateSize(
+  ImportHistory object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.fileName.length * 3;
+  return bytesCount;
+}
+
+void _importHistorySerialize(
+  ImportHistory object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeString(offsets[0], object.fileName);
+  writer.writeDateTime(offsets[1], object.importedAt);
+  writer.writeLong(offsets[2], object.newCount);
+  writer.writeLong(offsets[3], object.skippedCount);
+  writer.writeLong(offsets[4], object.updatedCount);
+}
+
+ImportHistory _importHistoryDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = ImportHistory(
+    fileName: reader.readString(offsets[0]),
+    importedAt: reader.readDateTime(offsets[1]),
+    newCount: reader.readLongOrNull(offsets[2]) ?? 0,
+    skippedCount: reader.readLongOrNull(offsets[3]) ?? 0,
+    updatedCount: reader.readLongOrNull(offsets[4]) ?? 0,
+  );
+  object.id = id;
+  return object;
+}
+
+P _importHistoryDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readString(offset)) as P;
+    case 1:
+      return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    case 3:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    case 4:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+Id _importHistoryGetId(ImportHistory object) {
+  return object.id;
+}
+
+List<IsarLinkBase<dynamic>> _importHistoryGetLinks(ImportHistory object) {
+  return [object.grenades];
+}
+
+void _importHistoryAttach(
+    IsarCollection<dynamic> col, Id id, ImportHistory object) {
+  object.id = id;
+  object.grenades.attach(col, col.isar.collection<Grenade>(), r'grenades', id);
+}
+
+extension ImportHistoryQueryWhereSort
+    on QueryBuilder<ImportHistory, ImportHistory, QWhere> {
+  QueryBuilder<ImportHistory, ImportHistory, QAfterWhere> anyId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+}
+
+extension ImportHistoryQueryWhere
+    on QueryBuilder<ImportHistory, ImportHistory, QWhereClause> {
+  QueryBuilder<ImportHistory, ImportHistory, QAfterWhereClause> idEqualTo(
+      Id id) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterWhereClause> idNotEqualTo(
+      Id id) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            )
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
+            )
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterWhereClause> idGreaterThan(
+      Id id,
+      {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.greaterThan(lower: id, includeLower: include),
+      );
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterWhereClause> idLessThan(
+      Id id,
+      {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.lessThan(upper: id, includeUpper: include),
+      );
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterWhereClause> idBetween(
+    Id lowerId,
+    Id upperId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+}
+
+extension ImportHistoryQueryFilter
+    on QueryBuilder<ImportHistory, ImportHistory, QFilterCondition> {
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fileName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fileName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fileName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fileName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'fileName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'fileName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'fileName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'fileName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fileName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      fileNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'fileName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition> idEqualTo(
+      Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition> idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition> idBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      importedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'importedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      importedAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'importedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      importedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'importedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      importedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'importedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      newCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'newCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      newCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'newCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      newCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'newCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      newCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'newCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      skippedCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'skippedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      skippedCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'skippedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      skippedCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'skippedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      skippedCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'skippedCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      updatedCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      updatedCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      updatedCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      updatedCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+}
+
+extension ImportHistoryQueryObject
+    on QueryBuilder<ImportHistory, ImportHistory, QFilterCondition> {}
+
+extension ImportHistoryQueryLinks
+    on QueryBuilder<ImportHistory, ImportHistory, QFilterCondition> {
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition> grenades(
+      FilterQuery<Grenade> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'grenades');
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      grenadesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'grenades', length, true, length, true);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      grenadesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'grenades', 0, true, 0, true);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      grenadesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'grenades', 0, false, 999999, true);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      grenadesLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'grenades', 0, true, length, include);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      grenadesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'grenades', length, include, 999999, true);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterFilterCondition>
+      grenadesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(
+          r'grenades', lower, includeLower, upper, includeUpper);
+    });
+  }
+}
+
+extension ImportHistoryQuerySortBy
+    on QueryBuilder<ImportHistory, ImportHistory, QSortBy> {
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> sortByFileName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      sortByFileNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> sortByImportedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'importedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      sortByImportedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'importedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> sortByNewCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'newCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      sortByNewCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'newCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      sortBySkippedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'skippedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      sortBySkippedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'skippedCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      sortByUpdatedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      sortByUpdatedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedCount', Sort.desc);
+    });
+  }
+}
+
+extension ImportHistoryQuerySortThenBy
+    on QueryBuilder<ImportHistory, ImportHistory, QSortThenBy> {
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> thenByFileName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      thenByFileNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> thenById() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> thenByIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> thenByImportedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'importedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      thenByImportedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'importedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy> thenByNewCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'newCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      thenByNewCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'newCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      thenBySkippedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'skippedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      thenBySkippedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'skippedCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      thenByUpdatedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QAfterSortBy>
+      thenByUpdatedCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedCount', Sort.desc);
+    });
+  }
+}
+
+extension ImportHistoryQueryWhereDistinct
+    on QueryBuilder<ImportHistory, ImportHistory, QDistinct> {
+  QueryBuilder<ImportHistory, ImportHistory, QDistinct> distinctByFileName(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fileName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QDistinct> distinctByImportedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'importedAt');
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QDistinct> distinctByNewCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'newCount');
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QDistinct>
+      distinctBySkippedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'skippedCount');
+    });
+  }
+
+  QueryBuilder<ImportHistory, ImportHistory, QDistinct>
+      distinctByUpdatedCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedCount');
+    });
+  }
+}
+
+extension ImportHistoryQueryProperty
+    on QueryBuilder<ImportHistory, ImportHistory, QQueryProperty> {
+  QueryBuilder<ImportHistory, int, QQueryOperations> idProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<ImportHistory, String, QQueryOperations> fileNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fileName');
+    });
+  }
+
+  QueryBuilder<ImportHistory, DateTime, QQueryOperations> importedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'importedAt');
+    });
+  }
+
+  QueryBuilder<ImportHistory, int, QQueryOperations> newCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'newCount');
+    });
+  }
+
+  QueryBuilder<ImportHistory, int, QQueryOperations> skippedCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'skippedCount');
+    });
+  }
+
+  QueryBuilder<ImportHistory, int, QQueryOperations> updatedCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedCount');
+    });
+  }
+}

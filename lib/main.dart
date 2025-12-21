@@ -127,7 +127,8 @@ Future<void> _runMainWindow() async {
       MapLayerSchema,
       GrenadeSchema,
       GrenadeStepSchema,
-      StepMediaSchema
+      StepMediaSchema,
+      ImportHistorySchema
     ],
     directory: dataPath,
   );
@@ -266,7 +267,8 @@ Future<void> _runOverlayWindow(
       MapLayerSchema,
       GrenadeSchema,
       GrenadeStepSchema,
-      StepMediaSchema
+      StepMediaSchema,
+      ImportHistorySchema
     ],
     directory: dataPath,
     // 使用默认实例名，与主窗口共享数据库

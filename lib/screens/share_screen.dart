@@ -138,7 +138,10 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
             trailing: ElevatedButton.icon(
               icon: const Icon(Icons.folder_open, size: 16),
               label: const Text("导出"),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
               onPressed: () async {
                 if (count == 0) return;
                 await service.exportData(context, scopeType: 1, singleMap: map);
