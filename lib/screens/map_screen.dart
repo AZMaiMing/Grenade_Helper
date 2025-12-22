@@ -11,6 +11,7 @@ import '../providers.dart';
 import '../main.dart';
 import '../spawn_point_data.dart';
 import '../widgets/joystick_widget.dart';
+import '../services/data_service.dart';
 import 'grenade_detail_screen.dart';
 
 // --- 页面级状态管理 ---
@@ -793,10 +794,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     }
 
+    // 先删除所有媒体文件
+    for (final g in grenades) {
+      for (final step in g.steps) {
+        for (final media in step.medias) {
+          await DataService.deleteMediaFile(media.localPath);
+        }
+      }
+    }
+
     // 在单个事务中执行所有删除操作
     await isar.writeTxn(() async {
       for (final g in grenades) {
-        // 删除所有媒体
+        // 删除所有媒体记录
         for (final step in g.steps) {
           await isar.stepMedias
               .deleteAll(step.medias.map((m) => m.id).toList());

@@ -14,6 +14,25 @@ class DataService {
   final Isar isar;
   DataService(this.isar);
 
+  /// 删除媒体文件（静态方法，可在其他地方调用）
+  static Future<void> deleteMediaFile(String localPath) async {
+    try {
+      final file = File(localPath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      print('删除媒体文件失败: $e');
+    }
+  }
+
+  /// 批量删除媒体文件
+  static Future<void> deleteMediaFiles(List<String> paths) async {
+    for (final path in paths) {
+      await deleteMediaFile(path);
+    }
+  }
+
   // --- 导出 (分享) ---
 
   Future<void> exportData(BuildContext context,

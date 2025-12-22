@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models.dart';
 import '../providers.dart';
+import '../services/data_service.dart';
 import '../main.dart' show sendOverlayCommand;
 
 // --- 视频播放小组件 ---
@@ -219,7 +220,24 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                 TextButton(
                   onPressed: () async {
                     final isar = ref.read(isarProvider);
+
+                    // 先删除所有媒体文件
+                    await grenade!.steps.load();
+                    for (final step in grenade!.steps) {
+                      await step.medias.load();
+                      for (final media in step.medias) {
+                        await DataService.deleteMediaFile(media.localPath);
+                      }
+                    }
+
+                    // 删除数据库记录
                     await isar.writeTxn(() async {
+                      for (final step in grenade!.steps) {
+                        await isar.stepMedias
+                            .deleteAll(step.medias.map((m) => m.id).toList());
+                      }
+                      await isar.grenadeSteps
+                          .deleteAll(grenade!.steps.map((s) => s.id).toList());
                       await isar.grenades.delete(grenade!.id);
                     });
                     Navigator.pop(ctx);
@@ -1387,6 +1405,9 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              // 先删除实际文件
+              await DataService.deleteMediaFile(media.localPath);
+              // 再删除数据库记录
               final isar = ref.read(isarProvider);
               await isar.writeTxn(() async {
                 await isar.stepMedias.delete(media.id);
