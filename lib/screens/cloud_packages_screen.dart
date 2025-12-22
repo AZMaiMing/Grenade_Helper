@@ -188,9 +188,12 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
 
   Widget _buildPackageCard(CloudPackage pkg) {
     final isDownloading = _downloadingIds.contains(pkg.id);
-    final lastImported = _lastImportedDates[pkg.id];
-    final isUpToDate = lastImported == pkg.updated;
-    final hasUpdate = lastImported != null && !isUpToDate;
+    final lastImportedVersion = _lastImportedDates[pkg.id];
+    // 使用版本号比较
+    final isUpToDate = lastImportedVersion != null &&
+        CloudPackageService.compareVersion(lastImportedVersion, pkg.version) >=
+            0;
+    final hasUpdate = lastImportedVersion != null && !isUpToDate;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),

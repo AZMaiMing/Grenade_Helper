@@ -73,11 +73,11 @@ class CloudPackageService {
     final prefs = await SharedPreferences.getInstance();
     final lastImportedVersion = prefs.getString('$_lastImportedKey:$packageId');
     if (lastImportedVersion == null) return false; // 从未导入过
-    return _compareVersion(lastImportedVersion, version) >= 0;
+    return compareVersion(lastImportedVersion, version) >= 0;
   }
 
   /// 比较版本号，返回 1 表示 v1 > v2，0 表示相等，-1 表示 v1 < v2
-  static int _compareVersion(String v1, String v2) {
+  static int compareVersion(String v1, String v2) {
     final parts1 = v1.split('.').map((e) => int.tryParse(e) ?? 0).toList();
     final parts2 = v2.split('.').map((e) => int.tryParse(e) ?? 0).toList();
     final maxLen =
