@@ -35,10 +35,10 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
 
     final index = await CloudPackageService.fetchIndex();
     if (index != null) {
-      // 获取每个包的上次导入日期
+      // 获取每个包的上次导入版本
       for (final pkg in index.packages) {
         _lastImportedDates[pkg.id] =
-            await CloudPackageService.getLastImportedDate(pkg.id);
+            await CloudPackageService.getLastImportedVersion(pkg.id);
       }
       setState(() {
         _packages = index.packages;
@@ -68,9 +68,9 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
       final dataService = DataService(isar);
       final resultMsg = await dataService.importFromPath(filePath);
 
-      // 标记已导入
-      await CloudPackageService.markPackageImported(pkg.id, pkg.updated);
-      _lastImportedDates[pkg.id] = pkg.updated;
+      // 标记已导入（保存版本号）
+      await CloudPackageService.markPackageImported(pkg.id, pkg.version);
+      _lastImportedDates[pkg.id] = pkg.version;
 
       _showMessage(resultMsg);
     } catch (e) {
@@ -258,13 +258,9 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
                     children: [
                       _buildTag(Icons.person, pkg.author),
                       const SizedBox(width: 8),
-                      _buildTag(Icons.inventory_2, '${pkg.count}个'),
+                      _buildTag(Icons.tag, 'v${pkg.version}'),
                       const SizedBox(width: 8),
                       _buildTag(Icons.update, pkg.updated),
-                      if (pkg.size != null) ...[
-                        const SizedBox(width: 8),
-                        _buildTag(Icons.storage, pkg.size!),
-                      ],
                     ],
                   ),
                 ],

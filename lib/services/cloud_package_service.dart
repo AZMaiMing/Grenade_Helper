@@ -67,23 +67,39 @@ class CloudPackageService {
     return null;
   }
 
-  /// 检查包是否已导入过（基于最后修改日期）
+  /// 检查包是否需要更新（基于版本号）
   static Future<bool> isPackageUpToDate(
-      String packageId, String updated) async {
+      String packageId, String version) async {
     final prefs = await SharedPreferences.getInstance();
-    final lastImported = prefs.getString('$_lastImportedKey:$packageId');
-    return lastImported == updated;
+    final lastImportedVersion = prefs.getString('$_lastImportedKey:$packageId');
+    if (lastImportedVersion == null) return false; // 从未导入过
+    return _compareVersion(lastImportedVersion, version) >= 0;
   }
 
-  /// 标记包已导入
+  /// 比较版本号，返回 1 表示 v1 > v2，0 表示相等，-1 表示 v1 < v2
+  static int _compareVersion(String v1, String v2) {
+    final parts1 = v1.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final parts2 = v2.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final maxLen =
+        parts1.length > parts2.length ? parts1.length : parts2.length;
+    for (int i = 0; i < maxLen; i++) {
+      final p1 = i < parts1.length ? parts1[i] : 0;
+      final p2 = i < parts2.length ? parts2[i] : 0;
+      if (p1 > p2) return 1;
+      if (p1 < p2) return -1;
+    }
+    return 0;
+  }
+
+  /// 标记包已导入（保存版本号）
   static Future<void> markPackageImported(
-      String packageId, String updated) async {
+      String packageId, String version) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$_lastImportedKey:$packageId', updated);
+    await prefs.setString('$_lastImportedKey:$packageId', version);
   }
 
-  /// 获取包的上次导入日期
-  static Future<String?> getLastImportedDate(String packageId) async {
+  /// 获取包的上次导入版本
+  static Future<String?> getLastImportedVersion(String packageId) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('$_lastImportedKey:$packageId');
   }

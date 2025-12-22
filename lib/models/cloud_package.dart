@@ -5,10 +5,9 @@ class CloudPackage {
   final String description;
   final String author;
   final String? map; // null = 全图
-  final int count;
+  final String version; // 版本号，如 "1.0.0"
   final String updated; // 最后更新日期
   final String url; // 相对于仓库根目录的路径
-  final String? size;
 
   CloudPackage({
     required this.id,
@@ -16,10 +15,9 @@ class CloudPackage {
     required this.description,
     required this.author,
     this.map,
-    required this.count,
+    required this.version,
     required this.updated,
     required this.url,
-    this.size,
   });
 
   factory CloudPackage.fromJson(Map<String, dynamic> json) {
@@ -29,10 +27,9 @@ class CloudPackage {
       description: json['description'] as String? ?? '',
       author: json['author'] as String? ?? '未知',
       map: json['map'] as String?,
-      count: json['count'] as int? ?? 0,
+      version: json['version'] as String? ?? '1.0.0',
       updated: json['updated'] as String? ?? '',
       url: json['url'] as String,
-      size: json['size'] as String?,
     );
   }
 
@@ -42,10 +39,9 @@ class CloudPackage {
         'description': description,
         'author': author,
         'map': map,
-        'count': count,
+        'version': version,
         'updated': updated,
         'url': url,
-        'size': size,
       };
 }
 
