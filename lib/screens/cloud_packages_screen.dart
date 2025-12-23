@@ -105,6 +105,15 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
     }
   }
 
+  void _cancelDownload(CloudPackage pkg) {
+    CloudPackageService.cancelDownload(pkg.url);
+    setState(() {
+      _downloadingIds.remove(pkg.id);
+      _downloadProgress.remove(pkg.id);
+    });
+    _showMessage('已取消下载');
+  }
+
   void _showMessage(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
@@ -179,13 +188,13 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
           // 源切换按钮
           PopupMenuButton<bool>(
             icon: Icon(
-              CloudPackageService.isUsingGitee
-                  ? Icons.cloud
+              CloudPackageService.isUsingCDN
+                  ? Icons.speed
                   : Icons.cloud_outlined,
             ),
             tooltip: '切换下载源',
-            onSelected: (useGitee) {
-              CloudPackageService.switchSource(useGitee);
+            onSelected: (useCDN) {
+              CloudPackageService.switchSource(useCDN);
               _loadPackages();
             },
             itemBuilder: (context) => [
@@ -195,7 +204,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
                   children: [
                     Icon(
                       Icons.check,
-                      color: !CloudPackageService.isUsingGitee
+                      color: !CloudPackageService.isUsingCDN
                           ? Colors.green
                           : Colors.transparent,
                     ),
@@ -210,12 +219,12 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
                   children: [
                     Icon(
                       Icons.check,
-                      color: CloudPackageService.isUsingGitee
+                      color: CloudPackageService.isUsingCDN
                           ? Colors.green
                           : Colors.transparent,
                     ),
                     const SizedBox(width: 8),
-                    const Text('Gitee (国内加速)'),
+                    const Text('CDN 加速 (国内推荐)'),
                   ],
                 ),
               ),
@@ -389,25 +398,24 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
             // 下载/重新下载按钮
             if (isDownloading)
-              SizedBox(
-                width: 48,
-                height: 48,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: _downloadProgress[pkg.id] ?? 0,
-                      strokeWidth: 3,
-                      backgroundColor: Colors.grey.withOpacity(0.3),
-                    ),
-                    Text(
-                      '${((_downloadProgress[pkg.id] ?? 0) * 100).toInt()}%',
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                  ],
+              GestureDetector(
+                onTap: () => _cancelDownload(pkg),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: _downloadProgress[pkg.id] ?? 0,
+                        strokeWidth: 3,
+                        backgroundColor: Colors.grey.withOpacity(0.3),
+                      ),
+                      const Icon(Icons.close, size: 16, color: Colors.grey),
+                    ],
+                  ),
                 ),
               )
             else ...[

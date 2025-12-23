@@ -10,9 +10,9 @@ class CloudPackageService {
   // GitHub 源（主）
   static const String kGitHubBaseUrl =
       'https://raw.githubusercontent.com/Invis1ble-2/grenades_repo/main/';
-  // Gitee 镜像源（备用）
-  static const String kGiteeBaseUrl =
-      'https://gitee.com/Invis1ble-2/grenades_repo/raw/main/';
+  // ghproxy 加速源（国内推荐）
+  static const String kCDNBaseUrl =
+      'https://ghproxy.grenade-helper.top/https://raw.githubusercontent.com/Invis1ble-2/grenades_repo/main/';
 
   // 当前使用的源
   static String kRepoBaseUrl = kGitHubBaseUrl;
@@ -36,12 +36,21 @@ class CloudPackageService {
   }
 
   /// 切换源
-  static void switchSource(bool useGitee) {
-    kRepoBaseUrl = useGitee ? kGiteeBaseUrl : kGitHubBaseUrl;
+  static void switchSource(bool useCDN) {
+    kRepoBaseUrl = useCDN ? kCDNBaseUrl : kGitHubBaseUrl;
   }
 
-  /// 当前是否使用 Gitee
-  static bool get isUsingGitee => kRepoBaseUrl == kGiteeBaseUrl;
+  /// 当前是否使用 CDN
+  static bool get isUsingCDN => kRepoBaseUrl == kCDNBaseUrl;
+
+  // 存储正在下载的 client，用于取消
+  static final Map<String, http.Client> _activeClients = {};
+
+  /// 取消下载
+  static void cancelDownload(String url) {
+    final client = _activeClients.remove(url);
+    client?.close();
+  }
 
   /// 从 URL 下载 .cs2pkg 文件（带进度回调）
   /// [onProgress] 回调参数：(已下载字节数, 总字节数)
@@ -51,18 +60,31 @@ class CloudPackageService {
   }) async {
     // 如果是相对路径，拼接当前源
     final fullUrl = url.startsWith('http') ? url : '$kRepoBaseUrl$url';
-    return _downloadFromUrl(fullUrl, onProgress: onProgress);
+    return _downloadFromUrl(fullUrl, originalUrl: url, onProgress: onProgress);
   }
 
   static Future<String?> _downloadFromUrl(
     String url, {
+    String? originalUrl,
     void Function(int received, int total)? onProgress,
   }) async {
+    final trackingUrl = originalUrl ?? url;
+    http.Client? client;
     try {
+      print('正在下载: $url');
+
+      // 使用流式下载支持进度回调
       final request = http.Request('GET', Uri.parse(url));
-      final client = http.Client();
+      request.headers['User-Agent'] =
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+
+      client = http.Client();
+      _activeClients[trackingUrl] = client;
+
       final response =
-          await client.send(request).timeout(const Duration(seconds: 30));
+          await client.send(request).timeout(const Duration(seconds: 10));
+
+      print('响应状态码: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final contentLength = response.contentLength ?? 0;
@@ -81,10 +103,17 @@ class CloudPackageService {
         }
 
         await sink.close();
+        _activeClients.remove(trackingUrl);
+        client.close();
         return filePath;
+      } else {
+        print('下载失败，状态码: ${response.statusCode}');
       }
     } catch (e) {
       print('下载失败 ($url): $e');
+    } finally {
+      _activeClients.remove(trackingUrl);
+      client?.close();
     }
     return null;
   }
