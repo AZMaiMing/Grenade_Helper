@@ -386,7 +386,8 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       await isar.grenades.put(grenade!);
     });
     await _markAsLocallyEdited(); // 标记为本地编辑
-    _loadData();
+    _loadData(resetTitle: false);
+    sendOverlayCommand('reload_data');
   }
 
   Future<void> _pickMediaForNewStep(
@@ -423,6 +424,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       });
       await _markAsLocallyEdited(); // 添加媒体算实质性编辑
       setState(() {});
+      sendOverlayCommand('reload_data');
     }
   }
 
@@ -787,7 +789,8 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                 });
                 await _markAsLocallyEdited(); // 编辑步骤文字算实质性编辑
                 Navigator.pop(ctx);
-                _loadData();
+                _loadData(resetTitle: false);
+                sendOverlayCommand('reload_data');
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text("步骤已更新"),
                     duration: Duration(milliseconds: 800)));
@@ -1413,7 +1416,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                 await isar.stepMedias.delete(media.id);
               });
               await _markAsLocallyEdited();
-              _loadData();
+              _loadData(resetTitle: false);
               sendOverlayCommand('reload_data');
             },
             child: const Text('删除', style: TextStyle(color: Colors.red)),
@@ -1471,7 +1474,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     });
 
     await _markAsLocallyEdited();
-    _loadData();
+    _loadData(resetTitle: false);
     sendOverlayCommand('reload_data');
   }
 
@@ -1542,7 +1545,9 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                       await isar.writeTxn(() async {
                         await isar.grenadeSteps.delete(step.id);
                       });
-                      _loadData();
+                      await _markAsLocallyEdited();
+                      _loadData(resetTitle: false);
+                      sendOverlayCommand('reload_data');
                     },
                   ),
                 ]
