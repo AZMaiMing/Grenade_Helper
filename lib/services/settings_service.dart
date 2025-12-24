@@ -268,6 +268,15 @@ class SettingsService {
   Future<void> setThemeMode(int value) async =>
       await _prefs?.setInt(_keyThemeMode, value);
 
+  // 节日主题开关
+  static const String _keySeasonalThemeEnabled = 'seasonal_theme_enabled';
+
+  /// 节日主题是否启用
+  bool getSeasonalThemeEnabled() =>
+      _prefs?.getBool(_keySeasonalThemeEnabled) ?? true;
+  Future<void> setSeasonalThemeEnabled(bool value) async =>
+      await _prefs?.setBool(_keySeasonalThemeEnabled, value);
+
   /// 检查是否是桌面平台
   static bool get isDesktop =>
       Platform.isWindows || Platform.isMacOS || Platform.isLinux;

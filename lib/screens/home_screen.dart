@@ -4,6 +4,7 @@ import 'package:isar_community/isar.dart';
 import '../models.dart';
 import '../providers.dart';
 import '../main.dart';
+import '../widgets/snowfall_effect.dart';
 import 'map_screen.dart';
 import 'grenade_detail_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -71,8 +72,9 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isar = ref.watch(isarProvider);
     final maps = isar.gameMaps.where().findAllSync();
+    final seasonalTheme = ref.watch(activeSeasonalThemeProvider);
 
-    return Scaffold(
+    Widget body = Scaffold(
       appBar: AppBar(
         title: GestureDetector(
           onTap: () =>
@@ -110,9 +112,26 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text("Grenade Helper",
-                    style:
-                        TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (seasonalTheme != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(seasonalTheme.emoji,
+                            style: const TextStyle(fontSize: 24)),
+                      ),
+                    const Text("Grenade Helper",
+                        style: TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.bold)),
+                    if (seasonalTheme != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(seasonalTheme.emoji,
+                            style: const TextStyle(fontSize: 24)),
+                      ),
+                  ],
+                ),
               ],
             )),
             ListTile(
@@ -212,5 +231,15 @@ class HomeScreen extends ConsumerWidget {
         },
       ),
     );
+
+    // 如果有激活的节日主题，添加装饰效果
+    if (seasonalTheme != null) {
+      body = SnowfallEffect(
+        snowflakeCount: 25,
+        child: body,
+      );
+    }
+
+    return body;
   }
 }

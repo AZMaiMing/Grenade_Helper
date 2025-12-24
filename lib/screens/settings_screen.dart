@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/settings_service.dart';
+import '../services/seasonal_theme_service.dart';
 import '../providers.dart';
 import '../main.dart' show sendOverlayCommand;
 
@@ -139,6 +140,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
             ),
+            // 节日主题开关（仅在有激活节日主题时显示）
+            if (SeasonalThemeManager.getActiveTheme() != null)
+              _buildSeasonalThemeToggle(),
           ],
         ),
         const SizedBox(height: 16),
@@ -352,6 +356,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
             ),
+            // 节日主题开关（仅在有激活节日主题时显示）
+            if (SeasonalThemeManager.getActiveTheme() != null)
+              _buildSeasonalThemeToggle(),
             SwitchListTile(
               title: const Text('关闭按钮最小化到托盘'),
               subtitle: const Text('关闭时隐藏到系统托盘，而非退出程序'),
@@ -573,6 +580,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     }
+  }
+
+  /// 构建节日主题开关
+  Widget _buildSeasonalThemeToggle() {
+    final seasonalTheme = SeasonalThemeManager.getActiveTheme();
+    if (seasonalTheme == null) return const SizedBox.shrink();
+
+    final enabled = ref.watch(seasonalThemeEnabledProvider);
+
+    return SwitchListTile(
+      title: Row(
+        children: [
+          Text(seasonalTheme.emoji, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          Text('${seasonalTheme.name}主题'),
+        ],
+      ),
+      subtitle: Text(enabled ? '享受节日氛围吧！' : '已关闭节日装饰'),
+      value: enabled,
+      onChanged: (value) async {
+        ref.read(seasonalThemeEnabledProvider.notifier).state = value;
+        if (widget.settingsService != null) {
+          await widget.settingsService!.setSeasonalThemeEnabled(value);
+        }
+      },
+      activeColor: Theme.of(context).colorScheme.primary,
+    );
   }
 
   Widget _buildSection({

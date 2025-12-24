@@ -17,6 +17,7 @@ import 'services/window_service.dart';
 import 'services/overlay_state_service.dart';
 import 'services/update_service.dart';
 import 'services/migration_service.dart';
+import 'themes/christmas_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // 全局服务实例（仅桌面端使用）
@@ -214,6 +215,9 @@ Future<void> _runMainWindow() async {
       sendOverlayCommand('scroll_down');
     });
   }
+
+  // 初始化节日主题系统
+  initializeSeasonalThemes();
 
   runApp(
     // 4. 注入 Riverpod 和 Isar
@@ -743,6 +747,9 @@ class _MainAppState extends ConsumerState<MainApp> {
     if (globalSettingsService != null) {
       final savedTheme = globalSettingsService!.getThemeMode();
       ref.read(themeModeProvider.notifier).state = savedTheme;
+      // 加载节日主题开关设置
+      final seasonalEnabled = globalSettingsService!.getSeasonalThemeEnabled();
+      ref.read(seasonalThemeEnabledProvider.notifier).state = seasonalEnabled;
     }
   }
 
@@ -1023,59 +1030,91 @@ class _MainAppState extends ConsumerState<MainApp> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
+    final seasonalTheme = ref.watch(activeSeasonalThemeProvider);
+
+    // 基础深色主题
+    ThemeData baseDarkTheme = ThemeData(
+      brightness: Brightness.dark,
+      primarySwatch: Colors.orange,
+      colorScheme: ColorScheme.dark(
+        primary: Colors.orange,
+        secondary: Colors.orangeAccent,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF1B1E23),
+      useMaterial3: true,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF141619),
+        elevation: 0,
+      ),
+    );
+
+    // 基础浅色主题
+    ThemeData baseLightTheme = ThemeData(
+      brightness: Brightness.light,
+      primarySwatch: Colors.blue,
+      colorScheme: ColorScheme.light(
+        primary: Colors.blue,
+        secondary: Colors.blueAccent,
+        surface: const Color.fromARGB(255, 248, 239, 225),
+        onSurface: const Color(0xFF1A1A1A),
+      ),
+      scaffoldBackgroundColor: const Color.fromARGB(255, 248, 240, 227),
+      cardColor: const Color.fromARGB(255, 248, 240, 227),
+      useMaterial3: true,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color.fromARGB(255, 255, 239, 213),
+        foregroundColor: Color.fromARGB(255, 5, 5, 5),
+        elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFF333333)),
+      ),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Color(0xFF1A1A1A)),
+        bodyMedium: TextStyle(color: Color(0xFF333333)),
+        bodySmall: TextStyle(color: Color(0xFF555555)),
+        titleLarge:
+            TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: Color(0xFF1A1A1A)),
+        labelLarge: TextStyle(color: Color(0xFF1A1A1A)),
+      ),
+      iconTheme: const IconThemeData(color: Color(0xFF333333)),
+      dividerColor: const Color(0xFFE0DDD8),
+    );
+
+    // 如果有激活的节日主题，应用节日配色
+    ThemeData darkTheme = baseDarkTheme;
+    ThemeData lightTheme = baseLightTheme;
+
+    if (seasonalTheme != null) {
+      final darkColorScheme = seasonalTheme.getDarkColorScheme();
+      final lightColorScheme = seasonalTheme.getLightColorScheme();
+
+      darkTheme = baseDarkTheme.copyWith(
+        colorScheme: darkColorScheme,
+        primaryColor: darkColorScheme.primary,
+        scaffoldBackgroundColor: darkColorScheme.surface,
+        appBarTheme: baseDarkTheme.appBarTheme.copyWith(
+          backgroundColor: darkColorScheme.surface,
+        ),
+      );
+
+      lightTheme = baseLightTheme.copyWith(
+        colorScheme: lightColorScheme,
+        primaryColor: lightColorScheme.primary,
+        scaffoldBackgroundColor: lightColorScheme.surface,
+        appBarTheme: baseLightTheme.appBarTheme.copyWith(
+          backgroundColor: lightColorScheme.primaryContainer,
+          foregroundColor: lightColorScheme.onPrimaryContainer,
+        ),
+      );
+    }
 
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: 'Grenade Helper',
       debugShowCheckedModeBanner: false,
       themeMode: intToThemeMode(themeMode),
-      // 深色主题
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.orange,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.orange,
-          secondary: Colors.orangeAccent,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF1B1E23),
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF141619),
-          elevation: 0,
-        ),
-      ),
-      // 浅色主题 - 使用柔和的奶白色，增强文字对比度
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primarySwatch: Colors.blue,
-        colorScheme: ColorScheme.light(
-          primary: Colors.blue,
-          secondary: Colors.blueAccent,
-          surface: const Color.fromARGB(255, 248, 239, 225), // 奶白色卡片背景
-          onSurface: const Color(0xFF1A1A1A), // 深色文字
-        ),
-        scaffoldBackgroundColor:
-            const Color.fromARGB(255, 248, 240, 227), // 柔和的米色背景
-        cardColor: const Color.fromARGB(255, 248, 240, 227), // 奶白色卡片
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color.fromARGB(255, 255, 239, 213), // 奶白色 AppBar
-          foregroundColor: Color.fromARGB(255, 5, 5, 5), // 深色标题文字
-          elevation: 0,
-          iconTheme: IconThemeData(color: Color(0xFF333333)),
-        ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Color(0xFF1A1A1A)),
-          bodyMedium: TextStyle(color: Color(0xFF333333)),
-          bodySmall: TextStyle(color: Color(0xFF555555)),
-          titleLarge:
-              TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.bold),
-          titleMedium: TextStyle(color: Color(0xFF1A1A1A)),
-          labelLarge: TextStyle(color: Color(0xFF1A1A1A)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFF333333)),
-        dividerColor: const Color(0xFFE0DDD8),
-      ),
+      darkTheme: darkTheme,
+      theme: lightTheme,
       home: const HomeScreen(),
     );
   }
