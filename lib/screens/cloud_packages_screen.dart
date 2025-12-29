@@ -306,7 +306,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
                     label: Text(_getMapDisplayName(map)),
                     selected: isSelected,
                     onSelected: (_) => setState(() => _selectedMap = map),
-                    selectedColor: Colors.orange.withOpacity(0.3),
+                    selectedColor: Colors.orange.withValues(alpha: 0.3),
                     checkmarkColor: Colors.orange,
                   ),
                 );
@@ -348,7 +348,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.2),
+                color: Colors.orange.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: pkg.map != null
@@ -430,7 +430,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
                       CircularProgressIndicator(
                         value: _downloadProgress[pkg.id] ?? 0,
                         strokeWidth: 3,
-                        backgroundColor: Colors.grey.withOpacity(0.3),
+                        backgroundColor: Colors.grey.withValues(alpha: 0.3),
                       ),
                       const Icon(Icons.close, size: 16, color: Colors.grey),
                     ],

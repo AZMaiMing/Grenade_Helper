@@ -197,7 +197,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
             Icon(
               Icons.file_download,
               size: 100,
-              color: Colors.greenAccent.withOpacity(0.8),
+              color: Colors.greenAccent.withValues(alpha: 0.8),
             ),
             const SizedBox(height: 24),
             const Text(
@@ -333,7 +333,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
             body,
             if (_isDragging)
               Container(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -341,7 +341,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
                       Icon(
                         Icons.file_download,
                         size: 80,
-                        color: Colors.orange.withOpacity(0.8),
+                        color: Colors.orange.withValues(alpha: 0.8),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -358,7 +358,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
               ),
             if (_isImporting)
               Container(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 child: const Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -381,7 +381,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
         children: [
           body,
           Container(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withValues(alpha: 0.7),
             child: const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -431,7 +431,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.folder_zip, color: Colors.green),
@@ -486,7 +486,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

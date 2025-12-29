@@ -1224,11 +1224,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
             color:
-                isSelected ? activeColor.withOpacity(0.2) : Colors.transparent,
+                isSelected ? activeColor.withValues(alpha: 0.2) : Colors.transparent,
             border: Border.all(
                 color: isSelected
                     ? activeColor
-                    : unselectedColor.withOpacity(0.4)),
+                    : unselectedColor.withValues(alpha: 0.4)),
             borderRadius: BorderRadius.circular(8)),
         child: Row(children: [
           Icon(icon,
@@ -1253,9 +1253,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-            color: isSelected ? color.withOpacity(0.2) : Colors.transparent,
+            color: isSelected ? color.withValues(alpha: 0.2) : Colors.transparent,
             border: Border.all(
-                color: isSelected ? color : unselectedColor.withOpacity(0.4)),
+                color: isSelected ? color : unselectedColor.withValues(alpha: 0.4)),
             borderRadius: BorderRadius.circular(20)),
         child: Text(label,
             style: TextStyle(
@@ -1451,13 +1451,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               width: 16,
               height: 16,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.5),
+                color: color.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(3),
                 border:
-                    Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                    Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 2,
                     offset: const Offset(0, 1),
                   )
@@ -1467,7 +1467,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 child: Text(
                   '${spawn.id}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1503,7 +1503,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.3),
+                    color: color.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Center(
@@ -1563,7 +1563,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
@@ -1592,9 +1592,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           child: Container(
             width: 20,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1D21).withOpacity(0.9),
+              color: const Color(0xFF1A1D21).withValues(alpha: 0.9),
               border: Border(
-                  left: BorderSide(color: Colors.white.withOpacity(0.1))),
+                  left: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
             ),
             child: Center(
               child: Icon(
@@ -1612,7 +1612,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Container(
             width: 75,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1D21).withOpacity(0.9),
+              color: const Color(0xFF1A1D21).withValues(alpha: 0.9),
             ),
             child: Column(
               children: [
@@ -1621,7 +1621,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   padding:
                       const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                   ),
                   child: const Row(
                     children: [
@@ -1650,7 +1650,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: Colors.blueAccent.withOpacity(0.8),
+                                color: Colors.blueAccent.withValues(alpha: 0.8),
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -1675,7 +1675,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: Colors.amber.withOpacity(0.8),
+                                color: Colors.amber.withValues(alpha: 0.8),
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
@@ -1713,9 +1713,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           margin: const EdgeInsets.only(bottom: 3),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: color.withOpacity(0.3), width: 1),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1724,7 +1724,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.6),
+                  color: color.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Center(
@@ -1829,7 +1829,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                         color:
-                            Theme.of(context).dividerColor.withOpacity(0.1))),
+                            Theme.of(context).dividerColor.withValues(alpha: 0.1))),
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Row(
                   children: [
@@ -1846,7 +1846,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       width: 1,
                       height: 16,
-                      color: Theme.of(context).dividerColor.withOpacity(0.3),
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
                     ),
                     Icon(Icons.search,
                         color: Theme.of(context).hintColor, size: 16),
@@ -1939,9 +1939,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   scale: 0.7,
                   child: Switch(
                       value: isEditMode,
-                      activeColor: Colors.redAccent,
+                      activeThumbColor: Colors.redAccent,
                       inactiveThumbColor: Colors.grey,
-                      inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                      inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
                       onChanged: (val) =>
                           ref.read(isEditModeProvider.notifier).state = val),
                 ),
@@ -1971,7 +1971,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       onSelected: (val) =>
                           ref.read(onlyFavoritesProvider.notifier).state = val,
                       backgroundColor: Colors.white10,
-                      selectedColor: Colors.orange.withOpacity(0.3),
+                      selectedColor: Colors.orange.withValues(alpha: 0.3),
                       showCheckmark: false,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20))),
@@ -1983,7 +1983,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           .read(showSpawnPointsProvider.notifier)
                           .state = val,
                       backgroundColor: Colors.white10,
-                      selectedColor: Colors.green.withOpacity(0.3),
+                      selectedColor: Colors.green.withValues(alpha: 0.3),
                       showCheckmark: false,
                       labelStyle: TextStyle(
                           color: showSpawnPoints
@@ -2091,7 +2091,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                           height: 28,
                                           decoration: BoxDecoration(
                                               color: Colors.orange
-                                                  .withOpacity(0.8),
+                                                  .withValues(alpha: 0.8),
                                               shape: BoxShape.circle,
                                               border: Border.all(
                                                   color: Colors.white,
@@ -2134,7 +2134,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.85),
+                                color: Colors.black.withValues(alpha: 0.85),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: Colors.white12)),
                             child: Row(

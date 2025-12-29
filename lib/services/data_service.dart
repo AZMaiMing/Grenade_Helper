@@ -156,7 +156,7 @@ class DataService {
                     style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(ctx);
-                  Share.shareXFiles([XFile(zipPath)], text: "CS2 道具数据分享");
+                  SharePlus.instance.share(ShareParams(files: [XFile(zipPath)], text: "CS2 道具数据分享"));
                 },
               ),
               ListTile(

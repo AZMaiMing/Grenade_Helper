@@ -245,7 +245,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildHotkeyTile(HotkeyAction.toggleHE, '手雷过滤开关'),
             _buildHotkeyTile(HotkeyAction.toggleWallbang, '穿点过滤开关'),
             const Divider(height: 1),
-            _buildHotkeyTile(HotkeyAction.togglePlayPause, '播放/暂停视频'),
+            _buildHotkeyTile(HotkeyAction.togglePlayPause, '悬浮窗播放/暂停视频'),
             const Divider(height: 1),
             _buildHotkeyTile(HotkeyAction.increaseNavSpeed, '增加导航速度'),
             _buildHotkeyTile(HotkeyAction.decreaseNavSpeed, '减少导航速度'),
@@ -418,9 +418,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
+                  color: Colors.amber.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -429,7 +429,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '更改目录后需要手动重启应用。您可以选择自动将现有数据迁移到新目录。',
+                        '更改目录后需要手动重启应用。您可以选择自动将现有数据迁移到新目录。\n\n注意：更改目录后卸载应用需要手动删除更改过后数据目录的所有数据。',
                         style:
                             TextStyle(fontSize: 12, color: Colors.amber[700]),
                       ),
@@ -608,7 +608,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           await widget.settingsService!.setSeasonalThemeEnabled(value);
         }
       },
-      activeColor: Theme.of(context).colorScheme.primary,
+      activeThumbColor: Theme.of(context).colorScheme.primary,
     );
   }
 
@@ -665,9 +665,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.orange.withOpacity(0.5)),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
             ),
             child: Text(
               displayStr,

@@ -1519,7 +1519,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                               .textTheme
                               .bodyLarge
                               ?.color
-                              ?.withOpacity(0.7))),
+                              ?.withValues(alpha: 0.7))),
                 ),
                 if (isEditing) ...[
                   IconButton(
@@ -1643,7 +1643,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                               });
                             },
                             backgroundColor: authorController.text == author
-                                ? Colors.orange.withOpacity(0.3)
+                                ? Colors.orange.withValues(alpha: 0.3)
                                 : null,
                           ))
                       .toList(),
