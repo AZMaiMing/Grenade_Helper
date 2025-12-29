@@ -40,15 +40,15 @@ class WindowType {
 
 /// 发送命令给悬浮窗（通过 IPC）
 void sendOverlayCommand(String command, [Map<String, dynamic>? args]) {
-  // print('[Main] sendOverlayCommand: $command, args: $args');
+  // debugPrint('[Main] sendOverlayCommand: $command, args: $args');
   if (overlayWindowController != null) {
-    // print('[Main] overlayWindowController is not null, invoking $command');
+    // debugPrint('[Main] overlayWindowController is not null, invoking $command');
     overlayWindowController!.invokeMethod(command, args).catchError((e) {
       // 忽略通信错误（例如窗口已关闭）
-      print('[Main] IPC error for $command: $e');
+      debugPrint('[Main] IPC error for $command: $e');
     });
   } else {
-    // print('[Main] overlayWindowController is null, cannot send $command');
+    debugPrint('[Main] overlayWindowController is null, cannot send $command');
   }
 }
 
@@ -142,7 +142,7 @@ Future<void> _runMainWindow() async {
   final migrationService = MigrationService(isar);
   final migratedCount = await migrationService.migrateGrenadeUuids();
   if (migratedCount > 0) {
-    print('已为 $migratedCount 个旧道具生成 UUID');
+    debugPrint('已为 $migratedCount 个旧道具生成 UUID');
   }
 
   // 2.5 初始化设置服务（所有平台）
@@ -383,18 +383,18 @@ Future<void> _runOverlayWindow(
         final args = call.arguments as Map?;
         final dirStr = args?['direction'] as String?;
         final dir = _parseDirection(dirStr);
-        print('[Overlay] start_navigation: $dirStr -> $dir');
+        debugPrint('[Overlay] start_navigation: $dirStr -> $dir');
         if (dir != null) overlayState.startNavigation(dir);
         return 'ok';
       case 'stop_navigation':
         final args = call.arguments as Map?;
         final dirStr = args?['direction'] as String?;
         final dir = _parseDirection(dirStr);
-        print('[Overlay] stop_navigation: $dirStr -> $dir');
+        debugPrint('[Overlay] stop_navigation: $dirStr -> $dir');
         if (dir != null) overlayState.stopNavigation(dir);
         return 'ok';
       case 'stop_all_navigation':
-        print('[Overlay] stop_all_navigation');
+        debugPrint('[Overlay] stop_all_navigation');
         overlayState.stopAllNavigation();
         return 'ok';
       // 视频播放控制
@@ -416,7 +416,7 @@ Future<void> _runOverlayWindow(
       // 更新窗口尺寸
       case 'update_size':
         final sizeIndex = call.arguments?['sizeIndex'] as int? ?? 1;
-        print('[Overlay] Received update_size command with index: $sizeIndex');
+        debugPrint('[Overlay] Received update_size command with index: $sizeIndex');
         overlayState.setOverlaySize(sizeIndex);
         return 'ok';
       // 增加导航速度
@@ -449,7 +449,7 @@ Future<void> _runOverlayWindow(
         try {
           // 从 IPC 接收热键配置，需要处理类型转换
           final rawHotkeys = call.arguments?['hotkeys'];
-          print(
+          debugPrint(
               '[Overlay] reload_hotkeys - rawHotkeys type: ${rawHotkeys.runtimeType}');
 
           if (rawHotkeys != null) {
@@ -470,14 +470,14 @@ Future<void> _runOverlayWindow(
             // 通知 OverlayWindow 更新热键配置和UI
             overlayAppKey.currentState?.overlayWindowKey.currentState
                 ?.reloadHotkeys(hotkeys);
-            print(
+            debugPrint(
                 '[Overlay] Hotkeys reloaded and UI updated with ${hotkeys.length} keys');
           } else {
-            print('[Overlay] reload_hotkeys called without hotkeys data');
+            debugPrint('[Overlay] reload_hotkeys called without hotkeys data');
           }
         } catch (e, stack) {
-          print('[Overlay] Error reloading hotkeys: $e');
-          print('[Overlay] Stack trace: $stack');
+          debugPrint('[Overlay] Error reloading hotkeys: $e');
+          debugPrint('[Overlay] Stack trace: $stack');
         }
         return 'ok';
       // 获取悬浮窗可见状态（供主窗口轮询）
@@ -512,14 +512,14 @@ Future<void> _runOverlayWindow(
             // 直接隐藏悬浮窗
             // 注意：由于 desktop_multi_window 的限制，子窗口无法向主窗口发送消息
             // 热键将在用户下次按 Alt+G 时自动注销
-            print('[Overlay] Hiding overlay window');
+            debugPrint('[Overlay] Hiding overlay window');
             await windowManager.hide();
           },
           onMinimize: () async {
             final position = await windowManager.getPosition();
             await settingsService.setOverlayPosition(position.dx, position.dy);
             // 直接隐藏悬浮窗
-            print('[Overlay] Minimizing overlay window');
+            debugPrint('[Overlay] Minimizing overlay window');
             await windowManager.hide();
           },
         ),
@@ -532,7 +532,7 @@ Future<void> _runOverlayWindow(
 Future<void> _initMapData(Isar isar) async {
   // 如果数据库为空，则写入默认数据
   if (await isar.gameMaps.count() == 0) {
-    print("检测到首次运行，正在写入地图数据...");
+    debugPrint("检测到首次运行，正在写入地图数据...");
 
     final mapsConfig = [
       {
@@ -618,7 +618,7 @@ Future<void> _initMapData(Isar isar) async {
         await map.layers.save();
       }
     });
-    print("地图数据写入完成！");
+    debugPrint("地图数据写入完成！");
   }
 }
 
@@ -782,12 +782,12 @@ class _MainAppState extends ConsumerState<MainApp> {
     // 获取主窗口控制器并监听来自其他窗口的消息
     mainWindowController = await WindowController.fromCurrentEngine();
     await mainWindowController?.setWindowMethodHandler((call) async {
-      print('[Main] Received IPC method: ${call.method}');
+      debugPrint('[Main] Received IPC method: ${call.method}');
       if (call.method == 'overlay_closed' || call.method == 'overlay_hidden') {
         // 悬浮窗已隐藏/关闭，更新状态并注销热键
-        print('[Main] Processing overlay_hidden - calling hideOverlay');
+        debugPrint('[Main] Processing overlay_hidden - calling hideOverlay');
         await globalWindowService?.hideOverlay();
-        print('[Main] hideOverlay completed');
+        debugPrint('[Main] hideOverlay completed');
       }
       return null;
     });
@@ -817,7 +817,7 @@ class _MainAppState extends ConsumerState<MainApp> {
       final result =
           await overlayWindowController!.invokeMethod('get_visibility');
       if (result == 'hidden') {
-        print(
+        debugPrint(
             '[Main] Detected overlay hidden via polling, unregistering hotkeys');
         await globalWindowService!.hideOverlay();
       }

@@ -575,7 +575,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         hotkeysJson[entry.key.name] = entry.value.toJson();
       }
       sendOverlayCommand('reload_hotkeys', {'hotkeys': hotkeysJson});
-      print('[Settings] Hotkeys reset, notified overlay to reload');
+      debugPrint('[Settings] Hotkeys reset, notified overlay to reload');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -706,7 +706,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             hotkeysJson[entry.key.name] = entry.value.toJson();
           }
           sendOverlayCommand('reload_hotkeys', {'hotkeys': hotkeysJson});
-          print('[Settings] Hotkey changed, notified overlay to reload');
+          debugPrint('[Settings] Hotkey changed, notified overlay to reload');
         },
       ),
     );

@@ -22,7 +22,7 @@ class DataService {
         await file.delete();
       }
     } catch (e) {
-      print('删除媒体文件失败: $e');
+      debugPrint('删除媒体文件失败: $e');
     }
   }
 

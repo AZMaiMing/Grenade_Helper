@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -83,7 +84,7 @@ class UpdateService {
       return null;
     } catch (e) {
       // 网络错误或解析错误，静默失败
-      print('Update check failed: $e');
+      debugPrint('Update check failed: $e');
       return null;
     }
   }

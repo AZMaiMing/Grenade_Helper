@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_getters_setters
+
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -72,7 +74,7 @@ class WindowService with TrayListener, WindowListener {
       await trayManager.setToolTip('Grenade Helper');
       await _updateTrayMenu();
     } catch (e) {
-      print('Failed to initialize tray: $e');
+      debugPrint('Failed to initialize tray: $e');
     }
   }
 

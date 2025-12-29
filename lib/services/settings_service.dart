@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -157,11 +158,11 @@ class SettingsService {
         final content = await _settingsFile!.readAsString();
         if (content.isNotEmpty) {
           _cache = jsonDecode(content) as Map<String, dynamic>;
-          print('[Settings] Loaded ${_cache.length} settings from file');
+          debugPrint('[Settings] Loaded ${_cache.length} settings from file');
         }
       }
     } catch (e) {
-      print('[Settings] Error loading settings from file: $e');
+      debugPrint('[Settings] Error loading settings from file: $e');
       _cache = {};
     }
   }
@@ -194,7 +195,7 @@ class SettingsService {
       // 同步更新本地缓存为文件最新内容
       _cache = fileData;
     } catch (e) {
-      print('[Settings] Error saving value to file: $e');
+      debugPrint('[Settings] Error saving value to file: $e');
     }
   }
 
@@ -226,7 +227,7 @@ class SettingsService {
       // 同步更新本地缓存
       _cache = fileData;
     } catch (e) {
-      print('[Settings] Error saving values to file: $e');
+      debugPrint('[Settings] Error saving values to file: $e');
     }
   }
 
@@ -289,10 +290,10 @@ class SettingsService {
 
       if (migrated) {
         await _saveValues(_cache);
-        print('[Settings] Migrated settings from SharedPreferences to file');
+        debugPrint('[Settings] Migrated settings from SharedPreferences to file');
       }
     } catch (e) {
-      print('[Settings] Error migrating from SharedPreferences: $e');
+      debugPrint('[Settings] Error migrating from SharedPreferences: $e');
     }
   }
 
@@ -676,7 +677,7 @@ class SettingsService {
 
   /// 设置自定义数据路径（null表示恢复默认）
   Future<void> setCustomDataPath(String? customPath) async {
-    print('[Settings] setCustomDataPath called with: $customPath');
+    debugPrint('[Settings] setCustomDataPath called with: $customPath');
 
     if (isDesktop) {
       if (customPath == null) {
@@ -703,7 +704,7 @@ class SettingsService {
           await configFile.writeAsString(customPath, flush: true);
         }
       } catch (e) {
-        print('[Settings] Error updating legacy config file: $e');
+        debugPrint('[Settings] Error updating legacy config file: $e');
       }
     } else {
       if (customPath == null) {
@@ -742,7 +743,7 @@ class SettingsService {
         }
       }
     } catch (e) {
-      print('[Settings] Error reading legacy config file: $e');
+      debugPrint('[Settings] Error reading legacy config file: $e');
     }
 
     return await getDefaultDataPath();
@@ -765,7 +766,7 @@ class SettingsService {
           }
         }
       } catch (e) {
-        print('[Settings] Error reading settings.json: $e');
+        debugPrint('[Settings] Error reading settings.json: $e');
       }
     }
 
@@ -781,11 +782,11 @@ class SettingsService {
           if (customPath.isEmpty) customPath = null;
         }
       } catch (e) {
-        print('[Settings] Error reading legacy config file: $e');
+        debugPrint('[Settings] Error reading legacy config file: $e');
       }
     }
 
-    print('[Settings] getDataPathBeforeInit - customPath: $customPath');
+    debugPrint('[Settings] getDataPathBeforeInit - customPath: $customPath');
     final String targetDir;
 
     if (customPath != null && customPath.isNotEmpty) {
@@ -804,14 +805,14 @@ class SettingsService {
           final oldPath = path.join(appRoot, 'data');
 
           if (Directory(oldPath).existsSync()) {
-            print(
+            debugPrint(
                 '[Settings] Detecting legacy data at: $oldPath, migrating...');
             await moveData(oldPath, targetDir);
-            print('[Settings] Legacy data migration completed.');
+            debugPrint('[Settings] Legacy data migration completed.');
           }
         }
       } catch (e) {
-        print('[Settings] Error checking legacy migration: $e');
+        debugPrint('[Settings] Error checking legacy migration: $e');
       }
     }
 
@@ -849,7 +850,7 @@ class SettingsService {
       await targetDir.create(recursive: true);
     }
 
-    print('[Settings] Copying data from $fromPath to $toPath');
+    debugPrint('[Settings] Copying data from $fromPath to $toPath');
     await copyDirectory(sourceDir, targetDir);
   }
 }

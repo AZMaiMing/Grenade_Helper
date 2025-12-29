@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -241,7 +243,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                       await isar.grenades.delete(grenade!.id);
                     });
                     Navigator.pop(ctx);
-                    Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   },
                   child: const Text("删除", style: TextStyle(color: Colors.red)),
                 ),
@@ -695,7 +697,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
         await File(xFile.path).copy(savePath);
         return savePath;
       } catch (e) {
-        print('Video copy error: $e');
+        debugPrint('Video copy error: $e');
         return null;
       }
     }
@@ -791,9 +793,11 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                 Navigator.pop(ctx);
                 _loadData(resetTitle: false);
                 sendOverlayCommand('reload_data');
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text("步骤已更新"),
-                    duration: Duration(milliseconds: 800)));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text("步骤已更新"),
+                      duration: Duration(milliseconds: 800)));
+                }
               },
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
@@ -1125,8 +1129,9 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (grenade == null)
+    if (grenade == null){
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final isEditing = widget.isEditing;
 
     return PopScope(
@@ -1671,9 +1676,11 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                   if (author.isNotEmpty) {
                     await _saveAuthorToHistory(author);
                   }
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text("作者已更新"),
-                      duration: Duration(milliseconds: 800)));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text("作者已更新"),
+                        duration: Duration(milliseconds: 800)));
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,

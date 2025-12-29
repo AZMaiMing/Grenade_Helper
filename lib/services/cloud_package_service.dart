@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,7 +31,7 @@ class CloudPackageService {
         return CloudPackageIndex.fromJson(json);
       }
     } catch (e) {
-      print('获取索引失败: $e');
+      debugPrint('获取索引失败: $e');
     }
     return null;
   }
@@ -71,7 +72,7 @@ class CloudPackageService {
     final trackingUrl = originalUrl ?? url;
     http.Client? client;
     try {
-      print('正在下载: $url');
+      debugPrint('正在下载: $url');
 
       // 使用流式下载支持进度回调
       final request = http.Request('GET', Uri.parse(url));
@@ -84,7 +85,7 @@ class CloudPackageService {
       final response =
           await client.send(request).timeout(const Duration(seconds: 10));
 
-      print('响应状态码: ${response.statusCode}');
+      debugPrint('响应状态码: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final contentLength = response.contentLength ?? 0;
@@ -107,10 +108,10 @@ class CloudPackageService {
         client.close();
         return filePath;
       } else {
-        print('下载失败，状态码: ${response.statusCode}');
+        debugPrint('下载失败，状态码: ${response.statusCode}');
       }
     } catch (e) {
-      print('下载失败 ($url): $e');
+      debugPrint('下载失败 ($url): $e');
     } finally {
       _activeClients.remove(trackingUrl);
       client?.close();
@@ -133,7 +134,7 @@ class CloudPackageService {
         return filePath;
       }
     } catch (e) {
-      print('下载失败: $e');
+      debugPrint('下载失败: $e');
     }
     return null;
   }

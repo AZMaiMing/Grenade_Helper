@@ -1,5 +1,4 @@
 /// 出生点数据模型和内置数据
-
 /// 单个出生点
 class SpawnPoint {
   final int id; // 编号 1-5

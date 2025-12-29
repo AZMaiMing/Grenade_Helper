@@ -34,8 +34,9 @@ final _filteredGrenadesProvider =
       .map((allGrenades) {
     return allGrenades.where((g) {
       if (!selectedTypes.contains(g.type)) return false;
-      if (teamFilter == TeamType.onlyAll && g.team != TeamType.all)
+      if (teamFilter == TeamType.onlyAll && g.team != TeamType.all){
         return false;
+      }
       if (teamFilter == TeamType.ct && g.team != TeamType.ct) return false;
       if (teamFilter == TeamType.t && g.team != TeamType.t) return false;
       if (onlyFav && !g.isFavorite) return false;
@@ -214,7 +215,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _updateOverlayState(int layerIndex) {
-    print("DEBUG: _updateOverlayState called with index $layerIndex");
+    debugPrint("DEBUG: _updateOverlayState called with index $layerIndex");
     widget.gameMap.layers.loadSync();
     final layers = widget.gameMap.layers.toList();
     if (layerIndex < layers.length) {
@@ -227,7 +228,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _notifyOverlayWindowSetMap(int mapId, int layerId,
       {int retryCount = 0}) {
-    print(
+    debugPrint(
         "DEBUG: _notifyOverlayWindowSetMap called. Controller is ${overlayWindowController == null ? 'NULL' : 'NOT NULL'}");
     if (overlayWindowController != null) {
       try {
@@ -236,9 +237,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               'map_id': mapId,
               'layer_id': layerId,
             })
-            .then((_) => print("DEBUG: invokeMethod success"))
+            .then((_) => debugPrint("DEBUG: invokeMethod success"))
             .catchError((e) {
-              print("DEBUG: invokeMethod error: $e");
+              debugPrint("DEBUG: invokeMethod error: $e");
               if (retryCount < 3) {
                 Future.delayed(const Duration(milliseconds: 500), () {
                   _notifyOverlayWindowSetMap(mapId, layerId,
@@ -247,11 +248,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               }
             });
       } catch (e) {
-        print("DEBUG: Exception: $e");
+        debugPrint("DEBUG: Exception: $e");
       }
     } else {
       if (retryCount < 5) {
-        print("DEBUG: Controller null, retry $retryCount");
+        debugPrint("DEBUG: Controller null, retry $retryCount");
         Future.delayed(const Duration(milliseconds: 500), () {
           _notifyOverlayWindowSetMap(mapId, layerId,
               retryCount: retryCount + 1);
@@ -320,6 +321,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     setState(() {
       _tempTapPosition = null;
     });
+    if (!mounted) return;
     Navigator.push(
         context,
         MaterialPageRoute(
@@ -353,6 +355,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         await isar.grenades.put(g);
       });
     }
+    if (!mounted) return;
     Navigator.push(
         context,
         MaterialPageRoute(
@@ -387,6 +390,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         }
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("✓ 已合并到既有点位"),
@@ -430,6 +434,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         }
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("✓ 点位已合并"),
@@ -564,7 +569,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                                     selectedIds.contains(g.id));
                                               });
                                               if (grenades.isEmpty) {
-                                                Navigator.pop(context);
+                                                if (context.mounted) Navigator.pop(context);
                                               } else {
                                                 setInnerState(() {
                                                   isMultiSelectMode = false;
@@ -777,6 +782,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       grenade.layer.value = layer;
       await grenade.layer.save();
     });
+    if (!mounted) return;
     Navigator.push(
         context,
         MaterialPageRoute(
@@ -905,6 +911,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           await isar.grenades.put(g);
         }
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(successMessage),
@@ -944,6 +951,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         await isar.grenades.put(g);
       }
     });
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("✓ 点位已移动"),
@@ -1751,10 +1759,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: asyncData.when(
         data: (grenades) {
           final favs = grenades.where((g) => g.isFavorite).toList();
-          if (favs.isEmpty)
+          if (favs.isEmpty){
             return const Center(
                 child: Text("暂无本层常用道具",
                     style: TextStyle(color: Colors.grey, fontSize: 12)));
+          }
           return ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1799,8 +1808,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final currentLayer = (layers.isNotEmpty && layerIndex < layers.length)
         ? layers[layerIndex]
         : (layers.isNotEmpty ? layers.last : null);
-    if (currentLayer == null)
+    if (currentLayer == null){
       return const Scaffold(body: Center(child: Text("数据错误：无楼层信息")));
+    }
 
     final grenadesAsync = ref.watch(_filteredGrenadesProvider(currentLayer.id));
 

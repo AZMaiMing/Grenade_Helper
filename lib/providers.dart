@@ -80,8 +80,9 @@ final filteredGrenadesProvider =
       if (!selectedTypes.contains(g.type)) return false;
 
       // B. 阵营筛选
-      if (teamFilter == TeamType.onlyAll && g.team != TeamType.all)
+      if (teamFilter == TeamType.onlyAll && g.team != TeamType.all){
         return false;
+      }
       if (teamFilter == TeamType.ct && g.team != TeamType.ct) return false;
       if (teamFilter == TeamType.t && g.team != TeamType.t) return false;
 

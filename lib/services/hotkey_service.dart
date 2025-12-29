@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'settings_service.dart';
@@ -84,7 +85,7 @@ class HotkeyService {
     }
 
     _overlayHotkeysRegistered = true;
-    // print('Overlay hotkeys registered: ${_overlayHotkeys.length} keys');
+    debugPrint('Overlay hotkeys registered: ${_overlayHotkeys.length} keys');
   }
 
   /// 注销悬浮窗热键（悬浮窗隐藏时调用）
@@ -95,12 +96,12 @@ class HotkeyService {
       try {
         await hotKeyManager.unregister(hotKey);
       } catch (e) {
-        print('Failed to unregister overlay hotkey: $e');
+        debugPrint('Failed to unregister overlay hotkey: $e');
       }
     }
     _overlayHotkeys.clear();
     _overlayHotkeysRegistered = false;
-    // print('Overlay hotkeys unregistered');
+    debugPrint('Overlay hotkeys unregistered');
   }
 
   /// 注册单个快捷键
@@ -138,7 +139,7 @@ class HotkeyService {
     // 转换 LogicalKeyboardKey 到 PhysicalKeyboardKey
     final physicalKey = _logicalToPhysical(config.key);
     if (physicalKey == null) {
-      // print('No physical key mapping for: ${config.key.keyLabel}');
+      debugPrint('No physical key mapping for: ${config.key.keyLabel}');
       return;
     }
 
@@ -152,14 +153,14 @@ class HotkeyService {
       await hotKeyManager.register(
         hotKey,
         keyDownHandler: (hotKey) {
-          // print('Global hotkey triggered: $action');
+          // debugPrint('Global hotkey triggered: $action');
           _handlers[action]?.call();
         },
       );
 
       targetMap[action] = hotKey;
     } catch (e) {
-      print('Failed to register hotkey for $action: $e');
+      debugPrint('Failed to register hotkey for $action: $e');
     }
   }
 

@@ -75,6 +75,7 @@ dev_dependencies:
   riverpod_generator: ^3.0.0
   isar_community_generator: ^3.3.0
   flutter_launcher_icons: ^0.14.4
+  flutter_lints: any
 
 flutter_launcher_icons:
   android: true

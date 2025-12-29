@@ -69,7 +69,7 @@ class OverlayStateService extends ChangeNotifier {
   /// 设置速度档位 (1-5)
   void setNavSpeedLevel(int level) {
     _navSpeedLevel = level.clamp(1, 5);
-    print(
+    debugPrint(
         '[OverlayStateService] setNavSpeedLevel: $level -> $_navSpeedLevel, speed: ${_speedLevels[_navSpeedLevel - 1]}, snapThreshold: ${_snapThresholdLevels[_navSpeedLevel - 1]}');
   }
 
@@ -88,7 +88,7 @@ class OverlayStateService extends ChangeNotifier {
   void increaseNavSpeed() {
     if (_navSpeedLevel < 5) {
       setNavSpeedLevel(_navSpeedLevel + 1);
-      print('[OverlayStateService] Speed increased to $_navSpeedLevel');
+      debugPrint('[OverlayStateService] Speed increased to $_navSpeedLevel');
       notifyListeners();
     }
   }
@@ -97,7 +97,7 @@ class OverlayStateService extends ChangeNotifier {
   void decreaseNavSpeed() {
     if (_navSpeedLevel > 1) {
       setNavSpeedLevel(_navSpeedLevel - 1);
-      print('[OverlayStateService] Speed decreased to $_navSpeedLevel');
+      debugPrint('[OverlayStateService] Speed decreased to $_navSpeedLevel');
       notifyListeners();
     }
   }
@@ -127,7 +127,7 @@ class OverlayStateService extends ChangeNotifier {
 
   /// 触发视频播放/暂停
   void triggerVideoTogglePlayPause() {
-    print('[OverlayStateService] triggerVideoTogglePlayPause called');
+    debugPrint('[OverlayStateService] triggerVideoTogglePlayPause called');
     _videoTogglePlayPauseCallback?.call();
   }
 
@@ -138,7 +138,7 @@ class OverlayStateService extends ChangeNotifier {
 
   /// 强制重新加载数据（用于主窗口修改数据后通知悬浮窗刷新）
   void reloadData() {
-    print('[OverlayStateService] reloadData called, reloading grenades...');
+    debugPrint('[OverlayStateService] reloadData called, reloading grenades...');
     _loadGrenades(notify: true);
   }
 
@@ -160,11 +160,11 @@ class OverlayStateService extends ChangeNotifier {
   Future<void> setOverlaySize(int index) async {
     _overlaySizeIndex = index;
     final s = SettingsService.calculateSizePixels(index);
-    print('[OverlayStateService] Resizing window to: ${s.$1}x${s.$2}');
+    debugPrint('[OverlayStateService] Resizing window to: ${s.$1}x${s.$2}');
     try {
       await windowManager.setSize(Size(s.$1, s.$2));
     } catch (e) {
-      print('[OverlayStateService] Error resizing window: $e');
+      debugPrint('[OverlayStateService] Error resizing window: $e');
     }
     notifyListeners();
   }
@@ -291,7 +291,7 @@ class OverlayStateService extends ChangeNotifier {
           .watch(fireImmediately: false)
           .listen((_) {
         // 数据变化时重新加载
-        print('OverlayStateService: Data changed, reloading...');
+        debugPrint('OverlayStateService: Data changed, reloading...');
         _loadGrenades(notify: true);
       });
     }
@@ -562,7 +562,7 @@ class OverlayStateService extends ChangeNotifier {
     if (_activeDirections.contains(opposite)) {
       _activeDirections.remove(opposite);
       _lastHeartbeat.remove(opposite);
-      // print('[OverlayState] Removed opposite direction: ${opposite!.name}');
+      // debugPrint('[OverlayState] Removed opposite direction: ${opposite!.name}');
     }
 
     _activeDirections.add(direction);
@@ -573,7 +573,7 @@ class OverlayStateService extends ChangeNotifier {
     }
 
     // 调试日志：显示当前活跃的方向
-    // print(
+    // debugPrint(
     //     '[OverlayState] Active directions: ${_activeDirections.length} - ${_activeDirections.map((d) => d.name).join(', ')}');
 
     _startMoveTimer();
@@ -655,7 +655,7 @@ class OverlayStateService extends ChangeNotifier {
         for (final dir in toStop) {
           _activeDirections.remove(dir);
           _lastHeartbeat.remove(dir);
-          // print('[OverlayState] Heartbeat timeout for: ${dir.name}');
+          // debugPrint('[OverlayState] Heartbeat timeout for: ${dir.name}');
         }
 
         if (_activeDirections.isEmpty) {
