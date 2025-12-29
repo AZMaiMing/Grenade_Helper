@@ -1,9 +1,0 @@
-targets:
-  $default:
-    builders:
-      # 配置 source_gen:combining_builder (这是 Riverpod 等使用的通用生成器)
-      source_gen:combining_builder:
-        # 关键修改：exclude 必须放在 generate_for 下面
-        generate_for:
-          exclude:
-            - lib/objectbox.dart
