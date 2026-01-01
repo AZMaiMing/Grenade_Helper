@@ -94,6 +94,12 @@ class Grenade {
   @Index()
   String? uniqueId;
 
+  /// 原始出处链接
+  String? sourceUrl;
+
+  /// 出处备注
+  String? sourceNote;
+
   // 反向链接到 MapLayer
   @Backlink(to: 'grenades')
   final layer = IsarLink<MapLayer>();

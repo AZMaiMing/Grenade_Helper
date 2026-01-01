@@ -13,6 +13,7 @@ import 'package:chewie/chewie.dart';
 import 'package:intl/intl.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models.dart';
 import '../providers.dart';
@@ -189,7 +190,9 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       int? type,
       int? team,
       bool? isFavorite,
-      String? author}) async {
+      String? author,
+      String? sourceUrl,
+      String? sourceNote}) async {
     if (grenade == null) return;
     final isar = ref.read(isarProvider);
 
@@ -201,6 +204,8 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     if (team != null) grenade!.team = team;
     if (isFavorite != null) grenade!.isFavorite = isFavorite;
     if (author != null) grenade!.author = author.isEmpty ? null : author;
+    if (sourceUrl != null) grenade!.sourceUrl = sourceUrl.isEmpty ? null : sourceUrl;
+    if (sourceNote != null) grenade!.sourceNote = sourceNote.isEmpty ? null : sourceNote;
 
     grenade!.updatedAt = DateTime.now();
     await isar.writeTxn(() async {
@@ -1696,6 +1701,88 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     );
   }
 
+  /// 编辑原始出处
+  void _editSource() {
+    final urlController = TextEditingController(text: grenade?.sourceUrl ?? '');
+    final noteController = TextEditingController(text: grenade?.sourceNote ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            top: 20,
+            left: 20,
+            right: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text("编辑原始出处",
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(ctx).textTheme.bodyLarge?.color)),
+            const SizedBox(height: 8),
+            Text("记录道具的来源，方便溯源和致谢原作者",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            const SizedBox(height: 15),
+            TextField(
+              controller: urlController,
+              decoration: InputDecoration(
+                labelText: "出处链接",
+                hintText: "输入视频/帖子链接（可选）",
+                prefixIcon: const Icon(Icons.link),
+                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: noteController,
+              decoration: InputDecoration(
+                labelText: "备注",
+                hintText: "例如：来源于xxx的教程（可选）",
+                prefixIcon: const Icon(Icons.notes),
+                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final url = urlController.text.trim();
+                final note = noteController.text.trim();
+                Navigator.pop(ctx);
+                _updateGrenade(sourceUrl: url, sourceNote: note);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text("出处信息已更新"),
+                      duration: Duration(milliseconds: 800)));
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 14)),
+              child: const Text("保存",
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFooterInfo() {
     if (grenade == null) return const SizedBox();
     final fmt = DateFormat('yyyy-MM-dd HH:mm');
@@ -1707,6 +1794,22 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     // 1. 本地创建的道具（isImported == false）始终可以编辑
     // 2. 导入的道具（isImported == true）只有进行了本地实质性编辑后才能编辑作者
     final canEditAuthor = !grenade!.isImported || grenade!.hasLocalEdits;
+
+    // 原始出处信息
+    final hasSource = (grenade!.sourceUrl?.isNotEmpty == true) ||
+        (grenade!.sourceNote?.isNotEmpty == true);
+    String sourceDisplayText;
+    if (hasSource) {
+      if (grenade!.sourceNote?.isNotEmpty == true) {
+        sourceDisplayText = grenade!.sourceNote!;
+      } else {
+        // 只有链接，显示简化的链接文本
+        final url = grenade!.sourceUrl!;
+        sourceDisplayText = url.length > 30 ? '${url.substring(0, 30)}...' : url;
+      }
+    } else {
+      sourceDisplayText = '未设置';
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20, top: 10),
@@ -1743,6 +1846,62 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
               ],
             ),
           ),
+          // 原始出处栏（非编辑模式下无出处信息时隐藏）
+          if (isEditing || hasSource) ...[
+            const SizedBox(height: 4),
+            GestureDetector(
+              onTap: isEditing
+                  ? _editSource
+                  : (grenade!.sourceUrl?.isNotEmpty == true
+                      ? () async {
+                          final url = grenade!.sourceUrl!;
+                          final uri = Uri.tryParse(url);
+                          if (uri != null) {
+                            try {
+                              await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("无法打开链接: $e")),
+                                );
+                              }
+                            }
+                          }
+                        }
+                      : null),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    hasSource ? Icons.link : Icons.link_off,
+                    size: 12,
+                    color: hasSource ? Colors.blueAccent : Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "出处: $sourceDisplayText",
+                    style: TextStyle(
+                      color: hasSource
+                          ? (grenade!.sourceUrl?.isNotEmpty == true && !isEditing
+                              ? Colors.blueAccent
+                              : Colors.grey)
+                          : Colors.grey,
+                      fontSize: 12,
+                      decoration: grenade!.sourceUrl?.isNotEmpty == true && !isEditing
+                          ? TextDecoration.underline
+                          : null,
+                    ),
+                  ),
+                  if (isEditing) ...[
+                    const SizedBox(width: 4),
+                    const Icon(Icons.edit, size: 12, color: Colors.grey),
+                  ],
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -1675,38 +1675,48 @@ const GrenadeSchema = CollectionSchema(
       name: r'isNewImport',
       type: IsarType.bool,
     ),
-    r'team': PropertySchema(
+    r'sourceNote': PropertySchema(
       id: 6,
+      name: r'sourceNote',
+      type: IsarType.string,
+    ),
+    r'sourceUrl': PropertySchema(
+      id: 7,
+      name: r'sourceUrl',
+      type: IsarType.string,
+    ),
+    r'team': PropertySchema(
+      id: 8,
       name: r'team',
       type: IsarType.long,
     ),
     r'title': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'title',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'type',
       type: IsarType.long,
     ),
     r'uniqueId': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'uniqueId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'xRatio': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'xRatio',
       type: IsarType.double,
     ),
     r'yRatio': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'yRatio',
       type: IsarType.double,
     )
@@ -1765,6 +1775,18 @@ int _grenadeEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.sourceNote;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.sourceUrl;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.title.length * 3;
   {
     final value = object.uniqueId;
@@ -1787,13 +1809,15 @@ void _grenadeSerialize(
   writer.writeBool(offsets[3], object.isFavorite);
   writer.writeBool(offsets[4], object.isImported);
   writer.writeBool(offsets[5], object.isNewImport);
-  writer.writeLong(offsets[6], object.team);
-  writer.writeString(offsets[7], object.title);
-  writer.writeLong(offsets[8], object.type);
-  writer.writeString(offsets[9], object.uniqueId);
-  writer.writeDateTime(offsets[10], object.updatedAt);
-  writer.writeDouble(offsets[11], object.xRatio);
-  writer.writeDouble(offsets[12], object.yRatio);
+  writer.writeString(offsets[6], object.sourceNote);
+  writer.writeString(offsets[7], object.sourceUrl);
+  writer.writeLong(offsets[8], object.team);
+  writer.writeString(offsets[9], object.title);
+  writer.writeLong(offsets[10], object.type);
+  writer.writeString(offsets[11], object.uniqueId);
+  writer.writeDateTime(offsets[12], object.updatedAt);
+  writer.writeDouble(offsets[13], object.xRatio);
+  writer.writeDouble(offsets[14], object.yRatio);
 }
 
 Grenade _grenadeDeserialize(
@@ -1807,17 +1831,19 @@ Grenade _grenadeDeserialize(
     isFavorite: reader.readBoolOrNull(offsets[3]) ?? false,
     isImported: reader.readBoolOrNull(offsets[4]) ?? false,
     isNewImport: reader.readBoolOrNull(offsets[5]) ?? false,
-    team: reader.readLongOrNull(offsets[6]) ?? 0,
-    title: reader.readString(offsets[7]),
-    type: reader.readLong(offsets[8]),
-    uniqueId: reader.readStringOrNull(offsets[9]),
-    xRatio: reader.readDouble(offsets[11]),
-    yRatio: reader.readDouble(offsets[12]),
+    team: reader.readLongOrNull(offsets[8]) ?? 0,
+    title: reader.readString(offsets[9]),
+    type: reader.readLong(offsets[10]),
+    uniqueId: reader.readStringOrNull(offsets[11]),
+    xRatio: reader.readDouble(offsets[13]),
+    yRatio: reader.readDouble(offsets[14]),
   );
   object.author = reader.readStringOrNull(offsets[0]);
   object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.updatedAt = reader.readDateTime(offsets[10]);
+  object.sourceNote = reader.readStringOrNull(offsets[6]);
+  object.sourceUrl = reader.readStringOrNull(offsets[7]);
+  object.updatedAt = reader.readDateTime(offsets[12]);
   return object;
 }
 
@@ -1841,18 +1867,22 @@ P _grenadeDeserializeProp<P>(
     case 5:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 6:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
-    case 7:
-      return (reader.readString(offset)) as P;
-    case 8:
-      return (reader.readLong(offset)) as P;
-    case 9:
       return (reader.readStringOrNull(offset)) as P;
+    case 7:
+      return (reader.readStringOrNull(offset)) as P;
+    case 8:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
     case 10:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
+      return (reader.readDateTime(offset)) as P;
+    case 13:
+      return (reader.readDouble(offset)) as P;
+    case 14:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2302,6 +2332,298 @@ extension GrenadeQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isNewImport',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sourceNote',
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sourceNote',
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceNote',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sourceNote',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sourceNote',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sourceNote',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sourceNote',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sourceNote',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sourceNote',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sourceNote',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceNote',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceNoteIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sourceNote',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sourceUrl',
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sourceUrl',
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sourceUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sourceUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sourceUrl',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sourceUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sourceUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sourceUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sourceUrl',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceUrl',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterFilterCondition> sourceUrlIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sourceUrl',
+        value: '',
       ));
     });
   }
@@ -3012,6 +3334,30 @@ extension GrenadeQuerySortBy on QueryBuilder<Grenade, Grenade, QSortBy> {
     });
   }
 
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortBySourceNote() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNote', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortBySourceNoteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNote', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortBySourceUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> sortBySourceUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceUrl', Sort.desc);
+    });
+  }
+
   QueryBuilder<Grenade, Grenade, QAfterSortBy> sortByTeam() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'team', Sort.asc);
@@ -3183,6 +3529,30 @@ extension GrenadeQuerySortThenBy
     });
   }
 
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenBySourceNote() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNote', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenBySourceNoteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceNote', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenBySourceUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QAfterSortBy> thenBySourceUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sourceUrl', Sort.desc);
+    });
+  }
+
   QueryBuilder<Grenade, Grenade, QAfterSortBy> thenByTeam() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'team', Sort.asc);
@@ -3307,6 +3677,20 @@ extension GrenadeQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Grenade, Grenade, QDistinct> distinctBySourceNote(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceNote', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Grenade, Grenade, QDistinct> distinctBySourceUrl(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sourceUrl', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Grenade, Grenade, QDistinct> distinctByTeam() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'team');
@@ -3393,6 +3777,18 @@ extension GrenadeQueryProperty
   QueryBuilder<Grenade, bool, QQueryOperations> isNewImportProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isNewImport');
+    });
+  }
+
+  QueryBuilder<Grenade, String?, QQueryOperations> sourceNoteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceNote');
+    });
+  }
+
+  QueryBuilder<Grenade, String?, QQueryOperations> sourceUrlProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sourceUrl');
     });
   }
 
