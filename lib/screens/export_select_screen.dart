@@ -136,6 +136,9 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   Future<void> _doExport() async {
     setState(() => _isExporting = true);
 
+    // 等待一帧让 UI 更新显示 loading 状态，避免界面卡顿
+    await Future.delayed(const Duration(milliseconds: 50));
+
     try {
       final isar = ref.read(isarProvider);
       final dataService = DataService(isar);
@@ -170,7 +173,7 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
       await dataService.exportSelectedGrenades(context, grenadesToExport);
 
       if (mounted) {
-        Navigator.pop(context);
+        setState(() => _isExporting = false);
       }
     } catch (e) {
       if (mounted) {

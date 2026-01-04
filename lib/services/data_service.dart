@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:archive/archive_io.dart';
@@ -55,6 +56,48 @@ class PackagePreviewResult {
   int get totalCount => grenadesByMap.values.fold(0, (sum, list) => sum + list.length);
   
   List<String> get mapNames => grenadesByMap.keys.toList();
+}
+
+/// isolate 中执行的打包参数
+class _PackageParams {
+  final String exportDirPath;
+  final String zipPath;
+  final String jsonData;
+  final List<String> filesToCopy;
+
+  _PackageParams({
+    required this.exportDirPath,
+    required this.zipPath,
+    required this.jsonData,
+    required this.filesToCopy,
+  });
+}
+
+/// 在 isolate 中执行文件复制和压缩（顶层函数）
+Future<void> _packageFilesInIsolate(_PackageParams params) async {
+  final exportDir = Directory(params.exportDirPath);
+  
+  // 清理并创建目录
+  if (exportDir.existsSync()) exportDir.deleteSync(recursive: true);
+  exportDir.createSync(recursive: true);
+
+  // 写入 data.json
+  final jsonFile = File(p.join(exportDir.path, "data.json"));
+  jsonFile.writeAsStringSync(params.jsonData);
+
+  // 复制媒体文件
+  for (var filePath in params.filesToCopy) {
+    final file = File(filePath);
+    if (file.existsSync()) {
+      file.copySync(p.join(exportDir.path, p.basename(filePath)));
+    }
+  }
+
+  // 压缩为 .cs2pkg
+  final encoder = ZipFileEncoder();
+  encoder.create(params.zipPath);
+  encoder.addDirectory(exportDir);
+  encoder.close();
 }
 
 class DataService {
@@ -242,30 +285,22 @@ class DataService {
       });
     }
 
-    // 创建临时打包目录
+    // 获取临时目录路径
     final tempDir = await getTemporaryDirectory();
-    final exportDir = Directory(p.join(tempDir.path, "export_temp"));
-    if (exportDir.existsSync()) exportDir.deleteSync(recursive: true);
-    exportDir.createSync();
-
-    // 写入 data.json
-    final jsonFile = File(p.join(exportDir.path, "data.json"));
-    jsonFile.writeAsStringSync(jsonEncode(exportList));
-
-    // 复制媒体文件
-    for (var path in filesToZip) {
-      final file = File(path);
-      if (file.existsSync()) {
-        file.copySync(p.join(exportDir.path, p.basename(path)));
-      }
-    }
-
-    // 压缩为 .cs2pkg
-    final encoder = ZipFileEncoder();
+    final exportDirPath = p.join(tempDir.path, "export_temp");
     final zipPath = p.join(tempDir.path, "share_data.cs2pkg");
-    encoder.create(zipPath);
-    encoder.addDirectory(exportDir);
-    encoder.close();
+
+    // 在 isolate 中执行文件复制和压缩操作
+    await compute(
+      _packageFilesInIsolate,
+      _PackageParams(
+        exportDirPath: exportDirPath,
+        zipPath: zipPath,
+        jsonData: jsonEncode(exportList),
+        filesToCopy: filesToZip.toList(),
+      ),
+    );
+
     if (!context.mounted) return;
 
     // 根据平台显示不同的分享选项
@@ -274,7 +309,7 @@ class DataService {
     if (isDesktop) {
       await _saveToFolderWithCustomName(context, zipPath);
     } else {
-      showModalBottomSheet(
+      await showModalBottomSheet(
         context: context,
         builder: (ctx) => Container(
           padding: const EdgeInsets.all(20),
@@ -305,7 +340,7 @@ class DataService {
                 title: const Text("保存到文件夹", style: TextStyle(color: Colors.white)),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await _saveToFolder(context, zipPath);
+                  await _saveToFolderWithCustomName(context, zipPath);
                 },
               ),
             ],
@@ -378,30 +413,22 @@ class DataService {
       });
     }
 
-    // 3. 创建临时打包目录
+    // 3. 获取临时目录路径
     final tempDir = await getTemporaryDirectory();
-    final exportDir = Directory(p.join(tempDir.path, "export_temp"));
-    if (exportDir.existsSync()) exportDir.deleteSync(recursive: true);
-    exportDir.createSync();
-
-    // 4. 写入 data.json
-    final jsonFile = File(p.join(exportDir.path, "data.json"));
-    jsonFile.writeAsStringSync(jsonEncode(exportList));
-
-    // 5. 复制媒体文件
-    for (var path in filesToZip) {
-      final file = File(path);
-      if (file.existsSync()) {
-        file.copySync(p.join(exportDir.path, p.basename(path)));
-      }
-    }
-
-    // 6. 压缩为 .cs2pkg
-    final encoder = ZipFileEncoder();
+    final exportDirPath = p.join(tempDir.path, "export_temp");
     final zipPath = p.join(tempDir.path, "share_data.cs2pkg");
-    encoder.create(zipPath);
-    encoder.addDirectory(exportDir);
-    encoder.close();
+
+    // 4. 在 isolate 中执行文件复制和压缩操作
+    await compute(
+      _packageFilesInIsolate,
+      _PackageParams(
+        exportDirPath: exportDirPath,
+        zipPath: zipPath,
+        jsonData: jsonEncode(exportList),
+        filesToCopy: filesToZip.toList(),
+      ),
+    );
+
     if (!context.mounted) return;
 
     // 根据平台显示不同的分享选项
@@ -413,7 +440,7 @@ class DataService {
       await _saveToFolderWithCustomName(context, zipPath);
     } else {
       // 移动端：弹出底部菜单
-      showModalBottomSheet(
+      await showModalBottomSheet(
         context: context,
         builder: (ctx) => Container(
           padding: const EdgeInsets.all(20),
@@ -446,7 +473,7 @@ class DataService {
                     const Text("保存到文件夹", style: TextStyle(color: Colors.white)),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await _saveToFolder(context, zipPath);
+                  await _saveToFolderWithCustomName(context, zipPath);
                 },
               ),
             ],
@@ -861,36 +888,7 @@ class DataService {
     return g; // 返回创建的道具
   }
 
-  Future<void> _saveToFolder(BuildContext context, String sourcePath) async {
-    String? outputDirectory =
-        await FilePicker.platform.getDirectoryPath(dialogTitle: "请选择保存位置");
-
-    if (outputDirectory == null) return;
-
-    try {
-      final fileName =
-          "cs2_tactics_backup_${DateTime.now().millisecondsSinceEpoch}.cs2pkg";
-      final destination = p.join(outputDirectory, fileName);
-
-      final sourceFile = File(sourcePath);
-      await sourceFile.copy(destination);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("文件已保存至:\n$destination"),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 4),
-        ));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("保存失败: $e"), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  /// 桌面端另存为对话框，支持自定义文件名
+  /// 另存为对话框，支持自定义文件名
   Future<void> _saveToFolderWithCustomName(
       BuildContext context, String sourcePath) async {
     // 生成默认文件名
