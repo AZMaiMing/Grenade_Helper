@@ -158,8 +158,12 @@ async function main() {
       throw new Error("Downloaded file is too small, likely an auth error.");
     }
 
-    // 5. 上传到所有服务器（双服务器同步）
-    const cleanContent = bodyText.replace(/(?:vc|versionCode)\s*[:=]?\s*(\d+)/ig, '').trim();
+    // 清理技术标记，不在更新日志中显示
+    // 1. 先清理 forceUpdate 相关标记（需要先处理，因为它们在 versionCode 清理后可能仍在行首）
+    let cleanContent = bodyText
+      .replace(/\b(?:force|forceUpdate)\s*[:=]\s*\S+\s*/ig, '')  // 清理 forceUpdate: true 等
+      .replace(/(?:vc|versionCode)\s*[:=]?\s*(\d+)/ig, '')        // 清理 versionCode
+      .trim();
 
     // 检测是否需要强制更新 (支持 force: true, forceUpdate: true 等格式)
     const forceMatch = bodyText.match(/\b(?:force|forceUpdate)\s*[:=]\s*(true|1|yes)/i);
