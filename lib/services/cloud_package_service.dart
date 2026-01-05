@@ -8,15 +8,20 @@ import '../models/cloud_package.dart';
 
 /// 云端道具包服务
 class CloudPackageService {
+  // ===== 索引文件源（GitHub 仓库）=====
   // GitHub 源（主）
-  static const String kGitHubBaseUrl =
+  static const String kGitHubIndexUrl =
       'https://raw.githubusercontent.com/Invis1ble-2/grenades_repo/main/';
   // ghproxy 加速源（国内推荐）
-  static const String kCDNBaseUrl =
+  static const String kCDNIndexUrl =
       'https://ghproxy.grenade-helper.top/https://raw.githubusercontent.com/Invis1ble-2/grenades_repo/main/';
 
   // 当前使用的源
-  static String kRepoBaseUrl = kGitHubBaseUrl;
+  static String kIndexBaseUrl = kGitHubIndexUrl;
+  static bool _useCDN = false;
+
+  /// 是否使用 CDN 加速（用于 CloudPackage.getDownloadUrl）
+  static bool get isUsingCDN => _useCDN;
 
   static const String _lastImportedKey = 'cloud_package_last_imported';
 
@@ -24,7 +29,7 @@ class CloudPackageService {
   static Future<CloudPackageIndex?> fetchIndex() async {
     try {
       final response = await http
-          .get(Uri.parse('${kRepoBaseUrl}index.json'))
+          .get(Uri.parse('${kIndexBaseUrl}index.json'))
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -38,11 +43,9 @@ class CloudPackageService {
 
   /// 切换源
   static void switchSource(bool useCDN) {
-    kRepoBaseUrl = useCDN ? kCDNBaseUrl : kGitHubBaseUrl;
+    _useCDN = useCDN;
+    kIndexBaseUrl = useCDN ? kCDNIndexUrl : kGitHubIndexUrl;
   }
-
-  /// 当前是否使用 CDN
-  static bool get isUsingCDN => kRepoBaseUrl == kCDNBaseUrl;
 
   // 存储正在下载的 client，用于取消
   static final Map<String, http.Client> _activeClients = {};
@@ -59,9 +62,8 @@ class CloudPackageService {
     String url, {
     void Function(int received, int total)? onProgress,
   }) async {
-    // 如果是相对路径，拼接当前源
-    final fullUrl = url.startsWith('http') ? url : '$kRepoBaseUrl$url';
-    return _downloadFromUrl(fullUrl, originalUrl: url, onProgress: onProgress);
+    // URL 应该是完整的 http(s) 地址
+    return _downloadFromUrl(url, originalUrl: url, onProgress: onProgress);
   }
 
   static Future<String?> _downloadFromUrl(

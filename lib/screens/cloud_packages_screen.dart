@@ -82,9 +82,11 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
     });
 
     try {
+      // 根据当前源设置获取下载 URL
+      final downloadUrl = pkg.getDownloadUrl(CloudPackageService.isUsingCDN);
       // 下载文件（带进度）
       final filePath = await CloudPackageService.downloadPackage(
-        pkg.url,
+        downloadUrl,
         onProgress: (received, total) {
           if (total > 0) {
             setState(() {
@@ -129,7 +131,8 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
   }
 
   void _cancelDownload(CloudPackage pkg) {
-    CloudPackageService.cancelDownload(pkg.url);
+    final downloadUrl = pkg.getDownloadUrl(CloudPackageService.isUsingCDN);
+    CloudPackageService.cancelDownload(downloadUrl);
     setState(() {
       _downloadingIds.remove(pkg.id);
       _downloadProgress.remove(pkg.id);

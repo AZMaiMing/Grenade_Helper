@@ -7,7 +7,8 @@ class CloudPackage {
   final String? map; // null = 全图
   final String version; // 版本号，如 "1.0.0"
   final String updated; // 最后更新日期
-  final String url; // 相对于仓库根目录的路径
+  final String url; // 主源下载地址（R2 直连）
+  final String? cdnUrl; // CDN 加速下载地址（可选）
 
   CloudPackage({
     required this.id,
@@ -18,6 +19,7 @@ class CloudPackage {
     required this.version,
     required this.updated,
     required this.url,
+    this.cdnUrl,
   });
 
   factory CloudPackage.fromJson(Map<String, dynamic> json) {
@@ -30,7 +32,16 @@ class CloudPackage {
       version: json['version'] as String? ?? '1.0.0',
       updated: json['updated'] as String? ?? '',
       url: json['url'] as String,
+      cdnUrl: json['cdnUrl'] as String?,
     );
+  }
+
+  /// 根据当前源设置获取下载 URL
+  String getDownloadUrl(bool useCDN) {
+    if (useCDN && cdnUrl != null && cdnUrl!.isNotEmpty) {
+      return cdnUrl!;
+    }
+    return url;
   }
 
   Map<String, dynamic> toJson() => {
@@ -42,8 +53,10 @@ class CloudPackage {
         'version': version,
         'updated': updated,
         'url': url,
+        if (cdnUrl != null) 'cdnUrl': cdnUrl,
       };
 }
+
 
 /// 云端仓库索引
 class CloudPackageIndex {
