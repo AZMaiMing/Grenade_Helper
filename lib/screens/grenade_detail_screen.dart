@@ -1678,11 +1678,14 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context, 'draw_impact_area'),
+                onPressed: hasImpactPoint
+                    ? () => Navigator.pop(context, 'draw_impact_area')
+                    : null,
                 icon: const Icon(Icons.brush, size: 18),
-                label: const Text('绘制爆点范围'),
+                label: Text(hasImpactPoint ? '绘制爆点范围' : '请先设置爆点位置'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pinkAccent,
+                  backgroundColor:
+                      hasImpactPoint ? Colors.pinkAccent : Colors.grey,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
