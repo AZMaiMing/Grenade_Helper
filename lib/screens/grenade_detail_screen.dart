@@ -1679,7 +1679,58 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: hasImpactPoint
-                    ? () => Navigator.pop(context, 'draw_impact_area')
+                    ? () async {
+                        // 获取道具所在楼层
+                        await grenade!.layer.load();
+                        final layer = grenade!.layer.value;
+                        if (layer == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('无法获取楼层信息')),
+                          );
+                          return;
+                        }
+
+                        // 导航到绘制模式
+                        final result = await Navigator.push<Map<String, dynamic>>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ImpactPointPickerScreen(
+                              grenadeId: grenade!.id,
+                              initialX: grenade!.impactXRatio,
+                              initialY: grenade!.impactYRatio,
+                              throwX: grenade!.xRatio,
+                              throwY: grenade!.yRatio,
+                              layerId: layer.id,
+                              isDrawingMode: true,
+                              existingStrokes: grenade!.impactAreaStrokes,
+                              grenadeType: grenade!.type,
+                            ),
+                          ),
+                        );
+
+                        // 保存返回的笔画数据
+                        if (result != null && result['strokes'] != null) {
+                          final isar = ref.read(isarProvider);
+                          await isar.writeTxn(() async {
+                            final g = await isar.grenades.get(grenade!.id);
+                            if (g != null) {
+                              g.impactAreaStrokes = result['strokes'] as String;
+                              g.updatedAt = DateTime.now();
+                              await isar.grenades.put(g);
+                            }
+                          });
+                          await _markAsLocallyEdited();
+                          _loadData(resetTitle: false);
+                          sendOverlayCommand('reload_data');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✓ 爆点区域已保存'),
+                              backgroundColor: Colors.green,
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      }
                     : null,
                 icon: const Icon(Icons.brush, size: 18),
                 label: Text(hasImpactPoint ? '绘制爆点范围' : '请先设置爆点位置'),
