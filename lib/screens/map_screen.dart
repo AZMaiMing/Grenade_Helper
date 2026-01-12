@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -108,7 +109,6 @@ List<GrenadeCluster> clusterGrenadesByImpact(List<Grenade> grenades,
     {double threshold = 0.0}) {
   if (grenades.isEmpty) return [];
   final List<GrenadeCluster> clusters = [];
-  // Filter only grenades with impact coordinates
   final List<Grenade> remaining = grenades
       .where((g) => g.impactXRatio != null && g.impactYRatio != null)
       .toList();
@@ -170,6 +170,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Offset? _impactDragOffset; // 爆点拖动位置
   Offset? _impactDragAnchorOffset; // 爆点拖动锚点偏移
   Grenade? _movingSingleImpactGrenade; // 单个道具爆点移动状态
+
 
   @override
   void initState() {
@@ -241,9 +242,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (box == null) return null;
 
     // 2. 将全局坐标转换为 Stack 的局部坐标
-    // 这会自动处理 PhotoView 的缩放和平移变换，以及屏幕位置
-    // 注意：因为 GlobalKey 放在 Stack 上，而 Stack 是 PhotoView 的 child，
-    // 所以这里的 localPosition 已经是经过 PhotoView 逆变换后的坐标
     final localPosition = box.globalToLocal(globalPosition);
 
     // 3. 获取 Container 尺寸（Stack 的尺寸）
@@ -413,6 +411,36 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             backgroundColor: Colors.purpleAccent,
             duration: Duration(seconds: 1)));
 
+        // 移动完成后，尝试恢复选中状态
+        final impactTargetId = _movingSingleImpactGrenade!.id;
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (!mounted) return;
+          final grenades =
+              ref.read(_filteredGrenadesProvider(layerId)).asData?.value;
+          if (grenades != null) {
+            final clusterThreshold = _photoViewController.scale != null &&
+                    _photoViewController.scale! >= 2.0
+                ? 0.008
+                : 0.02;
+
+            List<GrenadeCluster> clusters;
+            if (_isImpactMode) {
+              clusters = clusterGrenadesByImpact(grenades,
+                  threshold: clusterThreshold);
+            } else {
+              clusters = clusterGrenades(grenades, threshold: clusterThreshold);
+            }
+
+            try {
+              final cluster = clusters.firstWhere(
+                  (c) => c.grenades.any((g) => g.id == impactTargetId));
+              setState(() {
+                _selectedClusterForImpact = cluster;
+              });
+            } catch (_) {}
+          }
+        });
+
         setState(() {
           _movingSingleImpactGrenade = null;
         });
@@ -448,19 +476,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         });
         return;
       }
-
-      // 处理整组点位合并：如果正在移动点位组，点击现有点位则全部合并进去
-      // 这里需要查找点击位置是否有现有的 cluster。但 _handleMoveClusterTap 之前的逻辑似乎是点击任何地方都视为移动目标？
-      // 不，之前的逻辑是：如果是点击了现有的点位 -> 合并；点击空白处 -> 移动。
-      // 由于这里只有点击空白处的逻辑（_handleTap 是 onBlankTap? 不，_handleTap 是 Stack 的 tapUp）
-
-      // 我们需要先检查点击位置是否有其他 cluster 以处理合并逻辑。
-      // 但是 _handleTap 这里的逻辑原本是 "创建新道具" (点击空白处)。
-      // 点击现有的 cluster 会触发 `_handleClusterTap`。
-      // 所以，如果是移动模式下点击空白处 -> 移动位置。
-      // 如果点击了 cluster -> _handleClusterTap 会被调用。
-
-      // 所以这里只需要处理 "移动到新位置" 的逻辑。
 
       if (_isMovingCluster && _draggingCluster != null) {
         final isar = ref.read(isarProvider);
@@ -542,11 +557,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _tempTapPosition = null;
     });
     if (!mounted) return;
-    Navigator.push(
+    await Navigator.push(
         context,
         MaterialPageRoute(
             builder: (_) =>
-                GrenadeDetailScreen(grenadeId: id, isEditing: true)));
+                GrenadeDetailScreen(grenadeId: id, isEditing: true)
+        )
+    );
   }
 
   void _onSearchResultSelected(Grenade g) {
@@ -568,19 +585,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _handleGrenadeTap(Grenade g, {required bool isEditing}) async {
+    final isar = ref.read(isarProvider);
     if (g.isNewImport) {
       g.isNewImport = false;
-      final isar = ref.read(isarProvider);
       await isar.writeTxn(() async {
         await isar.grenades.put(g);
       });
     }
     if (!mounted) return;
-    Navigator.push(
+    await Navigator.push(
         context,
         MaterialPageRoute(
             builder: (_) =>
                 GrenadeDetailScreen(grenadeId: g.id, isEditing: isEditing)));
+
+
   }
 
   void _handleClusterTap(GrenadeCluster cluster, int layerId) async {
@@ -713,7 +732,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
 
     // 清除该点位所有道具的红点标记（新导入标记）
-    final newImportGrenades = cluster.grenades.where((g) => g.isNewImport).toList();
+    final newImportGrenades =
+        cluster.grenades.where((g) => g.isNewImport).toList();
     if (newImportGrenades.isNotEmpty) {
       final isar = ref.read(isarProvider);
       await isar.writeTxn(() async {
@@ -1077,8 +1097,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       barrierColor: Colors.transparent,
       opacity: opacity,
       speedLevel: speed,
-      clusterName:
-          cluster.grenades.isNotEmpty ? '爆点: ${cluster.grenades.first.title}' : '爆点',
+      clusterName: cluster.grenades.isNotEmpty
+          ? '爆点: ${cluster.grenades.first.title}'
+          : '爆点',
       onMove: (direction) => _handleJoystickMoveForImpact(direction, speed),
       onConfirm: _confirmJoystickMoveForImpact,
       onCancel: _cancelJoystickMoveForImpact,
@@ -1087,13 +1108,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// 处理爆点摇杆移动
   void _handleJoystickMoveForImpact(Offset direction, int speedLevel) {
-    if (_joystickImpactCluster == null || _impactJoystickDragOffset == null) return;
+    if (_joystickImpactCluster == null || _impactJoystickDragOffset == null){
+      return;
+    }
 
     // 根据速度档位计算移动步长 (1档=0.0005, 5档=0.0025)
     final step = 0.0005 + (speedLevel - 1) * 0.0005;
 
-    final newX = (_impactJoystickDragOffset!.dx + direction.dx * step).clamp(0.0, 1.0);
-    final newY = (_impactJoystickDragOffset!.dy + direction.dy * step).clamp(0.0, 1.0);
+    final newX =
+        (_impactJoystickDragOffset!.dx + direction.dx * step).clamp(0.0, 1.0);
+    final newY =
+        (_impactJoystickDragOffset!.dy + direction.dy * step).clamp(0.0, 1.0);
 
     setState(() {
       _impactJoystickDragOffset = Offset(newX, newY);
@@ -1213,7 +1238,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Color _getTypeColor(int type) {
     switch (type) {
       case GrenadeType.smoke:
-        return Colors.grey;
+        return Colors.white;
       case GrenadeType.flash:
         return Colors.yellow;
       case GrenadeType.molotov:
@@ -1253,6 +1278,50 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       default:
         return "";
     }
+  }
+
+
+  /// 解析笔画 JSON
+  List<Map<String, dynamic>> _parseStrokes(String? json) {
+    if (json == null || json.isEmpty) return [];
+    try {
+      final parsed = jsonDecode(json) as List;
+      return parsed.map((e) => Map<String, dynamic>.from(e)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+
+
+  /// 构建爆点区域显示层（选中标点时显示）
+  Widget _buildImpactAreaOverlay(
+    Grenade grenade,
+    BoxConstraints constraints,
+  ) {
+    final strokes = _parseStrokes(grenade.impactAreaStrokes);
+    if (strokes.isEmpty) return const SizedBox.shrink();
+
+    final imageBounds =
+        _getImageBounds(constraints.maxWidth, constraints.maxHeight);
+    final color = _getTypeColor(grenade.type);
+    final opacity = ref.watch(impactAreaOpacityProvider);
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: CustomPaint(
+          painter: _ImpactAreaPainter(
+            strokes: strokes,
+            currentStroke: [],
+            currentStrokeWidth: 15,
+            isCurrentEraser: false,
+            color: color,
+            imageBounds: imageBounds,
+            opacity: opacity,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTypeFilterBtn(Set<int> selectedTypes, int type, String label,
@@ -1362,6 +1431,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final isDragging = _isSameCluster(_draggingImpactCluster, cluster);
     final isJoystickMoving = _isSameCluster(_joystickImpactCluster, cluster);
 
+    // 获取道具类型对应的颜色
+    final impactColor = _getTypeColor(cluster.primaryType);
+
     return Positioned(
       left: left,
       top: top,
@@ -1431,7 +1503,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               border: Border.all(
                   color: (isDragging || isJoystickMoving)
                       ? Colors.cyan
-                      : (isSelected ? Colors.white : Colors.purpleAccent),
+                      : (isSelected ? Colors.white : impactColor),
                   width: (isDragging || isJoystickMoving) ? 3 : 2),
               boxShadow: (isDragging || isJoystickMoving)
                   ? [
@@ -1444,24 +1516,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   : isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.purpleAccent.withValues(alpha: 0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                             blurRadius: 6,
                             spreadRadius: 2,
                           )
                         ]
                       : [
                           BoxShadow(
-                            color: Colors.purpleAccent.withValues(alpha: 0.3),
+                            color: impactColor.withValues(alpha: 0.3),
                             blurRadius: 4,
                             spreadRadius: 1,
                           ),
                         ],
             ),
-            child: Icon((isDragging || isJoystickMoving) ? Icons.open_with : Icons.close,
+            child: Icon(
+                (isDragging || isJoystickMoving)
+                    ? Icons.open_with
+                    : Icons.close,
                 size: size * 0.6,
                 color: (isDragging || isJoystickMoving)
                     ? Colors.white
-                    : (isSelected ? Colors.white : Colors.purpleAccent)),
+                    : (isSelected ? Colors.white : impactColor)),
           ),
         ),
       ),
@@ -2367,12 +2442,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             stream: _photoViewController.outputStateStream,
                             builder: (context, snapshot) {
                               final double scale = snapshot.data?.scale ?? 1.0;
-                              // Calculate scale factor (inverse of zoom)
-                              // Base scalar is 1.0, decreases as we zoom in
                               final double markerScale = 1.0 / scale;
-                              // Clamp scale to prevent markers getting too small or too big if needed
-                              // For now we use direct inverse scaling to keep visual size constant
-
+                              
                               // 计算 BoxFit.contain 模式下图片的实际显示区域
                               final imageBounds = _getImageBounds(
                                   constraints.maxWidth, constraints.maxHeight);
@@ -2388,6 +2459,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                         width: constraints.maxWidth,
                                         height: constraints.maxHeight,
                                         fit: BoxFit.contain),
+                                    // 爆点区域显示（最底层）
+                                    if (_selectedClusterForImpact != null)
+                                      ..._selectedClusterForImpact!.grenades
+                                          .where((g) =>
+                                              g.impactAreaStrokes != null &&
+                                              g.impactAreaStrokes!.isNotEmpty)
+                                          .map((g) => _buildImpactAreaOverlay(
+                                              g, constraints)),
                                     // 道具点位标记（先渲染，在下层）
                                     // 缩放 200% 以上时禁用合并，显示完整细节
                                     ...grenadesAsync.when(
@@ -2465,6 +2544,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                               constraints,
                                               markerScale,
                                               imageBounds)),
+                                    // 移动单个爆点时显示其原始位置及连线（无论在哪种模式）
+                                    if (_movingSingleImpactGrenade != null) ...[
+                                      if (_movingSingleImpactGrenade!.type !=
+                                          GrenadeType.wallbang)
+                                        _buildConnectionLine(
+                                            _movingSingleImpactGrenade!,
+                                            markerScale,
+                                            imageBounds),
+                                      _buildImpactMarker(
+                                          _movingSingleImpactGrenade!,
+                                          constraints,
+                                          markerScale,
+                                          imageBounds),
+                                    ],
                                     // 爆点模式下的投掷点标记（选中爆点时显示）
                                     if (_isImpactMode &&
                                         _selectedClusterForImpact != null)
@@ -2555,6 +2648,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                                 color: Colors.greenAccent,
                                                 size: 24),
                                           )),
+
                                   ]));
                             },
                           ),
@@ -2709,6 +2803,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       right: 0,
                       bottom: 0,
                       child: _buildFavoritesBar(grenadesAsync)),
+
               ]);
             }),
           ),
@@ -2903,6 +2998,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   constraints: const BoxConstraints(
                                       minWidth: 32, minHeight: 32),
                                 ),
+
                               // 添加按钮
                               if (!isMultiSelectMode)
                                 IconButton(
@@ -2941,7 +3037,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       itemCount: grenades.length,
                       itemBuilder: (_, index) {
                         final g = grenades[index];
-                        final color = _getTeamColor(g.team);
+                        // 根据类型获取颜色
+                        Color typeColor;
+                        switch (g.type) {
+                          case GrenadeType.smoke:
+                            typeColor = Colors.white;
+                            break;
+                          case GrenadeType.he:
+                            typeColor = Colors.greenAccent;
+                            break;
+                          case GrenadeType.molotov:
+                            typeColor = Colors.deepOrangeAccent;
+                            break;
+                          case GrenadeType.flash:
+                            typeColor = Colors.yellowAccent;
+                            break;
+                          case GrenadeType.wallbang:
+                            typeColor = Colors.lightBlueAccent;
+                            break;
+                          default:
+                            typeColor = Colors.white;
+                        }
+
                         final icon = _getTypeIcon(g.type);
                         final isSelected = selectedIds.contains(g.id);
 
@@ -2975,17 +3092,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.black54,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: color, width: 2),
+                                  border:
+                                      Border.all(color: typeColor, width: 2),
                                 ),
-                                child: Icon(icon, size: 12, color: color),
+                                child: Icon(icon, size: 14, color: typeColor),
                               ),
                             ],
                           ),
                           title: Text(
                             g.title,
                             style: TextStyle(
-                              color:
-                                  Theme.of(context).textTheme.bodyLarge?.color,
+                              color: typeColor,
                               fontWeight: FontWeight.w500,
                               fontSize: 12,
                             ),
@@ -3025,20 +3142,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (_isImpactMode)
-                                      IconButton(
-                                        onPressed: () {
-                                          _closeClusterPanel();
-                                          _startMoveSingleGrenadeImpact(g);
-                                        },
-                                        icon: const Icon(Icons.gps_fixed),
-                                        color: Colors.purpleAccent,
-                                        tooltip: "移动爆点",
-                                        iconSize: 18,
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                      ),
+                                    // 移除 _isImpactMode 限制，使得普通模式下也可以移动爆点
+                                    IconButton(
+                                      onPressed: () {
+                                        _closeClusterPanel();
+                                        _startMoveSingleGrenadeImpact(g);
+                                      },
+                                      icon: const Icon(Icons.gps_fixed),
+                                      color: Colors.purpleAccent,
+                                      tooltip: "设置/移动爆点",
+                                      iconSize: 18,
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                          minWidth: 32, minHeight: 32),
+                                    ),
                                     IconButton(
                                       onPressed: () {
                                         _closeClusterPanel();
@@ -3202,5 +3319,108 @@ class _DashedLinePainter extends CustomPainter {
     return start != oldDelegate.start ||
         end != oldDelegate.end ||
         color != oldDelegate.color;
+  }
+}
+
+class _ImpactAreaPainter extends CustomPainter {
+  final List<Map<String, dynamic>> strokes;
+  final List<Offset> currentStroke;
+  final double currentStrokeWidth;
+  final bool isCurrentEraser;
+  final Color color;
+  final double opacity;
+  final ({
+    double width,
+    double height,
+    double offsetX,
+    double offsetY
+  }) imageBounds;
+
+  _ImpactAreaPainter({
+    required this.strokes,
+    required this.currentStroke,
+    required this.currentStrokeWidth,
+    required this.isCurrentEraser,
+    required this.color,
+    required this.imageBounds,
+    required this.opacity,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 使用 saveLayer 创建新的图层，并应用整体透明度
+    // 这样笔画叠加时不会导致透明度累积，而是作为一个整体显示
+    canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height),
+        Paint()..color = Colors.white.withValues(alpha: opacity));
+
+    for (final stroke in strokes) {
+      final points =
+          (stroke['points'] as List).map((p) => Offset(p[0], p[1])).toList();
+      final width = (stroke['strokeWidth'] as num).toDouble();
+      final isEraser = stroke['isEraser'] as bool? ?? false;
+      final isShape = stroke['isShape'] as bool? ?? false;
+      _drawStroke(canvas, points, width, isEraser, isShape: isShape);
+    }
+
+    if (currentStroke.isNotEmpty) {
+      _drawStroke(canvas, currentStroke, currentStrokeWidth, isCurrentEraser);
+    }
+
+    canvas.restore();
+  }
+
+  void _drawStroke(Canvas canvas, List<Offset> points, double width,
+      bool isEraser, {bool isShape = false}) {
+    if (points.isEmpty) return;
+
+    final paint = Paint()
+      ..color = isEraser
+          ? Colors.transparent
+          : color.withValues(alpha: 1.0) // 笔画使用不透明颜色
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = isShape && !isEraser ? PaintingStyle.fill : PaintingStyle.stroke;
+
+    if (isEraser) {
+      paint.blendMode = BlendMode.clear;
+    }
+
+    final path = Path();
+    final start = _limitPoint(points[0]);
+    path.moveTo(start.dx, start.dy);
+
+    // 如果只有一个点，画一个点
+    if (points.length == 1) {
+      path.lineTo(start.dx, start.dy);
+    }
+
+    for (int i = 1; i < points.length; i++) {
+      final p = _limitPoint(points[i]);
+      path.lineTo(p.dx, p.dy);
+    }
+    
+    // 如果是填充模式，需要闭合路径
+    if (isShape && !isEraser) {
+      path.close();
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  // 将相对坐标转换为画布坐标，并限制在图片区域内
+  Offset _limitPoint(Offset ratio) {
+    return Offset(
+      imageBounds.offsetX + ratio.dx * imageBounds.width,
+      imageBounds.offsetY + ratio.dy * imageBounds.height,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ImpactAreaPainter oldDelegate) {
+    return oldDelegate.strokes != strokes ||
+        oldDelegate.currentStroke != currentStroke ||
+        oldDelegate.opacity != opacity ||
+        oldDelegate.color != color;
   }
 }
