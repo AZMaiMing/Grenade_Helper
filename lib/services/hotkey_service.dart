@@ -242,7 +242,28 @@ class HotkeyService {
   /// 更新单键
   Future<void> updateHotkey(HotkeyAction action, HotkeyConfig config) async {
     await _settings.saveHotkey(action, config);
-    // 重注悬浮键
+    
+    // 检查是否是核心热键（如 toggleOverlay）
+    if (_registeredHotkeys.containsKey(action)) {
+      // 注销旧热键
+      final oldHotKey = _registeredHotkeys[action];
+      if (oldHotKey != null) {
+        try {
+          await hotKeyManager.unregister(oldHotKey);
+        } catch (e) {
+          debugPrint('[HotkeyService] Failed to unregister old hotkey: $e');
+        }
+      }
+      _registeredHotkeys.remove(action);
+      
+      // 注册新热键
+      if (config.modifiers.isNotEmpty) {
+        await _registerHotkey(action, config, _registeredHotkeys);
+        debugPrint('[HotkeyService] Core hotkey updated: $action');
+      }
+    }
+    
+    // 检查是否是悬浮窗热键
     if (_overlayHotkeys.containsKey(action)) {
       await unregisterOverlayHotkeys();
       await registerOverlayHotkeys();
