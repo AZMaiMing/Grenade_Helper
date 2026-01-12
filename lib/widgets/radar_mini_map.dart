@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import '../models.dart';
 
-/// 雷达小地图组件 - 以准星为中心显示放大的地图区域（带平滑动画）
+/// 雷达小地图
 class RadarMiniMap extends StatefulWidget {
   final String mapAssetPath;
   final Grenade? currentGrenade;
@@ -11,7 +11,7 @@ class RadarMiniMap extends StatefulWidget {
   final double height;
   final double zoomLevel;
 
-  // 准星位置参数
+  // 准星位置
   final double crosshairX;
   final double crosshairY;
   final bool isSnapped;
@@ -37,12 +37,11 @@ class _RadarMiniMapState extends State<RadarMiniMap>
     with SingleTickerProviderStateMixin {
   late Ticker _ticker;
 
-  // 当前动画位置（每帧平滑插值）
+  // 动画位置
   double _animatedX = 0.5;
   double _animatedY = 0.5;
 
   // 平滑追踪速度（0.0-1.0，值越大追踪越快）
-  // 0.35 提供快速但仍平滑的过渡
   static const double _smoothFactor = 0.35;
 
   @override
@@ -51,16 +50,16 @@ class _RadarMiniMapState extends State<RadarMiniMap>
     _animatedX = widget.crosshairX;
     _animatedY = widget.crosshairY;
 
-    // 使用 Ticker 驱动每帧更新
+    // 驱动更新
     _ticker = createTicker(_onTick)..start();
   }
 
   void _onTick(Duration elapsed) {
-    // 计算当前位置与目标位置的差距
+    // 计算差距
     final dx = widget.crosshairX - _animatedX;
     final dy = widget.crosshairY - _animatedY;
 
-    // 如果差距很小，直接到达目标位置
+    // 到达目标
     if (dx.abs() < 0.001 && dy.abs() < 0.001) {
       if (_animatedX != widget.crosshairX || _animatedY != widget.crosshairY) {
         setState(() {
@@ -71,7 +70,7 @@ class _RadarMiniMapState extends State<RadarMiniMap>
       return;
     }
 
-    // 平滑插值：每帧向目标位置移动一定比例
+    // 平滑插值
     setState(() {
       _animatedX += dx * _smoothFactor;
       _animatedY += dy * _smoothFactor;
@@ -86,12 +85,12 @@ class _RadarMiniMapState extends State<RadarMiniMap>
 
   @override
   Widget build(BuildContext context) {
-    // 检查动画是否已到达目标位置（用于延迟显示脉冲点，避免动画过程中的抖动）
+    // 检查动画完成
     final dx = (widget.crosshairX - _animatedX).abs();
     final dy = (widget.crosshairY - _animatedY).abs();
     final animationSettled = dx < 0.005 && dy < 0.005;
 
-    // 只有在吸附状态且动画已到达目标时才显示脉冲点
+    // 显示脉冲点
     final showPulsingDot = widget.isSnapped && animationSettled;
 
     return Container(
@@ -113,13 +112,13 @@ class _RadarMiniMapState extends State<RadarMiniMap>
         borderRadius: BorderRadius.circular(10),
         child: Stack(
           children: [
-            // 地图背景（放大并居中于准星位置）
+            // 地图背景
             _buildZoomedMap(_animatedX, _animatedY),
 
-            // 其他道具点位
+            // 其他点位
             ..._buildOtherPoints(_animatedX, _animatedY),
 
-            // 中心吸附点（仅在吸附且动画完成时显示脉冲点）
+            // 中心吸附点
             if (showPulsingDot)
               const Center(
                 child: _PulsingDot(color: Colors.orange, size: 14),
@@ -138,7 +137,7 @@ class _RadarMiniMapState extends State<RadarMiniMap>
               ),
             ),
 
-            // 十字准星引导线
+            // 十字准星
             CustomPaint(
               size: Size(widget.width, widget.height),
               painter: _CrosshairPainter(isSnapped: widget.isSnapped),
@@ -150,11 +149,10 @@ class _RadarMiniMapState extends State<RadarMiniMap>
   }
 
   Widget _buildZoomedMap(double centerX, double centerY) {
-    // 使用方形地图尺寸，取宽高中较大者确保覆盖整个容器
+    // 地图尺寸
     final mapSize = widget.width > widget.height ? widget.width : widget.height;
 
-    // 计算偏移量：让准星位置位于容器中心
-    // 地图以容器中心为基准点进行偏移
+    // 计算偏移
     final offsetX = (0.5 - centerX) * mapSize * widget.zoomLevel;
     final offsetY = (0.5 - centerY) * mapSize * widget.zoomLevel;
 
@@ -182,10 +180,10 @@ class _RadarMiniMapState extends State<RadarMiniMap>
     );
   }
 
-  /// 聚合阈值（与 overlay_state_service.dart 保持一致）
+  /// 聚合阈值
   static const double _clusterThreshold = 0.03;
 
-  /// 将道具按位置聚合成组
+  /// 聚合道具
   List<List<Grenade>> _clusterGrenades(List<Grenade> grenades) {
     if (grenades.isEmpty) return [];
 
@@ -216,13 +214,13 @@ class _RadarMiniMapState extends State<RadarMiniMap>
   }
 
   List<Widget> _buildOtherPoints(double centerX, double centerY) {
-    // 使用与 _buildZoomedMap 一致的地图尺寸
+    // 地图尺寸
     final mapSize = widget.width > widget.height ? widget.width : widget.height;
 
-    // 聚合所有点位
+    // 聚合点位
     var clusters = _clusterGrenades(widget.allGrenades);
 
-    // 如果已吸附，过滤掉包含当前道具的cluster（避免与中心脉冲点重复）
+    // 过滤当前
     if (widget.isSnapped && widget.currentGrenade != null) {
       clusters = clusters.where((cluster) {
         return !cluster.any((g) => g.id == widget.currentGrenade!.id);
@@ -230,18 +228,18 @@ class _RadarMiniMapState extends State<RadarMiniMap>
     }
 
     return clusters.map((cluster) {
-      // 使用第一个道具的位置作为cluster中心
+      // 确定中心
       final centerGrenade = cluster.first;
       final relX =
           (centerGrenade.xRatio - centerX) * mapSize * widget.zoomLevel;
       final relY =
           (centerGrenade.yRatio - centerY) * mapSize * widget.zoomLevel;
 
-      // 转换为容器坐标（以容器中心为原点）
+      // 转换坐标
       final screenX = widget.width / 2 + relX;
       final screenY = widget.height / 2 + relY;
 
-      // 如果超出容器可见范围，不显示
+      // 超出隐藏
       if (screenX < -10 ||
           screenX > widget.width + 10 ||
           screenY < -10 ||
@@ -250,7 +248,7 @@ class _RadarMiniMapState extends State<RadarMiniMap>
       }
 
       final count = cluster.length;
-      // 确定颜色：如果只有一种类型用该类型颜色，否则用混合色
+      // 确定颜色
       final types = cluster.map((g) => g.type).toSet();
       final color = types.length == 1
           ? _getGrenadeColor(types.first)
@@ -314,7 +312,7 @@ class _RadarMiniMapState extends State<RadarMiniMap>
   }
 }
 
-/// 十字准星绘制器
+/// 准星绘制
 class _CrosshairPainter extends CustomPainter {
   final bool isSnapped;
 
@@ -364,7 +362,7 @@ class _CrosshairPainter extends CustomPainter {
       oldDelegate.isSnapped != isSnapped;
 }
 
-/// 脉冲动画点（吸附时显示）
+/// 脉冲动画
 class _PulsingDot extends StatefulWidget {
   final Color color;
   final double size;

@@ -58,7 +58,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
   Future<void> _handleImport() async {
     if (_dataService == null) return;
 
-    // 使用文件选择器选择文件
+    // 选择文件
     final result = await FilePicker.platform.pickFiles(
       dialogTitle: '选择要导入的 .cs2pkg 文件',
     );
@@ -74,7 +74,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
       return;
     }
 
-    // 跳转到预览界面
+    // 跳转预览
     if (mounted) {
       final importResult = await Navigator.push<String>(
         context,
@@ -100,7 +100,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
 
     for (final filePath in filePaths) {
       if (filePath.toLowerCase().endsWith('.cs2pkg')) {
-        // 跳转到预览界面
+        // 跳转预览
         if (mounted) {
           final importResult = await Navigator.push<String>(
             context,
@@ -258,7 +258,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
               ),
             ),
             const SizedBox(height: 32),
-            // URL 导入输入框
+            // URL导入
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -328,7 +328,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
               ),
             ),
             const SizedBox(height: 24),
-            // 在线道具库入口
+            // 在线库
             OutlinedButton.icon(
               onPressed: () {
                 Navigator.push(
@@ -351,7 +351,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
       ),
     );
 
-    // 桌面端添加拖拽支持
+    // 拖拽支持
     if (_isDesktop) {
       body = DropTarget(
         onDragEntered: (_) => setState(() => _isDragging = true),

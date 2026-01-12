@@ -17,7 +17,7 @@ import '../widgets/joystick_widget.dart';
 import '../services/data_service.dart';
 import 'grenade_detail_screen.dart';
 
-// --- 页面级状态管理 ---
+// 状态管理
 
 final isEditModeProvider = StateProvider.autoDispose<bool>((ref) => false);
 final selectedLayerIndexProvider = StateProvider.autoDispose<int>((ref) => 0);
@@ -47,7 +47,7 @@ final _filteredGrenadesProvider =
   });
 });
 
-// --- 点位聚合模型 ---
+// 聚合模型
 class GrenadeCluster {
   final double xRatio;
   final double yRatio;
@@ -69,7 +69,7 @@ class GrenadeCluster {
   bool get hasNewImport => grenades.any((g) => g.isNewImport);
   bool get hasFavorite => grenades.any((g) => g.isFavorite);
 
-  // 检查是否包含多种类型的道具
+  // 检查多类型
   bool get hasMultipleTypes {
     if (grenades.length <= 1) return false;
     final firstType = grenades.first.type;
@@ -79,7 +79,7 @@ class GrenadeCluster {
 
 List<GrenadeCluster> clusterGrenades(List<Grenade> grenades,
     {double threshold = 0.0}) {
-  // 禁用合并：阈值设为 0
+  // 禁用合并
   if (grenades.isEmpty) return [];
   final List<GrenadeCluster> clusters = [];
   final List<Grenade> remaining = List.from(grenades);
@@ -145,31 +145,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Offset? _tempTapPosition;
   GrenadeCluster? _draggingCluster;
   Offset? _dragOffset;
-  Offset? _dragAnchorOffset; // 拖拽锚点偏移
+  Offset? _dragAnchorOffset; // 锚点偏移
   bool _isMovingCluster = false;
-  Grenade? _movingSingleGrenade; // 单个道具移动状态
+  Grenade? _movingSingleGrenade; // 单个移动
   late final PhotoViewController _photoViewController;
-  final GlobalKey _stackKey = GlobalKey(); // 添加 GlobalKey
-  bool _isSpawnSidebarExpanded = true; // 出生点侧边栏展开状态
-  bool _isImpactMode = false; // 是否开启爆点优先显示模式
+  final GlobalKey _stackKey = GlobalKey(); // GlobalKey
+  bool _isSpawnSidebarExpanded = true; // 侧边栏状态
+  bool _isImpactMode = false; // 爆点模式
 
-  // 摇杆模式相关状态
-  GrenadeCluster? _joystickCluster; // 摇杆模式下选中的标点
-  Offset? _joystickOriginalOffset; // 摇杆移动前的原始位置
+  // 摇杆状态
+  GrenadeCluster? _joystickCluster; // 选中标点
+  Offset? _joystickOriginalOffset; // 原始位置
 
-  // 爆点摇杆模式相关状态
-  GrenadeCluster? _joystickImpactCluster; // 摇杆模式下选中的爆点
-  Offset? _joystickImpactOriginalOffset; // 爆点摇杆移动前的原始位置
-  Offset? _impactJoystickDragOffset; // 爆点摇杆移动时的实时位置
+  // 爆点摇杆
+  GrenadeCluster? _joystickImpactCluster; // 选中爆点
+  Offset? _joystickImpactOriginalOffset; // 原始爆点
+  Offset? _impactJoystickDragOffset; // 实时爆点
 
-  // 爆点显示相关状态
-  GrenadeCluster? _selectedClusterForImpact; // 选中的点位（用于显示爆点）
+  // 爆点显示
+  GrenadeCluster? _selectedClusterForImpact; // 选中点位
 
-  // 爆点拖动编辑相关状态
-  GrenadeCluster? _draggingImpactCluster; // 正在拖动的爆点 cluster
-  Offset? _impactDragOffset; // 爆点拖动位置
-  Offset? _impactDragAnchorOffset; // 爆点拖动锚点偏移
-  Grenade? _movingSingleImpactGrenade; // 单个道具爆点移动状态
+  // 爆点拖动
+  GrenadeCluster? _draggingImpactCluster; // 拖动Cluster
+  Offset? _impactDragOffset; // 拖动位置
+  Offset? _impactDragAnchorOffset; // 拖动锚点
+  Grenade? _movingSingleImpactGrenade; // 单个爆点移动
 
 
   @override
@@ -180,7 +180,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final defaultIndex = widget.gameMap.layers.length > 1 ? 1 : 0;
     Future.microtask(() {
       ref.read(selectedLayerIndexProvider.notifier).state = defaultIndex;
-      // 通知悬浮窗服务当前地图
+      // 通知悬浮窗
       _updateOverlayState(defaultIndex);
     });
   }
@@ -188,14 +188,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void dispose() {
     _photoViewController.dispose();
-    // 离开地图时清除悬浮窗状态
+    // 清除悬浮窗
     globalOverlayState?.clearMap();
-    // 通知独立悬浮窗清除地图
+    // 通知清除
     _notifyOverlayWindowClearMap();
     super.dispose();
   }
 
-  /// 比较两个 Cluster 是否相同（基于第一个 Grenade 的 ID）
+  /// 比较Cluster
   bool _isSameCluster(GrenadeCluster? c1, GrenadeCluster? c2) {
     if (c1 == null || c2 == null) return false;
     if (c1 == c2) return true;
@@ -203,15 +203,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return c1.grenades.first.id == c2.grenades.first.id;
   }
 
-  /// 计算 BoxFit.contain 模式下正方形图片的实际显示区域
+  /// 计算图片区域
   /// 返回 (imageWidth, imageHeight, offsetX, offsetY)
   ({double width, double height, double offsetX, double offsetY})
       _getImageBounds(double containerWidth, double containerHeight) {
-    const double imageAspectRatio = 1.0; // 地图图片是正方形
+    const double imageAspectRatio = 1.0; // 正方形图片
     final double containerAspectRatio = containerWidth / containerHeight;
 
     if (containerAspectRatio > imageAspectRatio) {
-      // 容器更宽，图片以高度为准，左右有留白
+      // 宽容器
       final imageHeight = containerHeight;
       final imageWidth = containerHeight * imageAspectRatio;
       return (
@@ -221,7 +221,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         offsetY: 0.0,
       );
     } else {
-      // 容器更高，图片以宽度为准，上下有留白
+      // 高容器
       final imageWidth = containerWidth;
       final imageHeight = containerWidth / imageAspectRatio;
       return (
@@ -233,28 +233,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  /// 将屏幕全局坐标转换为原始图片坐标比例 (0-1)
+  /// 坐标转比例
   /// 返回 null 如果坐标无效
   Offset? _getLocalPosition(Offset globalPosition) {
-    // 1. 获取 Stack 的 RenderBox
+    // 获取RenderBox
     final RenderBox? box =
         _stackKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return null;
 
-    // 2. 将全局坐标转换为 Stack 的局部坐标
+    // 转局部坐标
     final localPosition = box.globalToLocal(globalPosition);
 
-    // 3. 获取 Container 尺寸（Stack 的尺寸）
+    // 获取尺寸
     final size = box.size;
 
-    // 4. 计算图片实际显示区域
+    // 计算区域
     final bounds = _getImageBounds(size.width, size.height);
 
-    // 5. 将局部坐标转换为相对于图片区域的偏移
+    // 计算偏移
     final tapX = localPosition.dx - bounds.offsetX;
     final tapY = localPosition.dy - bounds.offsetY;
 
-    // 6. 转换为比例
+    // 转比例
     return Offset(tapX / bounds.width, tapY / bounds.height);
   }
 
@@ -330,7 +330,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return;
       }
 
-      // 处理单个道具移动
+      // 移动单个
       if (_movingSingleGrenade != null) {
         final isar = ref.read(isarProvider);
         final targetId = _movingSingleGrenade!.id;
@@ -352,10 +352,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             backgroundColor: Colors.cyan,
             duration: Duration(seconds: 1)));
 
-        // 移动完成后，尝试恢复选中状态（无论爆点模式还是标准模式）
+        // 恢复选中
         Future.delayed(const Duration(milliseconds: 50), () {
           if (!mounted) return;
-          // 使用正确的 Provider 获取当前楼层的道具列表
+          // 获取列表
           final grenades =
               ref.read(_filteredGrenadesProvider(layerId)).asData?.value;
           if (grenades != null) {
@@ -372,7 +372,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               clusters = clusterGrenades(grenades, threshold: clusterThreshold);
             }
 
-            // 找到包含该道具 ID 的 cluster
+            // 找Cluster
             try {
               final cluster = clusters
                   .firstWhere((c) => c.grenades.any((g) => g.id == targetId));
@@ -380,7 +380,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 _selectedClusterForImpact = cluster;
               });
             } catch (_) {
-              // 如果找不到，则不恢复选中
+              // 找不到忽略
             }
           }
         });
@@ -391,7 +391,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return;
       }
 
-      // 处理单个爆点移动
+      // 移动爆点
       if (_movingSingleImpactGrenade != null) {
         final isar = ref.read(isarProvider);
         await isar.writeTxn(() async {
@@ -411,7 +411,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             backgroundColor: Colors.purpleAccent,
             duration: Duration(seconds: 1)));
 
-        // 移动完成后，尝试恢复选中状态
+        // 恢复选中
         final impactTargetId = _movingSingleImpactGrenade!.id;
         Future.delayed(const Duration(milliseconds: 50), () {
           if (!mounted) return;
@@ -447,7 +447,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return;
       }
 
-      // 处理 Cluster 爆点整体移动
+      // 移动Cluster爆点
       if (_draggingImpactCluster != null) {
         final isar = ref.read(isarProvider);
         await isar.writeTxn(() async {
@@ -510,10 +510,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final isEditMode = ref.read(isEditModeProvider);
     if (!isEditMode) return;
 
-    // 如果道具列表面板已打开，禁止创建新道具
+    // 面板打开禁创建
     if (_selectedClusterForImpact != null) return;
 
-    // 使用 GlobalKey 和全局坐标获取精确的本地比例
+    // 精确比例
     final localRatio = _getLocalPosition(details.globalPosition);
 
     if (localRatio == null) {
@@ -523,7 +523,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final xRatio = localRatio.dx;
     final yRatio = localRatio.dy;
 
-    // 边界检查：只允许在地图范围内创建点位
+    // 范围检查
     if (xRatio < 0 || xRatio > 1 || yRatio < 0 || yRatio > 1) {
       return; // 点击在地图外，忽略
     }
@@ -603,12 +603,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _handleClusterTap(GrenadeCluster cluster, int layerId) async {
-    // 处理合并：如果正在移动单个道具，点击现有点位则合并进去
+    // 合并逻辑
     if (_movingSingleGrenade != null) {
       if (cluster.grenades.any((g) => g.id == _movingSingleGrenade!.id)) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("不能合并到自己所在的点位"),
-            behavior: SnackBarBehavior.floating, // 添加浮动样式，避免被其他遮挡
+            // 避免遮挡
+            behavior: SnackBarBehavior.floating, 
             duration: Duration(seconds: 1)));
         return;
       }
@@ -617,8 +618,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       await isar.writeTxn(() async {
         final g = await isar.grenades.get(_movingSingleGrenade!.id);
         if (g != null) {
-          // 使用 cluster 的坐标进行合并
-          // 为了物理合并，将坐标设为 cluster 中第一个道具的坐标
+          // 合并坐标
+          // 物理合并
           final targetX = cluster.grenades.first.xRatio;
           final targetY = cluster.grenades.first.yRatio;
 
@@ -649,7 +650,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (_movingSingleImpactGrenade != null) {
       final isar = ref.read(isarProvider);
 
-      // 使用目标 Cluster 的坐标作为新爆点位置（吸附效果）
+      // 吸附效果
       final targetX = cluster.xRatio;
       final targetY = cluster.yRatio;
 
@@ -676,9 +677,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
-    // 处理整组点位合并：如果正在移动点位组，点击现有点位则全部合并进去
+    // 组合并
     if (_isMovingCluster && _draggingCluster != null) {
-      // 检查是否包含自身（只要有任意重叠ID即视为由于源点位尚未消失而点击了自己）
+      // 自包含检查
       final draggingIds = _draggingCluster!.grenades.map((g) => g.id).toSet();
       final targetIds = cluster.grenades.map((g) => g.id).toSet();
 
@@ -692,7 +693,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       final isar = ref.read(isarProvider);
       await isar.writeTxn(() async {
-        // 使用目标 Cluster 的第一个坐标作为合并基准
+        // 合并基准
         final targetX = cluster.grenades.first.xRatio;
         final targetY = cluster.grenades.first.yRatio;
 
@@ -726,12 +727,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showClusterBottomSheet(GrenadeCluster cluster, int layerId) async {
-    // 设置选中状态，触发爆点显示和底部面板显示
+    // 选中状态
     setState(() {
       _selectedClusterForImpact = cluster;
     });
 
-    // 清除该点位所有道具的红点标记（新导入标记）
+    // 清除新标记
     final newImportGrenades =
         cluster.grenades.where((g) => g.isNewImport).toList();
     if (newImportGrenades.isNotEmpty) {
@@ -745,7 +746,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  /// 关闭底部道具列表面板
+  // 关闭面板
   void _closeClusterPanel() {
     setState(() {
       _selectedClusterForImpact = null;
@@ -778,12 +779,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 GrenadeDetailScreen(grenadeId: id, isEditing: true)));
   }
 
-  /// 批量删除道具（在单个事务中完成，避免嵌套事务错误）
+  /// 批量删除
   Future<void> _deleteGrenadesInBatch(List<Grenade> grenades) async {
     if (grenades.isEmpty) return;
     final isar = ref.read(isarProvider);
 
-    // 先加载所有必要的数据
+    // 加载数据
     for (final g in grenades) {
       g.steps.loadSync();
       for (final step in g.steps) {
@@ -791,7 +792,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     }
 
-    // 先删除所有媒体文件
+    // 删文件
     for (final g in grenades) {
       for (final step in g.steps) {
         for (final media in step.medias) {

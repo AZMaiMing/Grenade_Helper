@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/seasonal_theme_service.dart';
 import '../widgets/snowfall_effect.dart';
 
-/// 圣诞节主题
-///
-/// 激活期间：12月20日 - 1月2日
-/// 配色：红色、绿色、金色
+/// 圣诞主题
+/// 激活：12.20-1.2
+/// 配色：红绿金
 class ChristmasTheme extends SeasonalTheme {
   @override
   String get id => 'christmas';
@@ -28,7 +27,7 @@ class ChristmasTheme extends SeasonalTheme {
   @override
   int get endDay => 2;
 
-  // 圣诞配色常量
+  // 配色常量
   static const christmasRed = Color(0xFFC41E3A);
   static const christmasGreen = Color(0xFF228B22);
   static const christmasGold = Color(0xFFFFD700);
@@ -81,10 +80,7 @@ class ChristmasTheme extends SeasonalTheme {
   }
 }
 
-/// 初始化并注册所有节日主题
+/// 注册主题
 void initializeSeasonalThemes() {
   SeasonalThemeManager.registerTheme(ChristmasTheme());
-  // 未来可以在这里注册更多主题：
-  // SeasonalThemeManager.registerTheme(SpringFestivalTheme());
-  // SeasonalThemeManager.registerTheme(ValentineTheme());
 }

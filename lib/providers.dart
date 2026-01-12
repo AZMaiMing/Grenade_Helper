@@ -8,11 +8,11 @@ import 'services/seasonal_theme_service.dart';
 // 全局 Isar 数据库
 final isarProvider = Provider<Isar>((ref) => throw UnimplementedError());
 
-// 主题模式 Provider (0=跟随系统, 1=浅色, 2=深色)
-final themeModeProvider = StateProvider<int>((ref) => 2); // 默认深色
+// 主题模式 Provider
+final themeModeProvider = StateProvider<int>((ref) => 2);
 
-// 节日主题开关 Provider (用户是否启用节日主题)
-final seasonalThemeEnabledProvider = StateProvider<bool>((ref) => true); // 默认开启
+// 节日主题开关 Provider
+final seasonalThemeEnabledProvider = StateProvider<bool>((ref) => true);
 
 // 当前激活的节日主题 Provider
 final activeSeasonalThemeProvider = Provider<SeasonalTheme?>((ref) {
@@ -58,19 +58,18 @@ final impactAreaOpacityProvider = StateProvider<double>((ref) => 0.4);
 
 // ==================== Isar 数据流 ====================
 
-// 层级 1: 原始数据源 (Raw Data)
-// 从 Isar 数据库取当前楼层的所有数据
+// 层级 1: 原始数据源
+// 从 Isar 数据库取当前楼层数据
 final _rawLayerGrenadesProvider =
     StreamProvider.autoDispose.family<List<Grenade>, int>((ref, layerId) {
   final isar = ref.watch(isarProvider);
-  // 监听该楼层的所有 Grenade 变化
   return isar.grenades
       .filter()
       .layer((q) => q.idEqualTo(layerId))
       .watch(fireImmediately: true);
 });
 
-// 层级 2: 逻辑过滤器 (Logic Filter)
+// 层级 2: 逻辑过滤器
 final filteredGrenadesProvider =
     Provider.autoDispose.family<AsyncValue<List<Grenade>>, int>((ref, layerId) {
   // 1. 监听原始数据流

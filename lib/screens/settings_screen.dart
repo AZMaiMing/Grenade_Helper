@@ -8,7 +8,7 @@ import '../services/seasonal_theme_service.dart';
 import '../providers.dart';
 import '../main.dart' show sendOverlayCommand;
 
-/// 设置页面
+/// 设置
 class SettingsScreen extends ConsumerStatefulWidget {
   final SettingsService? settingsService;
   final void Function(HotkeyAction, HotkeyConfig)? onHotkeyChanged;
@@ -26,18 +26,18 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late Map<HotkeyAction, HotkeyConfig> _hotkeys;
   late double _overlayOpacity;
-  late int _overlaySize; // 悬浮窗尺寸 (0=小, 1=中, 2=大)
+  late int _overlaySize; // 悬浮窗尺寸
   late bool _closeToTray;
-  late int _overlayNavSpeed; // 悬浮窗导航速度 (1-5)
-  // 地图连线设置
+  late int _overlayNavSpeed; // 导航速度
+  // 连线设置
   late int _mapLineColor;
   late double _mapLineOpacity;
   late double _impactAreaOpacity;
-  // 摇杆相关设置（仅移动端）
+  // 摇杆设置
   late int _markerMoveMode;
   late double _joystickOpacity;
   late int _joystickSpeed;
-  // 数据存储路径（仅桌面端）
+  // 存储路径
   String _currentDataPath = '';
   String _defaultDataPath = '';
 
@@ -53,13 +53,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void didUpdateWidget(SettingsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 每次设置界面重新激活时重新加载设置，确保显示最新值
+    // 激活时重载
     _loadSettings();
   }
 
   void _loadSettings() {
     if (widget.settingsService != null) {
-      // 重新从设置服务加载，确保获取最新值
+      // 重载设置
       widget.settingsService!.reload();
       _hotkeys = widget.settingsService!.getHotkeys();
       _overlayOpacity = widget.settingsService!.getOverlayOpacity();
@@ -69,13 +69,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _mapLineColor = widget.settingsService!.getMapLineColor();
       _mapLineOpacity = widget.settingsService!.getMapLineOpacity();
       _impactAreaOpacity = widget.settingsService!.getImpactAreaOpacity();
-      // 同步到 Provider
+      // 同步Provider
       ref.read(impactAreaOpacityProvider.notifier).state = _impactAreaOpacity;
 
       _markerMoveMode = widget.settingsService!.getMarkerMoveMode();
       _joystickOpacity = widget.settingsService!.getJoystickOpacity();
       _joystickSpeed = widget.settingsService!.getJoystickSpeed();
-      // 加载数据路径（异步）
+      // 加载路径
       if (_isDesktop) {
         _loadDataPath();
       }
@@ -324,7 +324,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onChanged: (value) async {
                     setState(() => _overlayOpacity = value);
                     await widget.settingsService!.setOverlayOpacity(value);
-                    // 通知悬浮窗刷新透明度（直接传递值）
+                    // 刷新透明度
                     sendOverlayCommand('update_opacity', {'opacity': value});
                   },
                 ),
@@ -345,7 +345,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   final newSize = value.first;
                   setState(() => _overlaySize = newSize);
                   await widget.settingsService!.setOverlaySize(newSize);
-                  // 通知悬浮窗刷新尺寸
+                  // 刷新尺寸
                   sendOverlayCommand('update_size', {'sizeIndex': newSize});
                 },
               ),
@@ -362,12 +362,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   divisions: 4,
                   label: '$_overlayNavSpeed 档',
                   onChanged: (value) async {
-                    // 使用 round() 避免浮点精度问题（如 0.999... -> 1）
+                    // 避免精度问题
                     final speedLevel = value.round();
                     setState(() => _overlayNavSpeed = speedLevel);
                     await widget.settingsService!
                         .setOverlayNavSpeed(speedLevel);
-                    // 通知悬浮窗刷新导航速度
+                    // 刷新速度
                     sendOverlayCommand(
                         'update_nav_speed', {'speed': speedLevel});
                   },
@@ -541,7 +541,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  /// 更改数据目录
+  /// 更改目录
   Future<void> _changeDataDirectory() async {
     final result = await FilePicker.platform.getDirectoryPath(
       dialogTitle: '选择数据存储目录',
@@ -567,7 +567,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  /// 恢复默认路径
+  /// 恢复默认
   Future<void> _resetToDefaultPath() async {
     final oldPath = _currentDataPath;
     final newPath = _defaultDataPath;
@@ -588,7 +588,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  /// 显示迁移进度的对话框（简化版）
+  /// 迁移对话框
   Future<bool?> _showMigrationDialog() {
     return showDialog<bool>(
       context: context,
@@ -613,7 +613,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  /// 显示重启提示对话框
+  /// 重启提示
   void _showRestartDialog() {
     showDialog(
       context: context,
@@ -636,7 +636,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  /// 重置快捷键为默认值
+  /// 重置快捷键
   Future<void> _resetHotkeysToDefault() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -666,7 +666,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _hotkeys = widget.settingsService!.getHotkeys();
       });
 
-      // 通知悬浮窗重新加载热键配置
+      // 通知重载热键
       final hotkeysJson = <String, dynamic>{};
       for (final entry in _hotkeys.entries) {
         hotkeysJson[entry.key.name] = entry.value.toJson();
@@ -682,7 +682,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  /// 构建节日主题开关
+  /// 节日开关组件
   Widget _buildSeasonalThemeToggle() {
     final seasonalTheme = SeasonalThemeManager.getActiveTheme();
     if (seasonalTheme == null) return const SizedBox.shrink();

@@ -1,25 +1,24 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-/// 底部弹出式摇杆组件
-/// 用于在编辑模式下控制标点移动
+/// 摇杆组件
 class JoystickBottomSheet extends StatefulWidget {
-  /// 摇杆透明度 (0.1-1.0)
+  /// 透明度
   final double opacity;
 
-  /// 移动速度档位 (1-5)
+  /// 速度档位
   final int speedLevel;
 
-  /// 方向回调，返回标准化方向向量 (x: -1到1, y: -1到1)
+  /// 方向回调
   final Function(Offset direction) onMove;
 
-  /// 确认移动回调
+  /// 确认回调
   final VoidCallback onConfirm;
 
-  /// 取消移动回调
+  /// 取消回调
   final VoidCallback onCancel;
 
-  /// 标点名称（用于显示）
+  /// 标点名称
   final String? clusterName;
 
   const JoystickBottomSheet({
@@ -40,7 +39,7 @@ class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
   Offset _knobPosition = Offset.zero;
   Timer? _moveTimer;
 
-  // 摇杆尺寸
+  // 尺寸
   static const double _baseRadius = 60.0;
   static const double _knobRadius = 25.0;
 
@@ -52,21 +51,19 @@ class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
 
   void _startTimer() {
     _stopTimer();
-    // 使用 16ms (约60fps) 的定时器触发移动
+    // 定时器
     _moveTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
       if (_knobPosition == Offset.zero) return;
 
       final maxDistance = _baseRadius - _knobRadius;
-      // 计算标准化方向向量 (-1 到 1)
+      // 标准化向量
       final normalizedDirection = Offset(
         _knobPosition.dx / maxDistance,
         _knobPosition.dy / maxDistance,
       );
 
-      // 只有在有明显移动时才触发回调
+      // 触发回调
       if (normalizedDirection.distance > 0.1) {
-        // 调用回调，因为是高频调用，外层处理时可能需要考虑性能，
-        // 但在这里我们直接传出方向，由 map_screen 决定怎么根据 step 移动
         widget.onMove(normalizedDirection);
       }
     });
@@ -299,7 +296,7 @@ class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
   }
 
   void _onPanStart(DragStartDetails details) {
-    _startTimer(); // 开始持续移动
+    _startTimer(); // 开始移动
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
@@ -318,7 +315,6 @@ class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
         );
       }
     });
-    // 注意：不再在 onPanUpdate 中直接调用 onMove，而是由定时器调用
   }
 
   void _onPanEnd(DragEndDetails details) {
@@ -329,7 +325,7 @@ class _JoystickBottomSheetState extends State<JoystickBottomSheet> {
   }
 }
 
-/// 显示摇杆底部弹窗
+/// 显示摇杆
 Future<void> showJoystickBottomSheet({
   required BuildContext context,
   required double opacity,
@@ -338,7 +334,7 @@ Future<void> showJoystickBottomSheet({
   required VoidCallback onConfirm,
   required VoidCallback onCancel,
   String? clusterName,
-  Color barrierColor = Colors.black54, // 添加 barrierColor 参数，默认还是半透明
+  Color barrierColor = Colors.black54, // 遮罩颜色
 }) {
   return showModalBottomSheet(
     context: context,

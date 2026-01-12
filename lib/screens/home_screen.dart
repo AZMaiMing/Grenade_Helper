@@ -13,7 +13,7 @@ import 'share_screen.dart';
 import 'settings_screen.dart';
 import 'about_screen.dart';
 
-// 全局搜索逻辑
+// 全局搜索
 class GlobalSearchDelegate extends SearchDelegate {
   final WidgetRef ref;
   GlobalSearchDelegate(this.ref);
@@ -35,7 +35,7 @@ class GlobalSearchDelegate extends SearchDelegate {
     if (query.isEmpty) return const SizedBox();
 
     final isar = ref.read(isarProvider);
-    // 模糊搜索：标题包含 query
+    // 模糊搜索
     final results = isar.grenades
         .filter()
         .titleContains(query, caseSensitive: false)
@@ -110,7 +110,7 @@ class HomeScreen extends ConsumerWidget {
                 child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 带圣诞帽的 Logo
+                // Logo
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -122,7 +122,7 @@ class HomeScreen extends ConsumerWidget {
                         fit: BoxFit.cover,
                       ),
                     ),
-                    // 圣诞帽（戴在 logo 顶部）
+                    // 圣诞帽
                     if (seasonalTheme != null)
                       const Positioned(
                         top: -25,
@@ -252,7 +252,7 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
 
-    // 如果有激活的节日主题，添加装饰效果
+    // 节日装饰
     if (seasonalTheme != null) {
       body = SnowfallEffect(
         snowflakeCount: 25,

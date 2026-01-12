@@ -1,9 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// 雪花飘落动画效果
-///
-/// 轻量级实现，使用少量雪花粒子避免性能问题
+/// 雪花动画
+/// 轻量级实现
 class SnowfallEffect extends StatefulWidget {
   final Widget child;
   final int snowflakeCount;
@@ -77,7 +76,7 @@ class _SnowfallEffectState extends State<SnowfallEffect>
                     snowflakes: _snowflakes,
                     time: DateTime.now().millisecondsSinceEpoch / 1000.0,
                     onUpdate: (index) {
-                      // 雪花落到底部后重置到顶部
+                      // 重置雪花
                       if (_snowflakes[index].y > 1.0) {
                         _snowflakes[index] = _createSnowflake(-0.05);
                       } else {
@@ -96,7 +95,7 @@ class _SnowfallEffectState extends State<SnowfallEffect>
   }
 }
 
-/// 单个雪花的数据
+/// 雪花数据
 class Snowflake {
   double x;
   double y;
@@ -117,7 +116,7 @@ class Snowflake {
   });
 }
 
-/// 雪花绘制器
+/// 雪花绘制
 class SnowfallPainter extends CustomPainter {
   final List<Snowflake> snowflakes;
   final double time;
@@ -134,7 +133,7 @@ class SnowfallPainter extends CustomPainter {
     for (int i = 0; i < snowflakes.length; i++) {
       final flake = snowflakes[i];
 
-      // 计算水平摇摆
+      // 计算摇摆
       final wobbleOffset = sin(time * flake.wobbleSpeed + i) * flake.wobble;
       final x = (flake.x + wobbleOffset) * size.width;
       final y = flake.y * size.height;
@@ -145,7 +144,7 @@ class SnowfallPainter extends CustomPainter {
 
       canvas.drawCircle(Offset(x, y), flake.size, paint);
 
-      // 触发位置更新
+      // 触发更新
       onUpdate?.call(i);
     }
   }
@@ -154,7 +153,7 @@ class SnowfallPainter extends CustomPainter {
   bool shouldRepaint(SnowfallPainter oldDelegate) => true;
 }
 
-/// 圣诞徽章组件
+/// 圣诞徽章
 class ChristmasBadge extends StatelessWidget {
   final double size;
 
@@ -193,7 +192,7 @@ class ChristmasBadge extends StatelessWidget {
   }
 }
 
-/// 圣诞灯带组件
+/// 圣诞灯带
 class ChristmasLights extends StatefulWidget {
   final double height;
 
@@ -292,7 +291,7 @@ class _LightsPainter extends CustomPainter {
       final y = wireY + 8;
       final color = _colors[i % _colors.length];
 
-      // 交替闪烁效果
+      // 闪烁效果
       final brightness = (i % 2 == 0) ? animationValue : (1 - animationValue);
       final glowOpacity = 0.3 + brightness * 0.5;
 
@@ -325,7 +324,7 @@ class _LightsPainter extends CustomPainter {
       oldDelegate.animationValue != animationValue;
 }
 
-/// 圣诞帽组件
+/// 圣诞帽
 class ChristmasHat extends StatelessWidget {
   final double width;
 
@@ -352,7 +351,7 @@ class _ChristmasHatPainter extends CustomPainter {
     final width = size.width;
     final height = size.height;
 
-    // 红色帽子主体（三角形）
+    // 帽子主体
     final hatPath = Path();
     hatPath.moveTo(width * 0.5, 0); // 顶点
     hatPath.lineTo(width * 0.05, height * 0.75); // 左下
@@ -378,7 +377,7 @@ class _ChristmasHatPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawPath(furPath, furPaint);
 
-    // 毛边纹理（小圆点）
+    // 毛边纹理
     final dotPaint = Paint()
       ..color = const Color(0xFFF5F5F5)
       ..style = PaintingStyle.fill;
@@ -386,7 +385,7 @@ class _ChristmasHatPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, height * 0.88), width * 0.03, dotPaint);
     }
 
-    // 顶部白色绒球
+    // 顶部绒球
     final pompomPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;

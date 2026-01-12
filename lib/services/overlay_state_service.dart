@@ -5,23 +5,23 @@ import 'package:window_manager/window_manager.dart';
 import '../models.dart';
 import 'settings_service.dart';
 
-/// 悬浮窗状态服务 - 管理悬浮窗与主窗口的状态同步
+/// 悬浮窗状态服务
 class OverlayStateService extends ChangeNotifier {
   final Isar isar;
 
-  // 当前选中的地图和楼层
+  // 选中地图/楼层
   GameMap? _currentMap;
   MapLayer? _currentLayer;
 
-  // 当前地图的所有道具（已过滤）
+  // 当前道具
   List<Grenade> _allGrenades = [];
   List<Grenade> _filteredGrenades = [];
 
-  // 当前选中的道具索引
+  // 选中索引
   int _currentGrenadeIndex = 0;
   int _currentStepIndex = 0;
 
-  // 过滤器状态
+  // 过滤器
   final Set<int> _activeFilters = {
     GrenadeType.smoke,
     GrenadeType.flash,
@@ -30,61 +30,61 @@ class OverlayStateService extends ChangeNotifier {
     GrenadeType.wallbang,
   };
 
-  // 准星位置 (0.0-1.0 比例坐标)
+  // 准星位置
   double _crosshairX = 0.5;
   double _crosshairY = 0.5;
   bool _isSnapped = false;
 
-  // 吸附确认状态（延迟 0.3 秒后才确认，用于显示道具步骤内容）
+  // 吸附确认状态
   bool _isSnapConfirmed = false;
   Timer? _snapConfirmTimer;
 
-  // 准星移动常量
+  // 移动常量
   static const int _moveIntervalMs = 16; // 约60fps
 
-  // 速度档位配置 (1-5档对应的速度值)
+  // 速度档位配置
   static const List<double> _speedLevels = [
-    0.0025, // 1档 - 最慢
-    0.003, // 2档
+    0.0025, 
+    0.003, 
     0.004, // 3档 - 当前默认
-    0.0045, // 4档
-    0.005, // 5档 - 最快
+    0.0045, 
+    0.005, 
   ];
 
-  // 吸附步长档位配置 (1-5档对应的吸附阈值)
+  // 吸附阈值配置
   static const List<double> _snapThresholdLevels = [
-    0.015, // 1档 - 吸附范围最小
-    0.018, // 2档
+    0.015, 
+    0.018, 
     0.02, // 3档 - 默认
-    0.022, // 4档
-    0.025, // 5档 - 吸附范围最大
+    0.022, 
+    0.025, 
   ];
 
-  // 当前速度档位 (1-5)
+  // 当前档位
   int _navSpeedLevel = 3;
 
-  /// 获取当前速度档位
+  /// 获取档位
   int get navSpeedLevel => _navSpeedLevel;
 
-  /// 设置速度档位 (1-5)
+  /// 设置档位
   void setNavSpeedLevel(int level) {
     _navSpeedLevel = level.clamp(1, 5);
     debugPrint(
         '[OverlayStateService] setNavSpeedLevel: $level -> $_navSpeedLevel, speed: ${_speedLevels[_navSpeedLevel - 1]}, snapThreshold: ${_snapThresholdLevels[_navSpeedLevel - 1]}');
   }
 
-  /// 获取当前速度值
+  /// 获取速度
   double get _moveSpeed {
     final speed = _speedLevels[_navSpeedLevel - 1];
     return speed;
   }
 
-  /// 获取当前吸附阈值（根据速度档位动态调整）
+  /// 获取吸附阈值
   double get _snapThreshold {
     return _snapThresholdLevels[_navSpeedLevel - 1];
   }
 
-  /// 增加导航速度档位
+  /// 增加速度
   void increaseNavSpeed() {
     if (_navSpeedLevel < 5) {
       setNavSpeedLevel(_navSpeedLevel + 1);
@@ -93,7 +93,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 减少导航速度档位
+  /// 减少速度
   void decreaseNavSpeed() {
     if (_navSpeedLevel > 1) {
       setNavSpeedLevel(_navSpeedLevel - 1);
@@ -102,61 +102,61 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  // 连续移动状态
+  // 移动状态
   final Set<NavigationDirection> _activeDirections = {};
-  // 心跳包记录（用于 Windows 全局热键，因为没有 keyUp 事件，通过连续的 keyDown 心跳维持移动）
+  // 心跳记录
   final Map<NavigationDirection, DateTime> _lastHeartbeat = {};
   Timer? _moveTimer;
   Timer? _heartbeatTimer;
 
-  // 记忆：最后查看的道具 ID（按地图分组）
+  // 记忆位置
   final Map<int, int> _lastViewedGrenadeByMap = {};
 
-  // 数据监听订阅
+  // 监听订阅
   StreamSubscription<void>? _grenadeSubscription;
 
-  // 视频播放控制回调
+  // 视频回调
   VoidCallback? _videoTogglePlayPauseCallback;
 
   OverlayStateService(this.isar);
 
-  /// 注册视频播放/暂停回调
+  /// 注册视频回调
   void setVideoTogglePlayPauseCallback(VoidCallback? callback) {
     _videoTogglePlayPauseCallback = callback;
   }
 
-  /// 触发视频播放/暂停
+  /// 触发播放/暂停
   void triggerVideoTogglePlayPause() {
     debugPrint('[OverlayStateService] triggerVideoTogglePlayPause called');
     _videoTogglePlayPauseCallback?.call();
   }
 
-  /// 触发 UI 刷新（用于外部通知设置变更）
+  /// 刷新UI
   void refresh() {
     notifyListeners();
   }
 
-  /// 强制重新加载数据（用于主窗口修改数据后通知悬浮窗刷新）
+  /// 强制重载
   void reloadData() {
     debugPrint('[OverlayStateService] reloadData called, reloading grenades...');
     _loadGrenades(notify: true);
   }
 
-  // 悬浮窗透明度（用于跨进程 IPC 更新）
+  // 透明度
   double _overlayOpacity = 0.9;
   double get overlayOpacity => _overlayOpacity;
 
-  /// 设置悬浮窗透明度（由 IPC 调用）
+  /// 设置透明度
   void setOpacity(double value) {
     _overlayOpacity = value;
     notifyListeners();
   }
 
-  // 悬浮窗尺寸索引 (0=小, 1=中, 2=大)
+  // 尺寸索引
   int _overlaySizeIndex = 1;
   int get overlaySizeIndex => _overlaySizeIndex;
 
-  /// 设置悬浮窗尺寸并调整窗口大小（由 IPC 调用）
+  /// 设置尺寸
   Future<void> setOverlaySize(int index) async {
     _overlaySizeIndex = index;
     final s = SettingsService.calculateSizePixels(index);
@@ -191,7 +191,7 @@ class OverlayStateService extends ChangeNotifier {
   double get crosshairY => _crosshairY;
   bool get isSnapped => _isSnapped;
 
-  /// 吸附是否已确认（0.3秒后），用于决定是否显示道具步骤内容
+  /// 是否确认吸附
   bool get isSnapConfirmed => _isSnapConfirmed;
 
   Grenade? get currentGrenade {
@@ -203,10 +203,10 @@ class OverlayStateService extends ChangeNotifier {
     return _filteredGrenades[_currentGrenadeIndex];
   }
 
-  /// 合并阈值（与 map_screen.dart 中的 clusterGrenades 保持一致）
+  /// 合并阈值
   static const double _clusterThreshold = 0.03;
 
-  /// 获取当前点位（cluster）内的所有道具
+  /// 获取点位道具
   List<Grenade> get currentClusterGrenades {
     final current = currentGrenade;
     if (current == null) return [];
@@ -218,7 +218,7 @@ class OverlayStateService extends ChangeNotifier {
     }).toList();
   }
 
-  /// 当前道具在 cluster 内的索引
+  /// 点位内索引
   int get currentClusterIndex {
     final cluster = currentClusterGrenades;
     if (cluster.isEmpty || currentGrenade == null) return 0;
@@ -227,7 +227,7 @@ class OverlayStateService extends ChangeNotifier {
 
   bool get hasMap => _currentMap != null && _currentLayer != null;
 
-  /// 设置当前地图（从 MapScreen 调用）
+  /// 设置地图
   void setCurrentMap(GameMap map, MapLayer layer) {
     // 只有当 ID 变化时才重新设置，避免重复刷新
     if (_currentMap?.id == map.id && _currentLayer?.id == layer.id) {
@@ -263,7 +263,7 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 清除地图上下文（离开 MapScreen 时）
+  /// 清除地图
   void clearMap() {
     _grenadeSubscription?.cancel();
 
@@ -297,7 +297,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 加载当前楼层的道具
+  /// 加载道具
   void _loadGrenades({bool notify = false}) {
     if (_currentLayer == null) {
       _allGrenades.clear();
@@ -323,7 +323,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 应用过滤器
+  /// 应用过滤
   void _applyFilters() {
     // 保存当前选中的道具 ID（用于恢复位置）
     final currentGrenadeId = currentGrenade?.id;
@@ -346,7 +346,7 @@ class OverlayStateService extends ChangeNotifier {
     _currentStepIndex = 0;
   }
 
-  /// 切换过滤器
+  /// 切换过滤
   void toggleFilter(int type) {
     if (_activeFilters.contains(type)) {
       // 确保至少保留一个过滤器
@@ -360,7 +360,7 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 切换到当前点位的上一个道具（只在同一点位内循环）
+  /// 上一个道具
   void prevGrenade() {
     final cluster = currentClusterGrenades;
     if (cluster.isEmpty) return;
@@ -379,7 +379,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 切换到当前点位的下一个道具（只在同一点位内循环）
+  /// 下一个道具
   void nextGrenade() {
     final cluster = currentClusterGrenades;
     if (cluster.isEmpty) return;
@@ -398,7 +398,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 切换到上一步
+  /// 上一步
   void prevStep() {
     if (currentGrenade == null) return;
     final steps = currentGrenade!.steps.toList();
@@ -407,7 +407,7 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 切换到下一步
+  /// 下一步
   void nextStep() {
     if (currentGrenade == null) return;
     final steps = currentGrenade!.steps.toList();
@@ -416,7 +416,7 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 初始化准星位置到当前道具位置
+  /// 初始化准星
   void _initCrosshairPosition() {
     final grenade = currentGrenade;
     if (grenade != null) {
@@ -431,7 +431,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 将道具按位置聚合成 cluster（用于导航吸附逻辑）
+  /// 聚合点位
   /// 注意：使用 _snapThreshold（动态阈值）而非 _clusterThreshold（显示阈值）
   /// 这样导航时的 cluster 分组与逃离阈值保持一致
   List<List<Grenade>> _clusterGrenades() {
@@ -468,7 +468,7 @@ class OverlayStateService extends ChangeNotifier {
     return clusters;
   }
 
-  /// 检查点位吸附（基于 cluster 中心点）
+  /// 检查吸附
   /// [ignoreCurrent] - 如果为 true，则忽略当前 cluster（用于逃离吸附）
   /// 注意：cluster 的逃离阈值使用 _snapThreshold（动态，基于速度档位），
   /// 而不是 _clusterThreshold（固定，仅用于视觉显示聚合）
@@ -552,7 +552,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 开始向指定方向移动（按下按键时调用）
+  /// 开始移动
   void startNavigation(NavigationDirection direction) {
     final now = DateTime.now();
 
@@ -580,7 +580,7 @@ class OverlayStateService extends ChangeNotifier {
     _startHeartbeatTimer();
   }
 
-  /// 获取相反方向
+  /// 反方向
   NavigationDirection? _getOppositeDirection(NavigationDirection dir) {
     switch (dir) {
       case NavigationDirection.up:
@@ -594,7 +594,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 停止向指定方向移动（松开按键时调用）
+  /// 停止移动
   void stopNavigation(NavigationDirection direction) {
     _activeDirections.remove(direction);
     if (_activeDirections.isEmpty) {
@@ -605,7 +605,7 @@ class OverlayStateService extends ChangeNotifier {
     }
   }
 
-  /// 停止所有方向移动
+  /// 停止所有
   void stopAllNavigation() {
     _activeDirections.clear();
     _stopMoveTimer();
@@ -613,7 +613,7 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 启动移动定时器
+  /// 启动定时器
   void _startMoveTimer() {
     if (_moveTimer != null) return;
 
@@ -625,13 +625,13 @@ class OverlayStateService extends ChangeNotifier {
     _updateCrosshairPosition();
   }
 
-  /// 停止移动定时器
+  /// 停止定时器
   void _stopMoveTimer() {
     _moveTimer?.cancel();
     _moveTimer = null;
   }
 
-  /// 启动心跳检查定时器（针对 Windows 全局热键）
+  /// 启动心跳
   void _startHeartbeatTimer() {
     if (_heartbeatTimer != null) return;
 
@@ -672,7 +672,7 @@ class OverlayStateService extends ChangeNotifier {
     });
   }
 
-  /// 更新准星位置（每帧调用）
+  /// 更新位置
   void _updateCrosshairPosition() {
     if (_activeDirections.isEmpty) return;
 
@@ -721,7 +721,7 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 单次移动（兼容旧的单次按键调用，如全局热键）
+  /// 单次移动
   void navigateDirection(NavigationDirection direction) {
     // 记录移动前是否处于吸附状态
     final wasSnapped = _isSnapped;
@@ -764,7 +764,7 @@ class OverlayStateService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 直接设置道具索引
+  /// 设置索引
   void setGrenadeIndex(int index) {
     if (index >= 0 && index < _filteredGrenades.length) {
       _currentGrenadeIndex = index;

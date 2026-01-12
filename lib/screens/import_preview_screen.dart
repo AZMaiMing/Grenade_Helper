@@ -7,7 +7,7 @@ import '../providers.dart';
 import '../services/data_service.dart';
 import 'grenade_preview_screen.dart';
 
-/// 导入预览界面
+/// 导入预览
 class ImportPreviewScreen extends ConsumerStatefulWidget {
   final String filePath;
 
@@ -22,16 +22,16 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
   bool _isLoading = true;
   String? _error;
 
-  // 当前选中的地图（多地图模式下使用）
+  // 选中地图
   String? _selectedMap;
 
-  // 勾选的道具 uniqueId
+  // 选中ID
   Set<String> _selectedIds = {};
 
   // 类型筛选
   int? _filterType;
 
-  // 是否正在导入
+  // 正在导入
   bool _isImporting = false;
 
   @override
@@ -54,12 +54,12 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
         return;
       }
 
-      // 如果是单地图，直接选中
+      // 单地图自动选
       if (!preview.isMultiMap && preview.mapNames.isNotEmpty) {
         _selectedMap = preview.mapNames.first;
       }
 
-      // 默认全选所有非跳过的道具
+      // 默认全选
       final allIds = <String>{};
       for (var grenades in preview.grenadesByMap.values) {
         for (var g in grenades) {
@@ -82,12 +82,12 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     }
   }
 
-  /// 获取当前显示的道具列表
+  /// 获取列表
   List<GrenadePreviewItem> _getCurrentGrenades() {
     if (_preview == null || _selectedMap == null) return [];
     var grenades = _preview!.grenadesByMap[_selectedMap] ?? [];
 
-    // 应用类型筛选
+    // 类型过滤
     if (_filterType != null) {
       grenades = grenades.where((g) => g.type == _filterType).toList();
     }
@@ -95,7 +95,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     return grenades;
   }
 
-  /// 切换全选状态
+  /// 切换全选
   void _toggleSelectAll() {
     final currentGrenades = _getCurrentGrenades();
     final currentIds = currentGrenades.map((g) => g.uniqueId).toSet();
@@ -164,7 +164,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
       );
     }
 
-    // 多地图模式：显示地图列表
+    // 多地图列表
     if (_preview!.isMultiMap && _selectedMap == null) {
       final isar = ref.read(isarProvider);
       return Scaffold(
@@ -175,7 +175,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
           itemBuilder: (context, index) {
             final mapName = _preview!.mapNames[index];
             final count = _preview!.grenadesByMap[mapName]?.length ?? 0;
-            // 查询地图获取图标
+            // 地图图标
             final gameMap = isar.gameMaps.filter().nameEqualTo(mapName).findFirstSync();
             
             return Card(
@@ -195,7 +195,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
       );
     }
 
-    // 道具列表界面
+    // 道具列表
     return _buildGrenadeListScreen();
   }
 
@@ -216,11 +216,11 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
       ),
       body: Column(
         children: [
-          // 类型筛选栏
+          // 类型筛选
           _buildTypeFilter(),
           // 全选栏
           _buildSelectAllBar(selectedInCurrent, grenades.length),
-          // 道具列表
+          // 列表
           Expanded(
             child: grenades.isEmpty
                 ? const Center(child: Text("无匹配的道具", style: TextStyle(color: Colors.grey)))
@@ -230,7 +230,7 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
                     itemBuilder: (context, index) => _buildGrenadeItem(grenades[index]),
                   ),
           ),
-          // 底部导入按钮
+          // 底部按钮
           _buildImportButton(),
         ],
       ),

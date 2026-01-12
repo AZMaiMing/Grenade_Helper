@@ -124,7 +124,7 @@ class DataService {
     }
   }
 
-  /// 预览道具包内容（不执行导入）
+  /// 预览包
   Future<PackagePreviewResult?> previewPackage(String filePath) async {
     if (!filePath.toLowerCase().endsWith('.cs2pkg')) {
       return null;
@@ -245,7 +245,7 @@ class DataService {
 
   // --- 导出 (分享) ---
 
-  /// 导出选中的道具列表
+  /// 导出列表
   Future<void> exportSelectedGrenades(
       BuildContext context, List<Grenade> grenades) async {
     if (grenades.isEmpty) return;
@@ -300,7 +300,7 @@ class DataService {
     final exportDirPath = p.join(tempDir.path, "export_temp");
     final zipPath = p.join(tempDir.path, "share_data.cs2pkg");
 
-    // 在 isolate 中执行文件复制和压缩操作
+    // 异步打包
     await compute(
       _packageFilesInIsolate,
       _PackageParams(
@@ -318,8 +318,10 @@ class DataService {
         Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
     if (isDesktop) {
+      // 另存为
       await _saveToFolderWithCustomName(context, zipPath);
     } else {
+      // 底部菜单
       await showModalBottomSheet(
         context: context,
         builder: (ctx) => Container(
@@ -435,7 +437,7 @@ class DataService {
     final exportDirPath = p.join(tempDir.path, "export_temp");
     final zipPath = p.join(tempDir.path, "share_data.cs2pkg");
 
-    // 4. 在 isolate 中执行文件复制和压缩操作
+    // 4. 异步打包
     await compute(
       _packageFilesInIsolate,
       _PackageParams(
@@ -453,10 +455,10 @@ class DataService {
         Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
     if (isDesktop) {
-      // 桌面端：直接显示另存为对话框，支持自定义文件名
+      // 另存为
       await _saveToFolderWithCustomName(context, zipPath);
     } else {
-      // 移动端：弹出底部菜单
+      // 底部菜单
       await showModalBottomSheet(
         context: context,
         builder: (ctx) => Container(
@@ -513,7 +515,7 @@ class DataService {
     return importFromPath(filePath);
   }
 
-  /// 从指定路径导入数据（支持拖拽导入）
+  /// 导入路径
   Future<String> importFromPath(String filePath) async {
     if (!filePath.toLowerCase().endsWith('.cs2pkg')) {
       return "请选择 .cs2pkg 格式的文件";
@@ -522,8 +524,8 @@ class DataService {
     final file = File(filePath);
     final importFileName = p.basename(filePath);
 
-    // 使用当前 isar 实例的目录作为数据存储目录
-    // 这样可以避免异步调用 SharedPreferences 可能导致的问题
+    // 数据目录
+    // 避免异步问题
     final dataPath = isar.directory ?? '';
 
     // 2. 解压
@@ -585,7 +587,7 @@ class DataService {
         // 查找是否存在相同的道具
         Grenade? existing;
 
-        // 优先使用 UUID 查找
+        // UUID查找
         if (importedUniqueId != null && importedUniqueId.isNotEmpty) {
           final allGrenades = await isar.grenades.where().findAll();
           existing = allGrenades
@@ -593,7 +595,7 @@ class DataService {
               .firstOrNull;
         }
 
-        // 如果没有 UUID 或未找到，回退到旧的判断方式（标题+坐标）
+        // 回退查找
         if (existing == null && importedUniqueId == null) {
           await layer.grenades.load();
           existing = layer.grenades
@@ -605,19 +607,19 @@ class DataService {
         }
 
         if (existing != null) {
-          // 已存在道具，比较时间戳决定是否更新
+          // 比较时间
           if (importedUpdatedAt.isAfter(existing.updatedAt)) {
-            // 导入的更新，更新现有道具
+            // 更新
             await _updateExistingGrenade(
                 existing, item, memoryImages, dataPath);
             importedGrenades.add(existing); // 记录更新的道具
             updatedCount++;
           } else {
-            // 导入的更旧，跳过
+            // 跳过
             skippedCount++;
           }
         } else {
-          // 创建新道具
+          // 新建
           final newGrenade = await _createNewGrenade(
               item, memoryImages, dataPath, layer, importedUniqueId);
           importedGrenades.add(newGrenade); // 记录新增的道具
@@ -625,7 +627,7 @@ class DataService {
         }
       }
 
-      // 4. 记录导入历史（只有成功导入时才记录）
+      // 4. 记录历史
       if (importedGrenades.isNotEmpty) {
         final history = ImportHistory(
           fileName: importFileName,
@@ -636,13 +638,13 @@ class DataService {
         );
         await isar.importHistorys.put(history);
 
-        // 关联导入的道具
+        // 关联
         history.grenades.addAll(importedGrenades);
         await history.grenades.save();
       }
     });
 
-    // 生成结果消息
+    // 结果消息
     final List<String> messages = [];
     if (newCount > 0) messages.add("新增 $newCount 个");
     if (updatedCount > 0) messages.add("更新 $updatedCount 个");
@@ -654,7 +656,7 @@ class DataService {
     return "成功导入：${messages.join('，')}";
   }
 
-  /// 从预览结果导入选中的道具
+  /// 预览导入
   Future<String> importFromPreview(
     PackagePreviewResult preview,
     Set<String> selectedUniqueIds,
@@ -675,7 +677,7 @@ class DataService {
     await isar.writeTxn(() async {
       for (var mapGrenades in preview.grenadesByMap.values) {
         for (var previewItem in mapGrenades) {
-          // 仅处理选中的道具
+          // 过滤选中
           if (!selectedUniqueIds.contains(previewItem.uniqueId)) continue;
 
           final item = previewItem.rawData;
@@ -768,20 +770,20 @@ class DataService {
     return "成功导入：${messages.join('，')}";
   }
 
-  /// 更新现有道具
+  /// 更新
   Future<void> _updateExistingGrenade(
     Grenade existing,
     Map<String, dynamic> item,
     Map<String, List<int>> memoryImages,
     String dataPath,
   ) async {
-    // 更新基本信息
+    // 更新信息
     existing.title = item['title'];
     existing.type = item['type'];
     existing.team = item['team'];
     existing.author = item['author'] as String?;
-    existing.hasLocalEdits = false; // 重置为 false，保护原作者
-    existing.isImported = true; // 标记为导入的道具
+    existing.hasLocalEdits = false; // 重置
+    existing.isImported = true; // 导入标记
     existing.xRatio = (item['x'] as num).toDouble();
     existing.yRatio = (item['y'] as num).toDouble();
     existing.impactXRatio = (item['impactX'] as num?)?.toDouble();
@@ -791,11 +793,11 @@ class DataService {
     existing.isNewImport = true;
     await isar.grenades.put(existing);
 
-    // 删除旧的 Steps 和 Medias
+    // 删旧数据
     await existing.steps.load();
     for (final step in existing.steps) {
       await step.medias.load();
-      // 删除旧媒体文件
+      // 删旧文件
       for (final media in step.medias) {
         final file = File(media.localPath);
         if (await file.exists()) {

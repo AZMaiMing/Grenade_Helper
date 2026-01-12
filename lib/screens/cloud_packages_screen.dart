@@ -18,10 +18,10 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
   List<CloudPackage>? _packages;
   bool _isLoading = true;
   String? _error;
-  String _selectedMap = 'all'; // 'all' = 全部
+  String _selectedMap = 'all'; // 全部
   final Set<String> _downloadingIds = {};
   final Map<String, String?> _lastImportedDates = {};
-  final Map<String, double> _downloadProgress = {}; // 下载进度 0.0 - 1.0
+  final Map<String, double> _downloadProgress = {}; // 下载进度 0-1
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -52,7 +52,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
     }
 
     if (index != null) {
-      // 获取每个包的上次导入版本
+      // 获取导入版本
       for (final pkg in index.packages) {
         _lastImportedDates[pkg.id] =
             await CloudPackageService.getLastImportedVersion(pkg.id);
@@ -82,9 +82,9 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
     });
 
     try {
-      // 根据当前源设置获取下载 URL
+      // 获取URL
       final downloadUrl = pkg.getDownloadUrl(CloudPackageService.isUsingCDN);
-      // 下载文件（带进度）
+      // 下载文件
       final filePath = await CloudPackageService.downloadPackage(
         downloadUrl,
         onProgress: (received, total) {
@@ -100,7 +100,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
         return;
       }
 
-      // 跳转到预览界面进行道具选择
+      // 预览选择
       if (!mounted) return;
       final result = await Navigator.push<String>(
         context,
@@ -109,13 +109,13 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
         ),
       );
 
-      // 删除临时文件
+      // 删临时文件
       try {
         await File(filePath).delete();
       } catch (_) {}
 
       if (result != null) {
-        // 标记已导入（保存版本号）
+        // 标记已导入
         await CloudPackageService.markPackageImported(pkg.id, pkg.version);
         _lastImportedDates[pkg.id] = pkg.version;
         _showMessage(result);
@@ -295,7 +295,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
 
     return Column(
       children: [
-        // 地图筛选器
+        // 地图筛选
         if (_availableMaps.length > 1)
           Container(
             height: 50,
@@ -338,7 +338,7 @@ class _CloudPackagesScreenState extends ConsumerState<CloudPackagesScreen> {
   Widget _buildPackageCard(CloudPackage pkg) {
     final isDownloading = _downloadingIds.contains(pkg.id);
     final lastImportedVersion = _lastImportedDates[pkg.id];
-    // 使用版本号比较
+    // 比较版本
     final isUpToDate = lastImportedVersion != null &&
         CloudPackageService.compareVersion(lastImportedVersion, pkg.version) >=
             0;

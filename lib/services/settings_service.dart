@@ -6,14 +6,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
-/// 快捷键配置模型
+/// 快捷键配置
 class HotkeyConfig {
   final LogicalKeyboardKey key;
   final Set<LogicalKeyboardKey> modifiers;
 
   HotkeyConfig({required this.key, this.modifiers = const {}});
 
-  /// 转换为可读字符串，如 "Alt + G"
+  /// 转字符串
   String toDisplayString() {
     final parts = <String>[];
     if (modifiers.contains(LogicalKeyboardKey.control) ||
@@ -61,13 +61,13 @@ class HotkeyConfig {
         : key.debugName ?? 'Unknown';
   }
 
-  /// 序列化为 JSON
+  /// 转JSON
   Map<String, dynamic> toJson() => {
         'keyId': key.keyId,
         'modifierIds': modifiers.map((m) => m.keyId).toList(),
       };
 
-  /// 从 JSON 反序列化
+  /// 从JSON
   factory HotkeyConfig.fromJson(Map<String, dynamic> json) {
     return HotkeyConfig(
       key: LogicalKeyboardKey.findKeyByKeyId(json['keyId'] as int) ??
@@ -80,7 +80,7 @@ class HotkeyConfig {
   }
 }
 
-/// 快捷键动作类型
+/// 动作类型
 enum HotkeyAction {
   toggleOverlay, // 显示/隐藏悬浮窗
   navigateUp, // 向上导航点位
@@ -104,8 +104,7 @@ enum HotkeyAction {
   scrollDown, // 向下滚动
 }
 
-/// 设置服务 - 管理用户设置和快捷键配置
-/// 桌面端使用 JSON 文件存储，移动端使用 SharedPreferences
+/// 设置服务
 class SettingsService {
   // 设置项键名
   static const String _keyHotkeys = 'desktop_hotkeys';
@@ -127,14 +126,14 @@ class SettingsService {
   static const String _keyMapLineOpacity = 'map_line_opacity';
   static const String _keyImpactAreaOpacity = 'impact_area_opacity';
 
-  // 移动端使用 SharedPreferences
+  // 移动端存储
   SharedPreferences? _prefs;
 
-  // 桌面端使用内存缓存 + 文件存储
+  // 桌面端存储
   Map<String, dynamic> _cache = {};
   File? _settingsFile;
 
-  /// 检查是否是桌面平台
+  /// 检查平台
   static bool get isDesktop =>
       Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
@@ -153,7 +152,7 @@ class SettingsService {
     }
   }
 
-  /// 从文件加载设置（桌面端）
+  /// 加载文件
   Future<void> _loadFromFile() async {
     if (_settingsFile == null) return;
     try {
@@ -170,8 +169,8 @@ class SettingsService {
     }
   }
 
-  /// 保存设置到文件（桌面端）
-  /// 精确更新指定的键值，不会用旧缓存覆盖其他设置
+  /// 保存设置
+  /// 精确更新
   Future<void> _saveValue(String key, dynamic value) async {
     if (_settingsFile == null) return;
     try {
@@ -202,8 +201,8 @@ class SettingsService {
     }
   }
 
-  /// 保存多个设置到文件（桌面端）
-  /// 用于同时更新多个键值
+  /// 批量保存
+  /// 同时更新多个
   Future<void> _saveValues(Map<String, dynamic> values) async {
     if (_settingsFile == null) return;
     try {
@@ -234,7 +233,7 @@ class SettingsService {
     }
   }
 
-  /// 从 SharedPreferences 迁移旧设置到文件（仅首次迁移）
+  /// 迁移设置
   Future<void> _migrateFromSharedPreferences() async {
     // 如果已有设置，跳过迁移
     if (_cache.isNotEmpty) return;
@@ -313,7 +312,7 @@ class SettingsService {
     }
   }
 
-  /// 重新加载设置（用于多窗口间同步）
+  /// 重载设置
   Future<void> reload() async {
     if (isDesktop) {
       await _loadFromFile();
@@ -324,7 +323,7 @@ class SettingsService {
 
   // ==================== 快捷键设置 ====================
 
-  /// 获取所有快捷键配置
+  /// 获取快捷键
   Map<HotkeyAction, HotkeyConfig> getHotkeys() {
     final defaults = _getDefaultHotkeys();
     String? stored;
@@ -354,7 +353,7 @@ class SettingsService {
     }
   }
 
-  /// 保存快捷键配置
+  /// 保存快捷键
   Future<void> saveHotkey(HotkeyAction action, HotkeyConfig config) async {
     final hotkeys = getHotkeys();
     hotkeys[action] = config;
@@ -373,7 +372,7 @@ class SettingsService {
     }
   }
 
-  /// 重置所有快捷键为默认值
+  /// 重置快捷键
   Future<void> resetHotkeys() async {
     if (isDesktop) {
       _cache.remove(_keyHotkeys);
@@ -383,7 +382,7 @@ class SettingsService {
     }
   }
 
-  /// 默认快捷键配置
+  /// 默认快捷键
   Map<HotkeyAction, HotkeyConfig> _getDefaultHotkeys() {
     return {
       HotkeyAction.toggleOverlay: HotkeyConfig(
@@ -439,9 +438,9 @@ class SettingsService {
     };
   }
 
-  // ==================== 悬浮窗设置 ====================
+  // 悬浮窗设置
 
-  /// 悬浮窗透明度 (0.0 - 1.0)
+  /// 透明度
   double getOverlayOpacity() {
     if (isDesktop) {
       return (_cache[_keyOverlayOpacity] as num?)?.toDouble() ?? 0.9;
@@ -458,7 +457,7 @@ class SettingsService {
     }
   }
 
-  /// 悬浮窗尺寸 (0=小, 1=中, 2=大)
+  /// 尺寸
   int getOverlaySize() {
     if (isDesktop) {
       return (_cache[_keyOverlaySize] as num?)?.toInt() ?? 1;
@@ -475,7 +474,7 @@ class SettingsService {
     }
   }
 
-  /// 关闭按钮行为：true=最小化到托盘，false=退出程序
+  /// 关闭行为
   bool getCloseToTray() {
     if (isDesktop) {
       return _cache[_keyCloseToTray] as bool? ?? true;
@@ -492,7 +491,7 @@ class SettingsService {
     }
   }
 
-  /// 悬浮窗位置
+  /// 窗口位置
   double? getOverlayX() {
     if (isDesktop) {
       return (_cache[_keyOverlayX] as num?)?.toDouble();
@@ -518,12 +517,12 @@ class SettingsService {
     }
   }
 
-  /// 获取悬浮窗尺寸像素值
+  /// 获取像素尺寸
   (double width, double height) getOverlaySizePixels() {
     return calculateSizePixels(getOverlaySize());
   }
 
-  /// 静态方法：根据尺寸索引计算像素值
+  /// 计算像素尺寸
   static (double width, double height) calculateSizePixels(int sizeIndex) {
     switch (sizeIndex) {
       case 0:
@@ -535,7 +534,7 @@ class SettingsService {
     }
   }
 
-  /// 悬浮窗导航速度 (1=慢, 5=快)，默认3档
+  /// 导航速度
   int getOverlayNavSpeed() {
     if (isDesktop) {
       return (_cache[_keyOverlayNavSpeed] as num?)?.toInt() ?? 3;
@@ -554,7 +553,7 @@ class SettingsService {
 
   // ==================== 主题设置 ====================
 
-  /// 主题模式 (0=跟随系统, 1=浅色, 2=深色)
+  /// 主题模式
   int getThemeMode() {
     if (isDesktop) {
       return (_cache[_keyThemeMode] as num?)?.toInt() ?? 2;
@@ -571,7 +570,7 @@ class SettingsService {
     }
   }
 
-  /// 节日主题是否启用
+  /// 节日主题
   bool getSeasonalThemeEnabled() {
     if (isDesktop) {
       return _cache[_keySeasonalThemeEnabled] as bool? ?? true;
@@ -590,7 +589,7 @@ class SettingsService {
 
   // ==================== 移动端设置 ====================
 
-  /// 标点移动模式 (0=长按选定, 1=摇杆) - 仅移动端
+  /// 移动模式
   int getMarkerMoveMode() {
     if (isDesktop) {
       return (_cache[_keyMarkerMoveMode] as num?)?.toInt() ?? 0;
@@ -607,7 +606,7 @@ class SettingsService {
     }
   }
 
-  /// 摇杆透明度 (0.3-1.0)
+  /// 摇杆透明度
   double getJoystickOpacity() {
     if (isDesktop) {
       return (_cache[_keyJoystickOpacity] as num?)?.toDouble() ?? 0.8;
@@ -624,7 +623,7 @@ class SettingsService {
     }
   }
 
-  /// 摇杆移动速度 (1=慢, 5=快)
+  /// 摇杆速度
   int getJoystickSpeed() {
     if (isDesktop) {
       return (_cache[_keyJoystickSpeed] as num?)?.toInt() ?? 3;
@@ -643,7 +642,7 @@ class SettingsService {
 
   // ==================== 应用统计 ====================
 
-  /// 获取应用启动次数
+  /// 启动次数
   int getLaunchCount() {
     if (isDesktop) {
       return (_cache[_keyLaunchCount] as num?)?.toInt() ?? 0;
@@ -651,7 +650,7 @@ class SettingsService {
     return _prefs?.getInt(_keyLaunchCount) ?? 0;
   }
 
-  /// 增加启动次数并返回新值
+  /// 增加次数
   Future<int> incrementLaunchCount() async {
     final count = getLaunchCount() + 1;
     if (isDesktop) {
@@ -663,7 +662,7 @@ class SettingsService {
     return count;
   }
 
-  /// 是否已显示过赞助提醒弹窗
+  /// 赞助弹窗状态
   bool isDonationDialogShown() {
     if (isDesktop) {
       return _cache[_keyDonationDialogShown] as bool? ?? false;
@@ -671,7 +670,7 @@ class SettingsService {
     return _prefs?.getBool(_keyDonationDialogShown) ?? false;
   }
 
-  /// 标记已显示赞助提醒弹窗
+  /// 标记赞助弹窗
   Future<void> setDonationDialogShown() async {
     if (isDesktop) {
       _cache[_keyDonationDialogShown] = true;
@@ -683,7 +682,7 @@ class SettingsService {
 
   // ==================== 地图连线设置 ====================
 
-  /// 获取地图连线颜色值 (int)，默认为紫色 (Colors.purpleAccent.value)
+  /// 连线颜色
   int getMapLineColor() {
     // 默认 Colors.purpleAccent 的值
     const defaultColor = 0xFFE040FB;
@@ -702,7 +701,7 @@ class SettingsService {
     }
   }
 
-  /// 获取地图连线透明度 (0.0 - 1.0)，默认为 0.6
+  /// 连线透明度
   double getMapLineOpacity() {
     if (isDesktop) {
       return (_cache[_keyMapLineOpacity] as num?)?.toDouble() ?? 0.6;
@@ -719,9 +718,9 @@ class SettingsService {
     }
   }
 
-  // ==================== 爆点区域设置 ====================
+  // 爆点区域设置
 
-  /// 获取爆点区域透明度 (0.0 - 1.0)，默认为 0.4 (40%)
+  /// 爆点透明度
   double getImpactAreaOpacity() {
     if (isDesktop) {
       return (_cache[_keyImpactAreaOpacity] as num?)?.toDouble() ?? 0.4;
@@ -738,9 +737,9 @@ class SettingsService {
     }
   }
 
-  // ==================== 数据存储路径 ====================
+  // 数据存储路径
 
-  /// 获取自定义数据路径（null表示使用默认路径）
+  /// 自定义路径
   String? getCustomDataPath() {
     if (isDesktop) {
       return _cache[_keyDataPath] as String?;
@@ -748,7 +747,7 @@ class SettingsService {
     return _prefs?.getString(_keyDataPath);
   }
 
-  /// 设置自定义数据路径（null表示恢复默认）
+  /// 设置路径
   Future<void> setCustomDataPath(String? customPath) async {
     debugPrint('[Settings] setCustomDataPath called with: $customPath');
 
@@ -788,13 +787,13 @@ class SettingsService {
     }
   }
 
-  /// 获取默认数据路径（应用根目录/data）
+  /// 默认路径
   static Future<String> getDefaultDataPath() async {
     final directory = await getApplicationSupportDirectory();
     return path.join(directory.path, 'data');
   }
 
-  /// 获取实际使用的数据路径
+  /// 实际路径
   Future<String> getEffectiveDataPath() async {
     // 桌面端优先从内存缓存读取
     if (isDesktop) {

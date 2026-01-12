@@ -8,7 +8,7 @@ import '../widgets/radar_mini_map.dart';
 import 'grenade_detail_screen.dart'
     show VideoPlayerWidget, VideoPlayerWidgetState;
 
-/// 悬浮窗组件 - 独立无边框窗口，显示道具教程
+/// 悬浮窗组件
 class OverlayWindow extends StatefulWidget {
   final SettingsService settingsService;
   final OverlayStateService overlayState;
@@ -40,7 +40,7 @@ class OverlayWindowState extends State<OverlayWindow> {
     super.initState();
     _hotkeys = widget.settingsService.getHotkeys();
     widget.overlayState.addListener(_onStateChanged);
-    // 注册视频播放/暂停回调
+    // 注册视频回调
     widget.overlayState.setVideoTogglePlayPauseCallback(_handleVideoToggle);
   }
 
@@ -58,12 +58,12 @@ class OverlayWindowState extends State<OverlayWindow> {
     if (mounted) setState(() {});
   }
 
-  /// 重新加载热键配置
+  /// 重载热键
   void reloadHotkeys([Map<HotkeyAction, HotkeyConfig>? newHotkeys]) {
     // print(
     //     '[OverlayWindow] reloadHotkeys called, before reload: ${_hotkeys[HotkeyAction.navigateUp]?.toDisplayString()}');
     setState(() {
-      // 如果提供了新的热键配置，直接使用；否则从 settingsService 加载
+      // 加载热键
       _hotkeys = newHotkeys ?? widget.settingsService.getHotkeys();
     });
     // print(
@@ -98,7 +98,7 @@ class OverlayWindowState extends State<OverlayWindow> {
         child: Material(
           color: const Color(0xFF1B1E23),
           child: Container(
-            // 移除固定尺寸，让容器填满窗口
+            // 填满窗口
             decoration: BoxDecoration(
               color: const Color(0xFF1B1E23),
               borderRadius: BorderRadius.circular(16),
@@ -125,7 +125,7 @@ class OverlayWindowState extends State<OverlayWindow> {
     );
   }
 
-  /// 自定义标题栏（可拖动，无系统按钮）
+  /// 标题栏
   Widget _buildTitleBar() {
     final state = widget.overlayState;
     final mapName = state.currentMap?.name ?? '未选择地图';
@@ -143,7 +143,7 @@ class OverlayWindowState extends State<OverlayWindow> {
         ),
         child: Row(
           children: [
-            // 地图名称标签
+            // 地图名
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -161,7 +161,7 @@ class OverlayWindowState extends State<OverlayWindow> {
             ),
             const SizedBox(width: 12),
 
-            // 道具标题
+            // 道具名
             Expanded(
               child: Text(
                 title,
@@ -174,15 +174,15 @@ class OverlayWindowState extends State<OverlayWindow> {
               ),
             ),
 
-            // 速度档位显示
+            // 速度显示
             _buildSpeedIndicator(),
             const SizedBox(width: 8),
 
-            // 过滤器按钮
+            // 过滤器
             _buildFilterButtons(),
             const SizedBox(width: 12),
 
-            // 最小化按钮（隐藏悬浮窗，使用 onClose 以便同时注销热键）
+            // 最小化
             _buildWindowButton(
               icon: Icons.remove,
               onTap: widget.onClose,
@@ -230,7 +230,7 @@ class OverlayWindowState extends State<OverlayWindow> {
     );
   }
 
-  /// 速度档位显示（标题栏）
+  /// 速度指示器
   Widget _buildSpeedIndicator() {
     final state = widget.overlayState;
     final increaseSpeedKey = _getHotkeyLabel(HotkeyAction.increaseNavSpeed);
@@ -273,16 +273,16 @@ class OverlayWindowState extends State<OverlayWindow> {
     );
   }
 
-  /// 主内容区域
+  /// 主内容
   Widget _buildContent() {
     final state = widget.overlayState;
 
-    // 未进入地图
+    // 无地图
     if (!state.hasMap) {
       return _buildNoMapPrompt();
     }
 
-    // 没有道具
+    // 无道具
     if (state.filteredGrenades.isEmpty) {
       return _buildNoGrenadePrompt();
     }
@@ -292,20 +292,20 @@ class OverlayWindowState extends State<OverlayWindow> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // 雷达小地图（始终显示）
+          // 雷达
           _buildRadarMap(),
           const SizedBox(height: 16),
 
-          // 根据吸附确认状态显示内容（吸附后延迟 1.5 秒才显示）
+          // 吸附内容
           if (state.isSnapConfirmed && state.currentGrenade != null) ...[
-            // 道具媒体区域
+            // 媒体区
             _buildMediaArea(),
             const SizedBox(height: 12),
 
             // 步骤说明
             _buildDescription(),
           ] else
-            // 未吸附或未确认提示
+            // 导航提示
             _buildNavigationHint(),
         ],
       ),
@@ -412,10 +412,10 @@ class OverlayWindowState extends State<OverlayWindow> {
 
     if (layer == null) return const SizedBox.shrink();
 
-    // 使用 LayoutBuilder 动态获取可用宽度，确保拉伸窗口后图标位置正确
+    // 动态宽度
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 使用可用宽度，高度保持固定比例
+        // 宽度适配
         final availableWidth =
             constraints.maxWidth > 0 ? constraints.maxWidth : 550.0;
         final radarHeight = 140.0;
@@ -489,14 +489,14 @@ class OverlayWindowState extends State<OverlayWindow> {
     );
   }
 
-  /// 构建单个媒体项
+  /// 单个媒体
   Widget _buildSingleMediaItem(StepMedia media) {
-    // 对于图片，检测图片类型并动态调整显示
+    // 图片显示
     if (media.type == MediaType.image) {
       return FutureBuilder<Size?>(
         future: _getImageSize(media.localPath),
         builder: (context, snapshot) {
-          // 等待加载时显示占位符，避免先显示原比例再缩放的闪烁
+          // 加载占位
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Container(
               height: 400,
@@ -513,9 +513,9 @@ class OverlayWindowState extends State<OverlayWindow> {
             );
           }
 
-          // 根据图片比例决定高度和显示方式
+          // 图片高度
           double height = 400;
-          // 0: 正方形, 1: 竖屏, 2: 横版
+          // 0:正 1:竖 2:横
           int imageType = 0;
 
           if (snapshot.hasData && snapshot.data != null) {
@@ -523,14 +523,14 @@ class OverlayWindowState extends State<OverlayWindow> {
             final diff = (size.height - size.width).abs();
 
             if (diff <= 400) {
-              // 宽高差值在400px内，判定为正方形
+              // 判定正方形
               imageType = 0;
             } else if (size.height > size.width) {
-              // 竖屏图片
+              // 竖屏
               imageType = 1;
               height = 450;
             } else {
-              // 横版图片
+              // 横版
               imageType = 2;
             }
           }
@@ -558,7 +558,7 @@ class OverlayWindowState extends State<OverlayWindow> {
     );
   }
 
-  /// 获取图片尺寸
+  /// 图片尺寸
   Future<Size?> _getImageSize(String path) async {
     try {
       final file = File(path);
@@ -572,7 +572,7 @@ class OverlayWindowState extends State<OverlayWindow> {
     }
   }
 
-  /// imageType: 0=正方形(正常显示), 1=竖屏(缩放), 2=横版(缩放)
+  /// 媒体视图
   Widget _buildMediaView(StepMedia media, {int imageType = 0}) {
     final file = File(media.localPath);
     if (!file.existsSync()) {
@@ -582,7 +582,7 @@ class OverlayWindowState extends State<OverlayWindow> {
     }
 
     if (media.type == MediaType.image) {
-      // 正方形正常显示，竖屏和横版使用 contain 配合缩放
+      // 缩放逻辑
       final bool needsScale = imageType != 0;
 
       Widget imageWidget = Image.file(
@@ -595,10 +595,10 @@ class OverlayWindowState extends State<OverlayWindow> {
         ),
       );
 
-      // 竖屏和横版图片使用不同的缩放比例
+      // 应用缩放
       if (needsScale) {
-        // imageType 1=竖屏, 2=横版
-        final double scale = imageType == 1 ? 1.5 : 1.3; // 竖屏1.5倍，横版1.3倍
+        // 类型判断
+        final double scale = imageType == 1 ? 1.5 : 1.3; // 缩放倍率
         imageWidget = Transform.scale(
           scale: scale,
           child: imageWidget,
@@ -611,7 +611,7 @@ class OverlayWindowState extends State<OverlayWindow> {
       );
     }
 
-    // 视频播放
+    // 视频
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: VideoPlayerWidget(key: _videoPlayerKey, file: file),
@@ -654,12 +654,12 @@ class OverlayWindowState extends State<OverlayWindow> {
     );
   }
 
-  /// 底部导航栏
+  /// 底栏
   Widget _buildFooter() {
     final state = widget.overlayState;
 
     if (!state.hasMap || state.currentGrenade == null) {
-      // 动态构建提示文本
+      // 提示文本
       final navUpKey = _getHotkeyLabel(HotkeyAction.navigateUp);
       final navDownKey = _getHotkeyLabel(HotkeyAction.navigateDown);
       final navLeftKey = _getHotkeyLabel(HotkeyAction.navigateLeft);
@@ -703,7 +703,7 @@ class OverlayWindowState extends State<OverlayWindow> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // 道具切换（只在当前点位内循环）
+              // 道具切换
               _buildNavRow(
                 label: '道具',
                 current: state.currentClusterIndex + 1,
@@ -713,7 +713,7 @@ class OverlayWindowState extends State<OverlayWindow> {
                 color: Colors.orange,
               ),
 
-              // 步骤切换（显示步骤标题）
+              // 步骤切换
               _buildStepNavRow(
                 steps: steps,
                 currentIndex: state.currentStepIndex,
@@ -726,7 +726,7 @@ class OverlayWindowState extends State<OverlayWindow> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // 左侧：快捷键提示（动态获取）
+              // 快捷键提示
               Expanded(
                 child: Builder(builder: (context) {
                   final navUpKey = _getHotkeyLabel(HotkeyAction.navigateUp);
@@ -795,7 +795,7 @@ class OverlayWindowState extends State<OverlayWindow> {
     );
   }
 
-  /// 步骤导航（显示步骤标题）
+  /// 步骤导航
   Widget _buildStepNavRow({
     required List<GrenadeStep> steps,
     required int currentIndex,

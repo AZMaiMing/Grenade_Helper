@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 
-/// 更新信息模型
+/// 更新信息
 class UpdateInfo {
   final int versionCode;
   final String versionName;
@@ -31,26 +31,26 @@ class UpdateInfo {
   }
 }
 
-/// 下载链接配置
+/// 下载链接
 class DownloadLinks {
-  /// 网盘下载链接
+  /// 网盘链接
   static const Map<String, String> panLinks = {
     '百度网盘': 'https://pan.baidu.com/s/5QyKQdw4AIqxcrHgbiN6gTw',
     '夸克网盘': 'https://pan.quark.cn/s/2907fabc3738',
     '蓝奏云网盘（密码4j0g）': 'https://wwanb.lanzoum.com/b016kfxakh',
   };
 
-  /// 官方下载链接（根据平台动态生成）
+  /// 官方链接
   static String getOfficialUrl(String platform) {
     return 'https://cdn.grenade-helper.top:8443/download/$platform';
   }
 }
 
-/// 更新检测服务
+/// 更新服务
 class UpdateService {
   static const String _baseUrl = 'https://cdn.grenade-helper.top:8443';
 
-  /// 获取当前平台标识
+  /// 平台标识
   String get currentPlatform {
     if (Platform.isWindows) return 'windows';
     if (Platform.isAndroid) return 'android';
@@ -59,7 +59,6 @@ class UpdateService {
   }
 
   /// 检查更新
-  /// 返回 null 表示无需更新或检测失败
   Future<UpdateInfo?> checkForUpdate() async {
     try {
       // 获取当前应用版本
@@ -92,8 +91,7 @@ class UpdateService {
     }
   }
 
-  /// 比较版本号，判断 latest 是否比 current 新
-  /// 例如: "1.0.4" > "1.0.3" 返回 true
+  /// 比较版本
   bool _isNewerVersion(String latest, String current) {
     try {
       final latestParts = latest.split('.').map(int.parse).toList();

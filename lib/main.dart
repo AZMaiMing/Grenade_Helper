@@ -20,7 +20,7 @@ import 'services/migration_service.dart';
 import 'themes/christmas_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// 全局服务实例（仅桌面端使用）
+// 全局服务实例
 SettingsService? globalSettingsService;
 HotkeyService? globalHotkeyService;
 WindowService? globalWindowService;
@@ -38,7 +38,7 @@ class WindowType {
   static const String overlay = 'overlay';
 }
 
-/// 发送命令给悬浮窗（通过 IPC）
+/// IPC发送命令
 void sendOverlayCommand(String command, [Map<String, dynamic>? args]) {
   // debugPrint('[Main] sendOverlayCommand: $command, args: $args');
   if (overlayWindowController != null) {
@@ -55,7 +55,7 @@ void sendOverlayCommand(String command, [Map<String, dynamic>? args]) {
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 检查是否是桌面平台
+  // 桌面端检查
   if (SettingsService.isDesktop) {
     // 获取当前窗口控制器
     final windowController = await WindowController.fromCurrentEngine();
@@ -107,10 +107,8 @@ Future<void> _runMainWindow() async {
   // 1. 获取数据存储目录
   String dataPath;
   if (SettingsService.isDesktop) {
-    // 桌面端：使用自定义路径或默认的应用根目录/data
     dataPath = await SettingsService.getDataPathBeforeInit();
   } else {
-    // 移动端：使用应用文档目录
     final dir = await getApplicationDocumentsDirectory();
     dataPath = dir.path;
   }
@@ -132,7 +130,7 @@ Future<void> _runMainWindow() async {
     debugPrint('[Main] Error cleaning lock file: $e');
   }
 
-  // 3. 初始化 Isar 数据库
+  // 3. 初始化数据库
   final isar = await Isar.open(
     [
       GameMapSchema,
@@ -146,10 +144,10 @@ Future<void> _runMainWindow() async {
   );
   globalIsar = isar;
 
-  // 2.1 检查并预填充地图数据
+  // 2.1 预填充地图
   await _initMapData(isar);
 
-  // 2.2 执行数据迁移（为旧道具生成 UUID）
+  // 2.2 数据迁移
   final migrationService = MigrationService(isar);
   final migratedCount = await migrationService.migrateGrenadeUuids();
   if (migratedCount > 0) {
@@ -306,9 +304,6 @@ Future<void> _runOverlayWindow(
     directory: dataPath,
     // 使用默认实例名，与主窗口共享数据库
   );
-
-  // 初始化设置服务
-  // 已在上方初始化
 
   // 初始化状态服务
   final overlayState = OverlayStateService(isar);
@@ -550,7 +545,7 @@ Future<void> _runOverlayWindow(
 
 /// 数据预填充逻辑：支持多楼层
 Future<void> _initMapData(Isar isar) async {
-  // 如果数据库为空，则写入默认数据
+  // 数据库为空则写入默认数据
   if (await isar.gameMaps.count() == 0) {
     debugPrint("检测到首次运行，正在写入地图数据...");
 

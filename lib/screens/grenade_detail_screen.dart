@@ -22,7 +22,7 @@ import '../services/data_service.dart';
 import '../main.dart' show sendOverlayCommand;
 import 'impact_point_picker_screen.dart';
 
-// --- 视频播放小组件 ---
+// 视频播放组件
 class VideoPlayerWidget extends StatefulWidget {
   final File file;
   const VideoPlayerWidget({super.key, required this.file});
@@ -65,7 +65,7 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
-  /// 切换播放/暂停状态 (供外部通过 GlobalKey 调用)
+  /// 切换播放状态
   void togglePlayPause() {
     if (_videoController == null || !_videoController!.value.isInitialized) {
       return;
@@ -111,10 +111,10 @@ class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 }
 
-/// 媒体来源枚举
+/// 媒体来源
 enum _MediaSource { gallery, clipboard }
 
-// --- 主页面 ---
+// 主页面
 class GrenadeDetailScreen extends ConsumerStatefulWidget {
   final int grenadeId;
   final bool isEditing;
@@ -130,7 +130,7 @@ class GrenadeDetailScreen extends ConsumerStatefulWidget {
 class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
   Grenade? grenade;
   final _titleController = TextEditingController();
-  String? _originalTitle; // 保存原始标题，用于检测未保存的修改
+  String? _originalTitle; // 存原始标题
 
   @override
   void initState() {
@@ -149,31 +149,31 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       }
       if (resetTitle) {
         _titleController.text = grenade!.title;
-        _originalTitle = grenade!.title; // 保存原始标题
+        _originalTitle = grenade!.title; // 存原始标题
       }
     }
     setState(() {});
   }
 
-  /// 默认作者名
+  /// 默认作者
   static const String _defaultAuthor = '匿名作者';
   static const String _authorHistoryKey = 'author_history';
   List<String> _authorHistory = [];
 
-  /// 加载作者历史
+  /// 加载历史
   Future<void> _loadAuthorHistory() async {
     final prefs = await SharedPreferences.getInstance();
     _authorHistory = prefs.getStringList(_authorHistoryKey) ?? [];
   }
 
-  /// 保存作者到历史
+  /// 保存历史
   Future<void> _saveAuthorToHistory(String author) async {
     if (author.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    // 移除重复，添加到开头
+    // 更新历史
     _authorHistory.remove(author);
     _authorHistory.insert(0, author);
-    // 最多保留 10 个
+    // 保留10个
     if (_authorHistory.length > 10) {
       _authorHistory = _authorHistory.sublist(0, 10);
     }
@@ -203,7 +203,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
 
     if (title != null) {
       grenade!.title = title;
-      _originalTitle = title; // 更新原始标题，避免保存后仍提示未保存
+      _originalTitle = title; // 更新原始标题
     }
     if (type != null) grenade!.type = type;
     if (team != null) grenade!.team = team;
@@ -223,7 +223,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     _loadData(resetTitle: false);
   }
 
-  /// 更新爆点位置
+  /// 更新爆点
   Future<void> _updateImpactPoint(double? x, double? y) async {
     if (grenade == null) return;
     final isar = ref.read(isarProvider);
@@ -241,11 +241,11 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     sendOverlayCommand('reload_data');
   }
 
-  /// 打开爆点选择页面
+  /// 选择爆点
   Future<void> _pickImpactPoint() async {
     if (grenade == null) return;
 
-    // 获取道具所在楼层
+    // 获取楼层
     await grenade!.layer.load();
     final layer = grenade!.layer.value;
     if (layer == null) {
@@ -302,12 +302,12 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     );
 
     if (confirm == true) {
-      // 清除爆点坐标和绘制区域
+      // 清数据
       final isar = ref.read(isarProvider);
 
       grenade!.impactXRatio = null;
       grenade!.impactYRatio = null;
-      grenade!.impactAreaStrokes = null; // 同时清除绘制范围
+      grenade!.impactAreaStrokes = null; // 清范围
       grenade!.updatedAt = DateTime.now();
 
       await isar.writeTxn(() async {
@@ -341,7 +341,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                   onPressed: () async {
                     final isar = ref.read(isarProvider);
 
-                    // 先删除所有媒体文件
+                    // 删媒体文件
                     await grenade!.steps.load();
                     for (final step in grenade!.steps) {
                       await step.medias.load();
@@ -350,7 +350,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                       }
                     }
 
-                    // 删除数据库记录
+                    // 删数据库
                     await isar.writeTxn(() async {
                       for (final step in grenade!.steps) {
                         await isar.stepMedias
@@ -524,7 +524,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     final path = await _pickAndProcessMedia(isImage);
     if (path != null) {
       final isar = ref.read(isarProvider);
-      // 计算新媒体的排序索引（追加到末尾）
+      // 计算排序
       final maxSortOrder = step.medias.isEmpty
           ? -1
           : step.medias
@@ -548,7 +548,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     }
   }
 
-  /// 显示媒体来源选择对话框
+  /// 来源选择
   Future<_MediaSource?> _showMediaSourcePicker(bool isImage) async {
     return showModalBottomSheet<_MediaSource>(
       context: context,
@@ -591,20 +591,20 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     );
   }
 
-  /// 从剪切板读取图片并打开编辑器
+  /// 剪切板图片
   Future<String?> _processImageFromClipboard(String dataPath) async {
-    // 首先尝试读取剪切板中的图片数据
+    // 读剪切板数据
     final imageBytes = await Pasteboard.image;
 
     File? tempFile;
     if (imageBytes != null && imageBytes.isNotEmpty) {
-      // 剪切板中有图片数据，写入临时文件
+      // 写临时文件
       final tempPath = p.join(dataPath,
           "_clipboard_temp_${DateTime.now().millisecondsSinceEpoch}.png");
       tempFile = File(tempPath);
       await tempFile.writeAsBytes(imageBytes);
     } else {
-      // 尝试从剪切板文件列表中查找图片
+      // 查文件列表
       final files = await Pasteboard.files();
       if (files.isNotEmpty) {
         const imageExtensions = [
@@ -636,7 +636,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
 
     if (!mounted) return null;
 
-    // 打开图片编辑器
+    // 打开编辑
     String? resultPath;
     await Navigator.push(
       context,
@@ -657,7 +657,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       ),
     );
 
-    // 清理临时文件（如果是从剪切板数据创建的）
+    // 清临时文件
     if (imageBytes != null && tempFile.existsSync()) {
       try {
         await tempFile.delete();
@@ -667,7 +667,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     return resultPath;
   }
 
-  /// 从剪切板读取视频
+  /// 剪切板视频
   Future<String?> _processVideoFromClipboard(String dataPath) async {
     final files = await Pasteboard.files();
     if (files.isEmpty) {
@@ -723,7 +723,7 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     }
   }
 
-  /// 构建图片编辑器配置（提取公共配置）
+  /// 编辑器配置
   ProImageEditorConfigs _buildImageEditorConfigs() {
     return ProImageEditorConfigs(
       designMode: ImageEditorDesignMode.cupertino,

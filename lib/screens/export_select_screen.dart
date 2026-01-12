@@ -7,7 +7,7 @@ import '../providers.dart';
 import '../services/data_service.dart';
 import 'grenade_detail_screen.dart';
 
-/// 导出选择界面 - 选择要分享的道具
+/// 导出选择界面
 class ExportSelectScreen extends ConsumerStatefulWidget {
   /// 0=选择道具(从所有道具), 1=选择地图, 2=从指定地图选择道具
   final int mode;
@@ -27,19 +27,19 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   bool _isLoading = true;
   bool _isExporting = false;
 
-  // 所有地图
+  // 地图列表
   List<GameMap> _maps = [];
 
-  // 按地图分组的道具
+  // 分组数据
   Map<String, List<Grenade>> _grenadesByMap = {};
 
-  // 选中的地图名称（多地图模式）
+  // 选中地图
   Set<String> _selectedMapNames = {};
 
-  // 选中的道具ID（单道具模式）
+  // 选中道具
   Set<int> _selectedGrenadeIds = {};
 
-  // 当前查看的地图（用于从地图进入道具列表）
+  // 当前地图
   String? _currentMapName;
 
   // 类型筛选
@@ -72,17 +72,17 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
       }
     }
 
-    // 根据模式设置初始选择
+    // 初始选择
     if (widget.mode == 1) {
-      // 多地图选择模式：默认全选有道具的地图
+      // 多地图默认全选
       _selectedMapNames = grenadesByMap.keys.toSet();
     } else if (widget.mode == 2 && widget.singleMap != null) {
-      // 单地图道具选择：默认全选该地图的道具
+      // 单地图默认全选
       _currentMapName = widget.singleMap!.name;
       final mapGrenades = grenadesByMap[_currentMapName] ?? [];
       _selectedGrenadeIds = mapGrenades.map((g) => g.id).toSet();
     } else {
-      // 全道具选择模式：默认全选
+      // 全道默认全选
       for (final grenades in grenadesByMap.values) {
         _selectedGrenadeIds.addAll(grenades.map((g) => g.id));
       }
@@ -136,7 +136,7 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   Future<void> _doExport() async {
     setState(() => _isExporting = true);
 
-    // 等待一帧让 UI 更新显示 loading 状态，避免界面卡顿
+    // 延时更新UI
     await Future.delayed(const Duration(milliseconds: 50));
 
     try {
@@ -146,12 +146,12 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
       List<Grenade> grenadesToExport = [];
 
       if (widget.mode == 1) {
-        // 多地图模式：导出选中地图的所有道具
+        // 导出多地图
         for (final mapName in _selectedMapNames) {
           grenadesToExport.addAll(_grenadesByMap[mapName] ?? []);
         }
       } else {
-        // 道具选择模式
+        // 导出道具
         for (final grenades in _grenadesByMap.values) {
           grenadesToExport.addAll(
             grenades.where((g) => _selectedGrenadeIds.contains(g.id)),
@@ -169,7 +169,7 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
         return;
       }
 
-      // 使用自定义道具列表导出
+      // 执行导出
       await dataService.exportSelectedGrenades(context, grenadesToExport);
 
       if (mounted) {
@@ -199,7 +199,7 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
       return _buildMapSelectScreen();
     }
 
-    // 道具选择模式 - 如果没有选择地图，显示地图列表
+    // 道具选择-地图列表
     if (widget.mode == 0 && _currentMapName == null) {
       return _buildMapListForGrenadeSelect();
     }
@@ -299,7 +299,7 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   Widget _buildMapListForGrenadeSelect() {
     final mapsWithGrenades = _maps.where((m) => _grenadesByMap.containsKey(m.name)).toList();
     
-    // 计算总数和已选数
+    // 计算数量
     int totalGrenades = 0;
     for (final grenades in _grenadesByMap.values) {
       totalGrenades += grenades.length;
@@ -310,7 +310,7 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
       appBar: AppBar(title: const Text("选择地图")),
       body: Column(
         children: [
-          // 全选所有地图栏
+          // 全选栏
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: Theme.of(context).colorScheme.surfaceContainerHighest,

@@ -6,7 +6,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'settings_service.dart';
 import 'hotkey_service.dart';
 
-/// 窗口服务 - 管理主窗口和悬浮窗、系统托盘
+/// 窗口服务
 class WindowService with TrayListener, WindowListener {
   final SettingsService _settings;
   HotkeyService? _hotkeyService;
@@ -23,7 +23,7 @@ class WindowService with TrayListener, WindowListener {
 
   WindowService(this._settings);
 
-  /// 设置热键服务引用
+  /// 设置热键
   void setHotkeyService(HotkeyService service) {
     _hotkeyService = service;
   }
@@ -32,7 +32,7 @@ class WindowService with TrayListener, WindowListener {
   set isOverlayVisible(bool value) => _isOverlayVisible = value;
   bool get isMainWindowVisible => _isMainWindowVisible;
 
-  /// 初始化窗口管理
+  /// 初始化
   Future<void> init() async {
     if (!SettingsService.isDesktop) return;
 
@@ -63,7 +63,7 @@ class WindowService with TrayListener, WindowListener {
     await _initTray();
   }
 
-  /// 初始化系统托盘
+  /// 初始化托盘
   Future<void> _initTray() async {
     trayManager.addListener(this);
 
@@ -79,7 +79,7 @@ class WindowService with TrayListener, WindowListener {
     }
   }
 
-  /// 更新托盘菜单
+  /// 更新菜单
   Future<void> _updateTrayMenu() async {
     final menu = Menu(
       items: [
@@ -101,7 +101,7 @@ class WindowService with TrayListener, WindowListener {
     await trayManager.setContextMenu(menu);
   }
 
-  /// 托盘菜单点击回调
+  /// 菜单回调
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     switch (menuItem.key) {
@@ -121,19 +121,19 @@ class WindowService with TrayListener, WindowListener {
     }
   }
 
-  /// 托盘图标双击回调
+  /// 图标双击
   @override
   void onTrayIconMouseDown() {
     showMainWindow();
   }
 
-  /// 托盘图标右键回调
+  /// 图标右键
   @override
   void onTrayIconRightMouseDown() {
     trayManager.popUpContextMenu();
   }
 
-  /// 窗口关闭事件 - 拦截关闭按钮
+  /// 窗口关闭
   @override
   void onWindowClose() async {
     if (_settings.getCloseToTray()) {
@@ -178,7 +178,7 @@ class WindowService with TrayListener, WindowListener {
     onHideOverlay?.call();
   }
 
-  /// 切换悬浮窗显示状态
+  /// 切换悬浮窗
   Future<void> toggleOverlay() async {
     if (_isOverlayVisible) {
       await hideOverlay();
@@ -187,7 +187,7 @@ class WindowService with TrayListener, WindowListener {
     }
   }
 
-  /// 强制退出程序
+  /// 强制退出
   Future<void> forceExitApp() async {
     onExitApp?.call();
     trayManager.removeListener(this);
@@ -204,7 +204,7 @@ class WindowService with TrayListener, WindowListener {
     await windowManager.close();
   }
 
-  /// 清理资源
+  /// 清理
   Future<void> dispose() async {
     trayManager.removeListener(this);
     windowManager.removeListener(this);

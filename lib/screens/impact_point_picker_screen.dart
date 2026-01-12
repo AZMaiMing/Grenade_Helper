@@ -8,16 +8,14 @@ import '../models.dart';
 import '../providers.dart';
 
 /// 爆点选择/绘制页面
-/// mode = 'pick': 点击选择爆点位置
-/// mode = 'draw': 绘制爆点区域
 class ImpactPointPickerScreen extends ConsumerStatefulWidget {
   final int grenadeId;
-  final double? initialX; // 当前爆点 X（如果已设置）
-  final double? initialY; // 当前爆点 Y（如果已设置）
-  final double throwX; // 投掷点 X（用于显示参考）
-  final double throwY; // 投掷点 Y
-  final int layerId; // 所在楼层
-  final bool isDrawingMode; // 是否为绘制模式
+  final double? initialX; 
+  final double? initialY; 
+  final double throwX; 
+  final double throwY; 
+  final int layerId; 
+  final bool isDrawingMode;
   final String? existingStrokes; // 现有笔画 JSON
   final int grenadeType; // 道具类型（用于颜色）
 
@@ -44,18 +42,18 @@ class _ImpactPointPickerScreenState
   late final PhotoViewController _photoViewController;
   final GlobalKey _stackKey = GlobalKey();
 
-  // 选中的爆点位置（选择模式用）
+  // 选中坐标
   double? _selectedX;
   double? _selectedY;
 
-  // 当前楼层信息
+  // 楼层信息
   MapLayer? _layer;
 
-  // ========== 绘制模式状态 ==========
+  // 绘制状态
   bool _isEraserMode = false;
   double _brushSize = 15.0;
   double _shapeSize = 0.05;
-  int _selectedShapeType = 0; // 0=笔刷, 1=圆形, 2=方块
+  int _selectedShapeType = 0; // 0:笔刷 1:圆 2:方
   List<Map<String, dynamic>> _drawingStrokes = [];
   List<Offset> _currentStroke = [];
 
@@ -67,7 +65,7 @@ class _ImpactPointPickerScreenState
     _selectedY = widget.initialY;
     _loadLayer();
 
-    // 绘制模式：解析现有笔画
+    // 解析笔画
     if (widget.isDrawingMode && widget.existingStrokes != null) {
       try {
         final parsed = jsonDecode(widget.existingStrokes!) as List;
@@ -89,7 +87,7 @@ class _ImpactPointPickerScreenState
     if (mounted) setState(() {});
   }
 
-  /// 计算 BoxFit.contain 模式下正方形图片的实际显示区域
+  /// 计算图片区域
   ({double width, double height, double offsetX, double offsetY})
       _getImageBounds(double containerWidth, double containerHeight) {
     const double imageAspectRatio = 1.0;
@@ -116,7 +114,7 @@ class _ImpactPointPickerScreenState
     }
   }
 
-  /// 将全局坐标转换为图片坐标比例 (0-1)
+  /// 坐标转比例
   Offset? _getLocalPosition(Offset globalPosition) {
     final RenderBox? box =
         _stackKey.currentContext?.findRenderObject() as RenderBox?;
@@ -132,7 +130,7 @@ class _ImpactPointPickerScreenState
     return Offset(tapX / bounds.width, tapY / bounds.height);
   }
 
-  // 选择模式方法
+  // 选择模式
 
   void _handleTap(TapUpDetails details) {
     final localRatio = _getLocalPosition(details.globalPosition);
@@ -161,7 +159,7 @@ class _ImpactPointPickerScreenState
     }
   }
 
-  /// 处理鼠标滚轮缩放
+  /// 滚轮缩放
   void _handleMouseWheelZoom(
       PointerScrollEvent event, BoxConstraints constraints) {
     final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
@@ -193,7 +191,7 @@ class _ImpactPointPickerScreenState
     _photoViewController.position = newPosition;
   }
 
-  // ========== 绘制模式方法 ==========
+  // 绘制方法
 
   Color _getTypeColor() {
     switch (widget.grenadeType) {
@@ -250,7 +248,7 @@ class _ImpactPointPickerScreenState
         'isEraser': false,
         'isShape': true,
         'shapeType': _selectedShapeType,
-        'center': [center.dx, center.dy], // 存储中心点以便缩放
+        'center': [center.dx, center.dy], // 存储中心
       });
     });
   }
@@ -261,7 +259,7 @@ class _ImpactPointPickerScreenState
 
     final shape = _drawingStrokes[shapeIndex];
     
-    // 获取或计算中心点
+    // 计算中心
     Offset center;
     if (shape['center'] != null) {
       final centerList = shape['center'] as List;
@@ -294,11 +292,8 @@ class _ImpactPointPickerScreenState
 
     final type = shape['shapeType'] as int;
     
-    // 只在当前选择的工具类型与形状类型匹配时才更新
-    // if (type != _selectedShapeType) return; // 移除类型检查，允许统一调整
-    // 但通常用户是在调整选中的工具大小。如果当前选中工具是圆，但调整的是方块（如果允许选中状态不一致的话），
-    // 由于我们分离了自动转换，这里应该总是更新为当前 Slider 的值。
-    // 然而，Slider 是绑定到 _shapeSize 的。所以无论如何，直接用 _shapeSize 更新当前形状。
+    // 匹配类型更新
+    // if (type != _selectedShapeType) return;
 
     List<List<double>> points;
     if (type == 1) {
@@ -463,7 +458,7 @@ class _ImpactPointPickerScreenState
     );
   }
 
-  // 选择模式视图
+  // 选择视图
 
   List<Widget> _buildPickerLayers(
     ({double width, double height, double offsetX, double offsetY}) imageBounds,
@@ -532,7 +527,7 @@ class _ImpactPointPickerScreenState
     );
   }
 
-  // 绘制模式视图
+  // 绘制视图
 
   List<Widget> _buildDrawingLayers(
     BoxConstraints constraints,
@@ -541,10 +536,10 @@ class _ImpactPointPickerScreenState
     final color = _getTypeColor();
 
     return [
-      // 爆点标记
+      // 爆点
       if (widget.initialX != null && widget.initialY != null)
         _buildImpactMarkerForDrawing(imageBounds),
-      // 绘制画布
+      // 画布
       Positioned.fill(
         child: GestureDetector(
           onTapDown: (details) {
@@ -670,7 +665,7 @@ class _ImpactPointPickerScreenState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 工具按钮行
+          // 工具栏
           Row(
             children: [
               _buildToolButton(

@@ -13,7 +13,7 @@ class ShareScreen extends ConsumerStatefulWidget {
 }
 
 class _ShareScreenState extends ConsumerState<ShareScreen> {
-  // 缓存数据，避免在 build 中使用同步查询
+  // 缓存数据
   List<GameMap> _maps = [];
   List<Grenade> _grenades = [];
   bool _isInitialized = false;
@@ -38,7 +38,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 如果还未初始化完成，显示加载指示器
+    // 加载中
     if (!_isInitialized) {
       return Scaffold(
         appBar: AppBar(title: const Text("分享")),
@@ -46,7 +46,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       );
     }
 
-    // 不再在 build 中使用 findAllSync()，使用缓存的数据
+    // 构建
     final body = TabBarView(
       children: [
         _buildSingleGrenadeTab(context),
@@ -81,7 +81,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       );
     }
 
-    // 按地图分组统计
+    // 地图统计
     final mapStats = <String, int>{};
     for (final g in _grenades) {
       g.layer.loadSync();
@@ -132,7 +132,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   }
 
   Widget _buildMapTab(BuildContext context) {
-    // 统计有道具的地图数量
+    // 地图统计
     int mapsWithDataCount = 0;
     for (final map in _maps) {
       map.layers.loadSync();

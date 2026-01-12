@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../services/data_service.dart';
 
-/// 道具包中道具的预览页面（只读，不导入）
+/// 道具预览
 class GrenadePreviewScreen extends StatelessWidget {
   final GrenadePreviewItem grenade;
   final Map<String, List<int>> memoryImages;
@@ -29,9 +29,9 @@ class GrenadePreviewScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 顶部信息栏
+          // 顶栏
           _buildInfoBar(context),
-          // 步骤列表
+          // 步骤
           Expanded(
             child: steps.isEmpty
                 ? const Center(
@@ -44,7 +44,7 @@ class GrenadePreviewScreen extends StatelessWidget {
                         _buildStepCard(context, steps[index], index),
                   ),
           ),
-          // 底部信息
+          // 底栏
           _buildFooter(context),
         ],
       ),
@@ -88,7 +88,7 @@ class GrenadePreviewScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 步骤标题
+          // 标题
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
@@ -135,7 +135,7 @@ class GrenadePreviewScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 14, color: Colors.grey[400]),
               ),
             ),
-          // 媒体列表
+          // 媒体
           ...medias.map((media) => _buildMediaItem(context, media)),
           const SizedBox(height: 8),
         ],
@@ -147,7 +147,7 @@ class GrenadePreviewScreen extends StatelessWidget {
     final path = mediaData['path'] as String? ?? '';
     final type = mediaData['type'] as int? ?? 0;
 
-    // 从内存中获取图片数据
+    // 内存图片
     final imageBytes = memoryImages[path];
 
     if (imageBytes == null) {
@@ -172,7 +172,7 @@ class GrenadePreviewScreen extends StatelessWidget {
     }
 
     if (type == MediaType.video) {
-      // 视频只显示占位符
+      // 视频占位
       return Container(
         height: 200,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -193,7 +193,7 @@ class GrenadePreviewScreen extends StatelessWidget {
       );
     }
 
-    // 显示图片
+    // 图片
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ClipRRect(

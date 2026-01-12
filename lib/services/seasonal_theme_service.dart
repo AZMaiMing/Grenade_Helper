@@ -7,34 +7,33 @@ abstract class SeasonalTheme {
   /// 主题唯一标识符
   String get id;
 
-  /// 显示名称
+  /// 名称
   String get name;
 
-  /// 表情图标
+  /// 图标
   String get emoji;
 
-  /// 主题开始日期（月/日）
+  /// 开始日期
   int get startMonth;
   int get startDay;
 
-  /// 主题结束日期（月/日）
+  /// 结束日期
   int get endMonth;
   int get endDay;
 
-  /// 获取浅色主题配色
+  /// 浅色配色
   ColorScheme getLightColorScheme();
 
-  /// 获取深色主题配色
+  /// 深色配色
   ColorScheme getDarkColorScheme();
 
-  /// 构建装饰组件（如雪花、烟花等）
-  /// 返回 null 表示无装饰
+  /// 构建装饰
   Widget? buildDecoration(BuildContext context);
 
-  /// 构建 AppBar 装饰（如小徽章）
+  /// 构建AppBar装饰
   Widget? buildAppBarDecoration(BuildContext context) => null;
 
-  /// 检查指定日期是否在主题激活期间
+  /// 检查激活
   bool isActiveOn(DateTime date) {
     final year = date.year;
 
@@ -58,24 +57,24 @@ abstract class SeasonalTheme {
   }
 }
 
-/// 节日主题管理器
+/// 主题管理
 class SeasonalThemeManager {
   SeasonalThemeManager._();
 
-  /// 所有已注册的节日主题
+  /// 已注册主题
   static final List<SeasonalTheme> _themes = [];
 
-  /// 注册主题
+  /// 注册
   static void registerTheme(SeasonalTheme theme) {
     if (!_themes.any((t) => t.id == theme.id)) {
       _themes.add(theme);
     }
   }
 
-  /// 获取所有已注册的主题
+  /// 获取所有
   static List<SeasonalTheme> get themes => List.unmodifiable(_themes);
 
-  /// 获取当前激活的主题（如果有）
+  /// 获取当前
   static SeasonalTheme? getActiveTheme([DateTime? date]) {
     final now = date ?? DateTime.now();
     for (final theme in _themes) {
@@ -86,7 +85,7 @@ class SeasonalThemeManager {
     return null;
   }
 
-  /// 根据 ID 获取主题
+  /// ID获取
   static SeasonalTheme? getThemeById(String id) {
     for (final theme in _themes) {
       if (theme.id == id) {
@@ -96,7 +95,7 @@ class SeasonalThemeManager {
     return null;
   }
 
-  /// 将节日配色应用到基础主题
+  /// 应用配色
   static ThemeData applySeasonalColors(
     ThemeData baseTheme,
     SeasonalTheme seasonalTheme,

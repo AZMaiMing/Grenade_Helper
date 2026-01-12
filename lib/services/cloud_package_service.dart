@@ -8,24 +8,24 @@ import '../models/cloud_package.dart';
 
 /// 云端道具包服务
 class CloudPackageService {
-  // ===== 索引文件源（GitHub 仓库）=====
-  // GitHub 源（主）
+  // ===== 索引源 (GitHub) =====
+  // GitHub
   static const String kGitHubIndexUrl =
       'https://raw.githubusercontent.com/Invis1ble-2/grenades_repo/main/';
-  // ghproxy 加速源（国内推荐）
+  // 代理源
   static const String kCDNIndexUrl =
       'https://ghproxy.grenade-helper.top/https://raw.githubusercontent.com/Invis1ble-2/grenades_repo/main/';
 
-  // 当前使用的源
+  // 当前源
   static String kIndexBaseUrl = kGitHubIndexUrl;
   static bool _useCDN = false;
 
-  /// 是否使用 CDN 加速（用于 CloudPackage.getDownloadUrl）
+  /// 是否CDN
   static bool get isUsingCDN => _useCDN;
 
   static const String _lastImportedKey = 'cloud_package_last_imported';
 
-  /// 获取云端道具包索引
+  /// 获取索引
   static Future<CloudPackageIndex?> fetchIndex() async {
     try {
       final response = await http
@@ -47,7 +47,7 @@ class CloudPackageService {
     kIndexBaseUrl = useCDN ? kCDNIndexUrl : kGitHubIndexUrl;
   }
 
-  // 存储正在下载的 client，用于取消
+  // 下载中的Client
   static final Map<String, http.Client> _activeClients = {};
 
   /// 取消下载
@@ -56,13 +56,13 @@ class CloudPackageService {
     client?.close();
   }
 
-  /// 从 URL 下载 .cs2pkg 文件（带进度回调）
-  /// [onProgress] 回调参数：(已下载字节数, 总字节数)
+  /// 下载文件
+  /// onProgress:进度回调
   static Future<String?> downloadPackage(
     String url, {
     void Function(int received, int total)? onProgress,
   }) async {
-    // URL 应该是完整的 http(s) 地址
+    // 完整URL
     return _downloadFromUrl(url, originalUrl: url, onProgress: onProgress);
   }
 
@@ -76,7 +76,7 @@ class CloudPackageService {
     try {
       debugPrint('正在下载: $url');
 
-      // 使用流式下载支持进度回调
+      // 流式下载
       final request = http.Request('GET', Uri.parse(url));
       request.headers['User-Agent'] =
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
@@ -121,7 +121,7 @@ class CloudPackageService {
     return null;
   }
 
-  /// 从任意 URL 导入道具包
+  /// URL导入
   static Future<String?> downloadFromUrl(String url) async {
     try {
       final uri = Uri.parse(url);
@@ -141,16 +141,16 @@ class CloudPackageService {
     return null;
   }
 
-  /// 检查包是否需要更新（基于版本号）
+  /// 检查更新
   static Future<bool> isPackageUpToDate(
       String packageId, String version) async {
     final prefs = await SharedPreferences.getInstance();
     final lastImportedVersion = prefs.getString('$_lastImportedKey:$packageId');
-    if (lastImportedVersion == null) return false; // 从未导入过
+    if (lastImportedVersion == null) return false; // 首次导入
     return compareVersion(lastImportedVersion, version) >= 0;
   }
 
-  /// 比较版本号，返回 1 表示 v1 > v2，0 表示相等，-1 表示 v1 < v2
+  /// 比较版本
   static int compareVersion(String v1, String v2) {
     final parts1 = v1.split('.').map((e) => int.tryParse(e) ?? 0).toList();
     final parts2 = v2.split('.').map((e) => int.tryParse(e) ?? 0).toList();
@@ -165,20 +165,20 @@ class CloudPackageService {
     return 0;
   }
 
-  /// 标记包已导入（保存版本号）
+  /// 标记导入
   static Future<void> markPackageImported(
       String packageId, String version) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_lastImportedKey:$packageId', version);
   }
 
-  /// 获取包的上次导入版本
+  /// 获取导入版本
   static Future<String?> getLastImportedVersion(String packageId) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('$_lastImportedKey:$packageId');
   }
 
-  /// 按地图筛选包列表
+  /// 地图筛选
   static List<CloudPackage> filterByMap(
       List<CloudPackage> packages, String? mapFilter) {
     if (mapFilter == null || mapFilter == 'all') {
@@ -187,7 +187,7 @@ class CloudPackageService {
     return packages.where((p) => p.map == null || p.map == mapFilter).toList();
   }
 
-  /// 获取所有可用地图列表（从包中提取）
+  /// 获取地图列表
   static List<String> getAvailableMaps(List<CloudPackage> packages) {
     final maps = <String>{};
     for (final p in packages) {

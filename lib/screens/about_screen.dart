@@ -55,7 +55,7 @@ class _AboutScreenState extends State<AboutScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // 应用图标和名称
+            // 图标名称
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -143,7 +143,7 @@ class _AboutScreenState extends State<AboutScreen> {
 
             const SizedBox(height: 16),
 
-            // QQ 群
+            // QQ群
             _buildSection(
               context,
               icon: Icons.group,
@@ -163,7 +163,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
-                      // QQ 群二维码
+                      // QR码
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -303,7 +303,7 @@ class _AboutScreenState extends State<AboutScreen> {
 
             const SizedBox(height: 16),
 
-            // 支持开发者
+            // 支持
             _buildSection(
               context,
               icon: Icons.favorite,
@@ -381,7 +381,7 @@ class _AboutScreenState extends State<AboutScreen> {
 
             const SizedBox(height: 24),
 
-            // 版权信息
+            // 版权
             Text(
               '© 2025 Grenade Helper. MIT License.',
               style: TextStyle(
