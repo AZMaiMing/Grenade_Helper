@@ -358,13 +358,12 @@ class _ImpactPointPickerScreenState
     }
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1A1D21) : Colors.grey[100];
+    final colorScheme = theme.colorScheme;
+    final scaffoldBg = theme.scaffoldBackgroundColor;
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : Colors.grey[200],
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: bgColor,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
@@ -397,7 +396,7 @@ class _ImpactPointPickerScreenState
             child: Text(
               widget.isDrawingMode ? '保存' : '确认',
               style: TextStyle(
-                color: theme.colorScheme.primary,
+                color: colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -420,7 +419,8 @@ class _ImpactPointPickerScreenState
                   },
                   child: PhotoView.customChild(
                     controller: _photoViewController,
-                    backgroundDecoration: const BoxDecoration(color: Colors.black),
+                    backgroundDecoration:
+                        const BoxDecoration(color: Colors.black),
                     minScale: PhotoViewComputedScale.contained * 0.8,
                     maxScale: PhotoViewComputedScale.covered * 3,
                     initialScale: PhotoViewComputedScale.contained,
@@ -480,10 +480,10 @@ class _ImpactPointPickerScreenState
 
   Widget _buildPickerFooter() {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1A1D21) : Colors.grey[100];
-    final textColor = isDark ? Colors.white70 : Colors.black54;
-    final markerColor = isDark ? Colors.white : Colors.black87;
+    final colorScheme = theme.colorScheme;
+    final bgColor = colorScheme.surfaceContainerHighest;
+    final textColor = colorScheme.onSurfaceVariant;
+    final markerColor = colorScheme.onSurface;
 
     return Container(
       width: double.infinity,
@@ -529,7 +529,9 @@ class _ImpactPointPickerScreenState
           Text(
             _selectedX != null ? '已选择爆点，点击确认保存' : '💡 点击地图任意位置设置爆点',
             style: TextStyle(
-              color: _selectedX != null ? theme.colorScheme.primary : Colors.grey,
+              color: _selectedX != null
+                  ? theme.colorScheme.primary
+                  : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               fontSize: 13,
             ),
           ),
@@ -680,9 +682,9 @@ class _ImpactPointPickerScreenState
   Widget _buildDrawingToolbar() {
     final color = _getTypeColor();
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1A1D21) : Colors.grey[100];
-    final textColor = isDark ? Colors.grey : Colors.grey[600];
+    final colorScheme = theme.colorScheme;
+    final bgColor = colorScheme.surfaceContainerHighest;
+    final textColor = colorScheme.onSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
