@@ -10,6 +10,7 @@ import '../services/data_service.dart';
 import '../models.dart';
 import '../providers.dart';
 import '../main.dart' show sendOverlayCommand;
+import 'grenade_select_delete_screen.dart';
 
 /// 设置
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -267,6 +268,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: const Text('删除选定地图的所有道具数据'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showDeleteMapGrenadesDialog(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.checklist, color: Colors.orange),
+              title: const Text('批量选择删除'),
+              subtitle: const Text('精确选择要删除的道具，支持预览'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GrenadeSelectDeleteScreen()),
+              ),
             ),
           ],
         ),
@@ -563,6 +574,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: const Text('删除选定地图的所有道具数据'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showDeleteMapGrenadesDialog(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.checklist, color: Colors.orange),
+              title: const Text('批量选择删除'),
+              subtitle: const Text('精确选择要删除的道具，支持预览'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GrenadeSelectDeleteScreen()),
+              ),
             ),
           ],
         ),
