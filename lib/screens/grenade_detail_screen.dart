@@ -19,6 +19,8 @@ import 'package:pasteboard/pasteboard.dart';
 import '../models.dart';
 import '../providers.dart';
 import '../services/data_service.dart';
+import '../services/tag_service.dart';
+import '../widgets/grenade_tag_editor.dart';
 import '../main.dart' show sendOverlayCommand;
 import 'impact_point_picker_screen.dart';
 
@@ -1798,6 +1800,34 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     );
   }
 
+  /// 构建标签编辑区域
+  Widget _buildTagSection() {
+    if (grenade == null) return const SizedBox.shrink();
+    final isar = ref.read(isarProvider);
+    final tagService = TagService(isar);
+    grenade!.layer.loadSync();
+    final layer = grenade!.layer.value;
+    if (layer == null) return const SizedBox.shrink();
+    layer.map.loadSync();
+    final map = layer.map.value;
+    if (map == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 1),
+      ),
+      child: GrenadeTagEditor(
+        grenadeId: grenade!.id,
+        mapId: map.id,
+        tagService: tagService,
+        onTagsChanged: () => sendOverlayCommand('reload_data'),
+      ),
+    );
+  }
+
   Widget _buildStepList(bool isEditing) {
     final steps = grenade!.steps.toList();
     steps.sort((a, b) => a.stepIndex.compareTo(b.stepIndex));
@@ -1811,15 +1841,31 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
           child: Text("暂无教学步骤", style: TextStyle(color: Colors.grey)));
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // 爆点卡片
-        if (showImpactCard) _buildImpactPointSection(isEditing),
-        // 步骤卡片
-        ...steps.map((step) => _buildStepCard(step, isEditing)),
-      ],
-    );
+    if (isEditing) {
+      // 编辑模式：使用 ListView（爬点卡片不参与重排序）
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 爆点卡片（编辑模式且非穿点类型时显示）
+          if (showImpactCard) _buildImpactPointSection(isEditing),
+          // 标签编辑器
+          _buildTagSection(),
+          // 步骤卡片
+          ...steps.map((step) => _buildStepCard(step, isEditing)),
+        ],
+      );
+    } else {
+      // 非编辑模式：使用 ListView（包含爆点卡片）
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 爆点卡片（有爆点时显示）
+          if (showImpactCard) _buildImpactPointSection(isEditing),
+          // 步骤卡片
+          ...steps.map((step) => _buildStepCard(step, isEditing)),
+        ],
+      );
+    }
   }
 
   // 构建单个媒体项（图片或视频）

@@ -10,6 +10,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:uuid/uuid.dart';
 import '../models.dart';
+import '../models/tag.dart';
+import '../models/grenade_tag.dart';
 
 /// 导入状态
 enum ImportStatus { newItem, update, skip }
@@ -303,6 +305,10 @@ class DataService {
         });
       }
 
+      // 获取道具关联的标签ID
+      final grenadeTags = await isar.grenadeTags.filter().grenadeIdEqualTo(g.id).findAll();
+      final tagIds = grenadeTags.map((gt) => gt.tagId).toList();
+
       exportList.add({
         'uniqueId': g.uniqueId,
         'mapName': g.layer.value?.map.value?.name ?? "Unknown",
@@ -317,6 +323,7 @@ class DataService {
         'impactX': g.impactXRatio,
         'impactY': g.impactYRatio,
         'impactAreaStrokes': g.impactAreaStrokes,
+        'tagIds': tagIds,
         'steps': stepsData,
         'createdAt': g.createdAt.millisecondsSinceEpoch,
         'updatedAt': g.updatedAt.millisecondsSinceEpoch,
@@ -440,6 +447,10 @@ class DataService {
         });
       }
 
+      // 获取道具关联的标签ID
+      final grenadeTags = await isar.grenadeTags.filter().grenadeIdEqualTo(g.id).findAll();
+      final tagIds = grenadeTags.map((gt) => gt.tagId).toList();
+
       exportList.add({
         'uniqueId': g.uniqueId,
         'mapName': g.layer.value?.map.value?.name ?? "Unknown",
@@ -454,6 +465,7 @@ class DataService {
         'impactX': g.impactXRatio,
         'impactY': g.impactYRatio,
         'impactAreaStrokes': g.impactAreaStrokes,
+        'tagIds': tagIds,
         'steps': stepsData,
         'createdAt': g.createdAt.millisecondsSinceEpoch,
         'updatedAt': g.updatedAt.millisecondsSinceEpoch,
@@ -945,6 +957,22 @@ class DataService {
       await step.medias.save();
     }
     await g.steps.save();
+    
+    // 导入标签关联
+    final tagIds = item['tagIds'] as List?;
+    if (tagIds != null && tagIds.isNotEmpty) {
+      for (final tagId in tagIds) {
+        if (tagId is int) {
+          // 检查标签是否存在
+          final tag = await isar.tags.get(tagId);
+          if (tag != null) {
+            final grenadeTag = GrenadeTag(grenadeId: g.id, tagId: tagId);
+            await isar.grenadeTags.put(grenadeTag);
+          }
+        }
+      }
+    }
+    
     return g; // 返回创建的道具
   }
 
