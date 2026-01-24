@@ -2493,7 +2493,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E2126),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
@@ -2509,7 +2509,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               Row(children: [
                 const Icon(Icons.label, color: Colors.blueAccent),
                 const SizedBox(width: 8),
-                const Text('标签筛选', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('标签筛选', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(ctx).textTheme.titleLarge?.color)),
                 const Spacer(),
                 if (selectedIds.isNotEmpty)
                   TextButton(onPressed: () { ref.read(selectedTagIdsProvider.notifier).state = {}; setSheetState(() {}); }, child: const Text('清除')),
@@ -2525,11 +2525,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => TagManagerScreen(mapId: widget.gameMap.id, mapName: widget.gameMap.name))); },
                 ),
               ]),
-              if (selectedIds.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('已选 ${selectedIds.length} 个标签', style: const TextStyle(color: Colors.grey, fontSize: 12))),
+              if (selectedIds.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('已选 ${selectedIds.length} 个标签', style: TextStyle(color: Theme.of(ctx).textTheme.bodySmall?.color, fontSize: 12))),
               const SizedBox(height: 8),
               Flexible(
                 child: tags.isEmpty
-                    ? const Center(child: Padding(padding: EdgeInsets.all(32), child: Text('暂无标签，点击右上角管理', style: TextStyle(color: Colors.grey))))
+                    ? Center(child: Padding(padding: const EdgeInsets.all(32), child: Text('暂无标签，点击右上角管理', style: TextStyle(color: Theme.of(ctx).textTheme.bodySmall?.color))))
                     : ListView(shrinkWrap: true, children: grouped.entries.where((e) => e.key != TagDimension.role).map((e) => _buildTagDimensionGroup(e.key, e.value, setSheetState)).toList()),
               ),
               const SizedBox(height: 12),
