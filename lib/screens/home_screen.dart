@@ -4,6 +4,7 @@ import 'package:isar_community/isar.dart';
 import '../models.dart';
 import '../providers.dart';
 import '../main.dart';
+import '../widgets/fireworks_effect.dart';
 import '../widgets/snowfall_effect.dart';
 import 'map_screen.dart';
 import 'grenade_detail_screen.dart';
@@ -90,6 +91,9 @@ class HomeScreen extends ConsumerWidget {
     final isar = ref.watch(isarProvider);
     final maps = isar.gameMaps.where().findAllSync();
     final seasonalTheme = ref.watch(activeSeasonalThemeProvider);
+    final seasonalThemeId = seasonalTheme?.id;
+    final isChristmasTheme = seasonalThemeId == 'christmas';
+    final isSpringFestivalTheme = seasonalThemeId == 'spring_festival';
 
     Widget body = Scaffold(
       appBar: AppBar(
@@ -113,7 +117,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         // 圣诞灯带
-        bottom: seasonalTheme != null
+        bottom: isChristmasTheme
             ? const PreferredSize(
                 preferredSize: Size.fromHeight(24),
                 child: ChristmasLights(height: 24),
@@ -140,7 +144,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     // 圣诞帽
-                    if (seasonalTheme != null)
+                    if (isChristmasTheme)
                       const Positioned(
                         top: -25,
                         left: 5,
@@ -269,10 +273,15 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
 
-    // 节日装饰
-    if (seasonalTheme != null) {
+    // 节日装饰（互斥触发）
+    if (isChristmasTheme) {
       body = SnowfallEffect(
         snowflakeCount: 25,
+        child: body,
+      );
+    } else if (isSpringFestivalTheme) {
+      body = FireworksEffect(
+        maxFireworks: 4,
         child: body,
       );
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/seasonal_theme_service.dart';
 import '../widgets/snowfall_effect.dart';
+import 'spring_festival_theme.dart';
 
 /// 圣诞主题
 /// 激活：12.20-1.2
@@ -83,4 +84,5 @@ class ChristmasTheme extends SeasonalTheme {
 /// 注册主题
 void initializeSeasonalThemes() {
   SeasonalThemeManager.registerTheme(ChristmasTheme());
+  SeasonalThemeManager.registerTheme(SpringFestivalTheme());
 }
