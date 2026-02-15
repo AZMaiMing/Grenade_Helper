@@ -568,9 +568,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         context,
         MaterialPageRoute(
             builder: (_) =>
-                GrenadeDetailScreen(grenadeId: id, isEditing: true)
-        )
-    );
+                GrenadeDetailScreen(grenadeId: id, isEditing: true)));
   }
 
   void _onSearchResultSelected(Grenade g) {
@@ -605,8 +603,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         MaterialPageRoute(
             builder: (_) =>
                 GrenadeDetailScreen(grenadeId: g.id, isEditing: isEditing)));
-
-
   }
 
   void _handleClusterTap(GrenadeCluster cluster, int layerId) async {
@@ -616,7 +612,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("不能合并到自己所在的点位"),
             // 避免遮挡
-            behavior: SnackBarBehavior.floating, 
+            behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 1)));
         return;
       }
@@ -966,12 +962,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// 打开自定义分组批量绘制爆点区域界面
-  Future<void> _openGroupImpactAreaDrawing(ImpactGroup group, List<Grenade> grenades, int layerId, void Function(void Function())? setPanelState) async {
+  Future<void> _openGroupImpactAreaDrawing(
+      ImpactGroup group,
+      List<Grenade> grenades,
+      int layerId,
+      void Function(void Function())? setPanelState) async {
     if (grenades.isEmpty) return;
-    
+
     // 使用第一个道具作为参照
     final referenceGrenade = grenades.first;
-    
+
     // 尝试找到一个已有绘制数据的道具作为初始状态
     String? existingStrokes;
     for (final g in grenades) {
@@ -981,7 +981,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     }
 
-    if (referenceGrenade.impactXRatio == null || referenceGrenade.impactYRatio == null) {
+    if (referenceGrenade.impactXRatio == null ||
+        referenceGrenade.impactYRatio == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('分组内道具未设置爆点位置'),
         backgroundColor: Colors.orange,
@@ -1002,7 +1003,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           layerId: layerId,
           isDrawingMode: true,
           existingStrokes: existingStrokes,
-          grenadeType: group.type == GrenadeType.molotov ? GrenadeType.molotov : GrenadeType.smoke, // 强制使用分组类型对应的绘制颜色
+          grenadeType: group.type == GrenadeType.molotov
+              ? GrenadeType.molotov
+              : GrenadeType.smoke, // 强制使用分组类型对应的绘制颜色
         ),
       ),
     );
@@ -1010,7 +1013,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (result != null && result['strokes'] != null) {
       final isar = ref.read(isarProvider);
       final newStrokes = result['strokes'] as String;
-      
+
       await isar.writeTxn(() async {
         for (final g in grenades) {
           // 重新从数据库获取最新对象以防并发修改
@@ -1240,7 +1243,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// 处理爆点摇杆移动
   void _handleJoystickMoveForImpact(Offset direction, int speedLevel) {
-    if (_joystickImpactCluster == null || _impactJoystickDragOffset == null){
+    if (_joystickImpactCluster == null || _impactJoystickDragOffset == null) {
       return;
     }
 
@@ -1686,8 +1689,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         double offsetX,
         double offsetY
       }) imageBounds) {
-
-
     final color = _getTeamColor(cluster.primaryTeam);
     final icon = _getTypeIcon(cluster.primaryType);
     final count = cluster.grenades.length;
@@ -1941,8 +1942,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     const double baseHalfSize = 14.0;
     final left =
         imageBounds.offsetX + cluster.xRatio * imageBounds.width - baseHalfSize;
-    final top =
-        imageBounds.offsetY + cluster.yRatio * imageBounds.height - baseHalfSize;
+    final top = imageBounds.offsetY +
+        cluster.yRatio * imageBounds.height -
+        baseHalfSize;
 
     return Positioned(
       left: left,
@@ -2444,7 +2446,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildFavoritesBar(AsyncValue<List<Grenade>> asyncData, BuildContext context) {
+  Widget _buildFavoritesBar(
+      AsyncValue<List<Grenade>> asyncData, BuildContext context) {
     return Container(
       height: 60,
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -2454,7 +2457,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           if (favs.isEmpty) {
             return Center(
                 child: Text("暂无本层常用道具",
-                    style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)));
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 12)));
           }
           return ListView.separated(
             scrollDirection: Axis.horizontal,
@@ -2465,9 +2470,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               final g = favs[index];
               Color color = g.team == TeamType.ct
                   ? Colors.blueAccent
-                  : (g.team == TeamType.t ? Colors.amber : Theme.of(context).colorScheme.onSurface);
+                  : (g.team == TeamType.t
+                      ? Colors.amber
+                      : Theme.of(context).colorScheme.onSurface);
               return ActionChip(
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainer,
                   padding: EdgeInsets.zero,
                   label: Text(g.title,
                       style: TextStyle(color: color, fontSize: 12)),
@@ -2486,21 +2494,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _showTagFilterSheet(int layerId) async {
     final isar = ref.read(isarProvider);
     final tagService = TagService(isar);
-    await tagService.initializeSystemTags(widget.gameMap.id, widget.gameMap.name);
+    await tagService.initializeSystemTags(
+        widget.gameMap.id, widget.gameMap.name);
     final tags = await tagService.getAllTags(widget.gameMap.id);
     if (!mounted) return;
     final selectedIds = ref.read(selectedTagIdsProvider);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
         final grouped = <int, List<Tag>>{};
-        for (final tag in tags){ grouped.putIfAbsent(tag.dimension, () => []).add(tag);}
+        for (final tag in tags) {
+          grouped.putIfAbsent(tag.dimension, () => []).add(tag);
+        }
         return Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6),
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2509,31 +2522,79 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               Row(children: [
                 const Icon(Icons.label, color: Colors.blueAccent),
                 const SizedBox(width: 8),
-                Text('标签筛选', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(ctx).textTheme.titleLarge?.color)),
+                Text('标签筛选',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(ctx).textTheme.titleLarge?.color)),
                 const Spacer(),
                 if (selectedIds.isNotEmpty)
-                  TextButton(onPressed: () { ref.read(selectedTagIdsProvider.notifier).state = {}; setSheetState(() {}); }, child: const Text('清除')),
+                  TextButton(
+                      onPressed: () {
+                        ref.read(selectedTagIdsProvider.notifier).state = {};
+                        setSheetState(() {});
+                      },
+                      child: const Text('清除')),
                 // 区域管理按钮
                 IconButton(
                   icon: const Icon(Icons.map_outlined, color: Colors.grey),
                   tooltip: '管理区域',
-                  onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => AreaManagerScreen(gameMap: widget.gameMap))); },
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                AreaManagerScreen(gameMap: widget.gameMap)));
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.settings, color: Colors.grey),
                   tooltip: '管理标签',
-                  onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => TagManagerScreen(mapId: widget.gameMap.id, mapName: widget.gameMap.name))); },
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => TagManagerScreen(
+                                mapId: widget.gameMap.id,
+                                mapName: widget.gameMap.name)));
+                  },
                 ),
               ]),
-              if (selectedIds.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('已选 ${selectedIds.length} 个标签', style: TextStyle(color: Theme.of(ctx).textTheme.bodySmall?.color, fontSize: 12))),
+              if (selectedIds.isNotEmpty)
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text('已选 ${selectedIds.length} 个标签',
+                        style: TextStyle(
+                            color: Theme.of(ctx).textTheme.bodySmall?.color,
+                            fontSize: 12))),
               const SizedBox(height: 8),
               Flexible(
                 child: tags.isEmpty
-                    ? Center(child: Padding(padding: const EdgeInsets.all(32), child: Text('暂无标签，点击右上角管理', style: TextStyle(color: Theme.of(ctx).textTheme.bodySmall?.color))))
-                    : ListView(shrinkWrap: true, children: grouped.entries.where((e) => e.key != TagDimension.role).map((e) => _buildTagDimensionGroup(e.key, e.value, setSheetState)).toList()),
+                    ? Center(
+                        child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text('暂无标签，点击右上角管理',
+                                style: TextStyle(
+                                    color: Theme.of(ctx)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color))))
+                    : ListView(
+                        shrinkWrap: true,
+                        children: grouped.entries
+                            .where((e) => e.key != TagDimension.role)
+                            .map((e) => _buildTagDimensionGroup(
+                                e.key, e.value, setSheetState))
+                            .toList()),
               ),
               const SizedBox(height: 12),
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定'))),
+              SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('确定'))),
             ],
           ),
         );
@@ -2541,30 +2602,57 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildTagDimensionGroup(int dimension, List<Tag> tags, void Function(void Function()) setSheetState) {
+  Widget _buildTagDimensionGroup(int dimension, List<Tag> tags,
+      void Function(void Function()) setSheetState) {
     final selectedIds = ref.watch(selectedTagIdsProvider);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(TagDimension.getName(dimension), style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500))),
-      Wrap(spacing: 8, runSpacing: 8, children: tags.map((tag) {
-        final isSelected = selectedIds.contains(tag.id);
-        final color = Color(tag.colorValue);
-        return GestureDetector(
-          onTap: () {
-            final newSelection = Set<int>.from(selectedIds);
-            if (isSelected) {newSelection.remove(tag.id); } else {newSelection.add(tag.id); }
-            ref.read(selectedTagIdsProvider.notifier).state = newSelection;
-            setSheetState(() {});
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: isSelected ? color : color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16), border: Border.all(color: isSelected ? color : color.withValues(alpha: 0.4))),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              if (isSelected) const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.check, size: 14, color: Colors.white)),
-              Text(tag.name, style: TextStyle(fontSize: 13, color: isSelected ? Colors.white : color)),
-            ]),
-          ),
-        );
-      }).toList()),
+      Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Text(TagDimension.getName(dimension),
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500))),
+      Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: tags.map((tag) {
+            final isSelected = selectedIds.contains(tag.id);
+            final color = Color(tag.colorValue);
+            return GestureDetector(
+              onTap: () {
+                final newSelection = Set<int>.from(selectedIds);
+                if (isSelected) {
+                  newSelection.remove(tag.id);
+                } else {
+                  newSelection.add(tag.id);
+                }
+                ref.read(selectedTagIdsProvider.notifier).state = newSelection;
+                setSheetState(() {});
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                    color: isSelected ? color : color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color:
+                            isSelected ? color : color.withValues(alpha: 0.4))),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (isSelected)
+                    const Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child:
+                            Icon(Icons.check, size: 14, color: Colors.white)),
+                  Text(tag.name,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: isSelected ? Colors.white : color)),
+                ]),
+              ),
+            );
+          }).toList()),
       const SizedBox(height: 12),
     ]);
   }
@@ -2651,12 +2739,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           final query = textEditingValue.text.toLowerCase();
                           return allMapGrenades.where((g) {
                             // 匹配标题
-                            if (g.title.toLowerCase().contains(query)) return true;
+                            if (g.title.toLowerCase().contains(query))
+                              return true;
                             // 匹配标签名
-                            final grenadeTags = isar.grenadeTags.filter().grenadeIdEqualTo(g.id).findAllSync();
+                            final grenadeTags = isar.grenadeTags
+                                .filter()
+                                .grenadeIdEqualTo(g.id)
+                                .findAllSync();
                             for (final gt in grenadeTags) {
                               final tag = isar.tags.getSync(gt.tagId);
-                              if (tag != null && tag.name.toLowerCase().contains(query)) return true;
+                              if (tag != null &&
+                                  tag.name.toLowerCase().contains(query))
+                                return true;
                             }
                             return false;
                           });
@@ -2727,7 +2821,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ],
         ),
         actions: [
-
           Padding(
               padding: const EdgeInsets.only(right: 12.0),
               child: Row(children: [
@@ -2818,7 +2911,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             builder: (context, snapshot) {
                               final double scale = snapshot.data?.scale ?? 1.0;
                               final double markerScale = 1.0 / scale;
-                              
+
                               // 计算 BoxFit.contain 模式下图片的实际显示区域
                               final imageBounds = _getImageBounds(
                                   constraints.maxWidth, constraints.maxHeight);
@@ -2840,29 +2933,50 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                           final clusterThreshold =
                                               scale >= 2.0 ? 0.008 : 0.02;
                                           // 根据当前筛选结果过滤选中的grenades
-                                          final filteredIds = list.map((g) => g.id).toSet();
-                                          final filteredSelectedGrenades = _selectedClusterForImpact?.grenades
-                                              .where((g) => filteredIds.contains(g.id))
-                                              .toList() ?? [];
+                                          final filteredIds =
+                                              list.map((g) => g.id).toSet();
+                                          final filteredSelectedGrenades =
+                                              _selectedClusterForImpact
+                                                      ?.grenades
+                                                      .where((g) => filteredIds
+                                                          .contains(g.id))
+                                                      .toList() ??
+                                                  [];
 
                                           final widgets = <Widget>[];
                                           // 爆点区域显示（最底层）
-                                          if (_selectedClusterForImpact != null) {
+                                          if (_selectedClusterForImpact !=
+                                              null) {
                                             // 根据类型和分组过滤器筛选
-                                            var areaGrenades = filteredSelectedGrenades.where((g) {
-                                              if (_selectedImpactTypeFilter != null && g.type != _selectedImpactTypeFilter) return false;
-                                              if (_selectedImpactGroupId != null && g.impactGroupId != _selectedImpactGroupId) return false;
+                                            var areaGrenades =
+                                                filteredSelectedGrenades
+                                                    .where((g) {
+                                              if (_selectedImpactTypeFilter !=
+                                                      null &&
+                                                  g.type !=
+                                                      _selectedImpactTypeFilter)
+                                                return false;
+                                              if (_selectedImpactGroupId !=
+                                                      null &&
+                                                  g.impactGroupId !=
+                                                      _selectedImpactGroupId)
+                                                return false;
                                               return true;
                                             });
-                                            
+
                                             // 去重逻辑：避免重复绘制相同的 strokes 导致透明度叠加
                                             final visitedStrokes = <String>{};
                                             for (final g in areaGrenades) {
-                                              if (g.impactAreaStrokes != null && 
-                                                  g.impactAreaStrokes!.isNotEmpty && 
-                                                  !visitedStrokes.contains(g.impactAreaStrokes)) {
-                                                visitedStrokes.add(g.impactAreaStrokes!);
-                                                widgets.add(_buildImpactAreaOverlay(g, constraints));
+                                              if (g.impactAreaStrokes != null &&
+                                                  g.impactAreaStrokes!
+                                                      .isNotEmpty &&
+                                                  !visitedStrokes.contains(
+                                                      g.impactAreaStrokes)) {
+                                                visitedStrokes
+                                                    .add(g.impactAreaStrokes!);
+                                                widgets.add(
+                                                    _buildImpactAreaOverlay(
+                                                        g, constraints));
                                               }
                                             }
                                           }
@@ -2874,14 +2988,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                                     threshold:
                                                         clusterThreshold);
 
-                                            widgets.addAll(impactClusters.map((c) =>
-                                                _buildImpactClusterMarker(
-                                                    c,
-                                                    constraints,
-                                                    isEditMode,
-                                                    currentLayer.id,
-                                                    markerScale,
-                                                    imageBounds)));
+                                            widgets.addAll(impactClusters.map(
+                                                (c) =>
+                                                    _buildImpactClusterMarker(
+                                                        c,
+                                                        constraints,
+                                                        isEditMode,
+                                                        currentLayer.id,
+                                                        markerScale,
+                                                        imageBounds)));
                                           } else {
                                             // 标准模式：显示投掷点聚合
                                             final clusters = clusterGrenades(
@@ -2899,8 +3014,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                                                 _selectedClusterForImpact))
                                                         .toList();
 
-                                            widgets.addAll(visibleClusters.map((c) =>
-                                                _buildClusterMarker(
+                                            widgets.addAll(visibleClusters.map(
+                                                (c) => _buildClusterMarker(
                                                     c,
                                                     constraints,
                                                     isEditMode,
@@ -2908,68 +3023,108 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                                     markerScale,
                                                     imageBounds)));
                                           }
-                                          
+
                                           // 爆点连线
-                                          if (_selectedClusterForImpact != null) {
+                                          if (_selectedClusterForImpact !=
+                                              null) {
                                             // 根据类型和分组过滤器筛选连线
-                                            final lineGrenades = filteredSelectedGrenades.where((g) {
-                                              if (_selectedImpactTypeFilter != null && g.type != _selectedImpactTypeFilter) return false;
-                                              if (_selectedImpactGroupId != null && g.impactGroupId != _selectedImpactGroupId) return false;
+                                            final lineGrenades =
+                                                filteredSelectedGrenades
+                                                    .where((g) {
+                                              if (_selectedImpactTypeFilter !=
+                                                      null &&
+                                                  g.type !=
+                                                      _selectedImpactTypeFilter)
+                                                return false;
+                                              if (_selectedImpactGroupId !=
+                                                      null &&
+                                                  g.impactGroupId !=
+                                                      _selectedImpactGroupId)
+                                                return false;
                                               return true;
                                             });
                                             widgets.addAll(lineGrenades
                                                 .where((g) =>
                                                     g.impactXRatio != null &&
                                                     g.impactYRatio != null &&
-                                                    g.type != GrenadeType.wallbang)
-                                                .map((g) => _buildConnectionLine(
-                                                    g, markerScale, imageBounds)));
+                                                    g.type !=
+                                                        GrenadeType.wallbang)
+                                                .map((g) =>
+                                                    _buildConnectionLine(
+                                                        g,
+                                                        markerScale,
+                                                        imageBounds)));
                                           }
                                           // 标准模式下的爆点标记（选中点位时显示）
-                                          if (!_isImpactMode && _selectedClusterForImpact != null) {
+                                          if (!_isImpactMode &&
+                                              _selectedClusterForImpact !=
+                                                  null) {
                                             // 检查当前缩放级别下投掷点是否仍然会聚合
                                             final subClusters = clusterGrenades(
                                                 filteredSelectedGrenades,
                                                 threshold: clusterThreshold);
-                                            
-                                            if (subClusters.length == 1 && filteredSelectedGrenades.length > 1) {
+
+                                            if (subClusters.length == 1 &&
+                                                filteredSelectedGrenades
+                                                        .length >
+                                                    1) {
                                               // 仍然聚合：显示聚合图标（带光圈效果）
-                                              widgets.add(_buildSelectedClusterMarker(
-                                                  subClusters.first,
-                                                  constraints,
-                                                  markerScale,
-                                                  imageBounds));
-                                            } else {
-                                              // 会分开：显示选中cluster内的所有投掷点标记（带光圈效果）
-                                              widgets.addAll(filteredSelectedGrenades
-                                                  .map((g) => _buildSelectedThrowPointMarker(
-                                                      g,
+                                              widgets.add(
+                                                  _buildSelectedClusterMarker(
+                                                      subClusters.first,
                                                       constraints,
                                                       markerScale,
-                                                      imageBounds)));
+                                                      imageBounds));
+                                            } else {
+                                              // 会分开：显示选中cluster内的所有投掷点标记（带光圈效果）
+                                              widgets.addAll(
+                                                  filteredSelectedGrenades.map(
+                                                      (g) =>
+                                                          _buildSelectedThrowPointMarker(
+                                                              g,
+                                                              constraints,
+                                                              markerScale,
+                                                              imageBounds)));
                                             }
                                             // 显示爆点标记
-                                            widgets.addAll(filteredSelectedGrenades
-                                                .where((g) =>
-                                                    g.impactXRatio != null &&
-                                                    g.impactYRatio != null &&
-                                                    g.type != GrenadeType.wallbang)
-                                                .map((g) => _buildImpactMarker(
-                                                    g,
-                                                    constraints,
-                                                    markerScale,
-                                                    imageBounds)));
+                                            widgets.addAll(
+                                                filteredSelectedGrenades
+                                                    .where((g) =>
+                                                        g.impactXRatio != null &&
+                                                        g.impactYRatio !=
+                                                            null &&
+                                                        g.type !=
+                                                            GrenadeType
+                                                                .wallbang)
+                                                    .map((g) =>
+                                                        _buildImpactMarker(
+                                                            g,
+                                                            constraints,
+                                                            markerScale,
+                                                            imageBounds)));
                                           }
                                           // 爆点模式下的投掷点标记（选中爆点时显示）
-                                          if (_isImpactMode && _selectedClusterForImpact != null) {
+                                          if (_isImpactMode &&
+                                              _selectedClusterForImpact !=
+                                                  null) {
                                             // 根据类型和分组过滤器筛选投掷点
-                                            final displayGrenades = filteredSelectedGrenades.where((g) {
-                                              if (_selectedImpactTypeFilter != null && g.type != _selectedImpactTypeFilter) return false;
-                                              if (_selectedImpactGroupId != null && g.impactGroupId != _selectedImpactGroupId) return false;
+                                            final displayGrenades =
+                                                filteredSelectedGrenades
+                                                    .where((g) {
+                                              if (_selectedImpactTypeFilter !=
+                                                      null &&
+                                                  g.type !=
+                                                      _selectedImpactTypeFilter)
+                                                return false;
+                                              if (_selectedImpactGroupId !=
+                                                      null &&
+                                                  g.impactGroupId !=
+                                                      _selectedImpactGroupId)
+                                                return false;
                                               return true;
                                             }).toList();
-                                            widgets.addAll(displayGrenades
-                                                .map((g) => _buildThrowPointMarker(
+                                            widgets.addAll(displayGrenades.map(
+                                                (g) => _buildThrowPointMarker(
                                                     g,
                                                     constraints,
                                                     markerScale,
@@ -3180,7 +3335,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         heroTag: "btn_tag_filter",
                         backgroundColor: Colors.blueGrey,
                         onPressed: () => _showTagFilterSheet(currentLayer.id),
-                        child: const Icon(Icons.label_outline, color: Colors.white),
+                        child: const Icon(Icons.label_outline,
+                            color: Colors.white),
                       ),
                       if (layers.length > 1) ...[
                         const SizedBox(height: 16),
@@ -3284,8 +3440,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// 构建底部道具列表面板内容
-  Widget _buildClusterListPanelContent(
-      List<Grenade> grenades, GrenadeCluster cluster, int layerId, bool isEditMode) {
+  Widget _buildClusterListPanelContent(List<Grenade> grenades,
+      GrenadeCluster cluster, int layerId, bool isEditMode) {
     // 多选删除模式状态
     bool isMultiSelectMode = false;
     Set<int> selectedIds = {};
@@ -3318,42 +3474,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           final customGroups = snapshot.data ?? [];
           return StatefulBuilder(
             builder: (context, setPanelState) {
-          // 计算当前显示的道具列表
-          List<Grenade> displayGrenades;
-          if (_selectedImpactGroupId != null) {
-            if (_selectedImpactGroupId == -1) {
-              // 未分类：显示所有 impactGroupId 为 null 的投掷点
-              displayGrenades = grenades.where((g) => g.impactGroupId == null).toList();
-            } else {
-              // 自定义分组：显示属于该分组的投掷点
-              displayGrenades = grenades.where((g) => g.impactGroupId == _selectedImpactGroupId).toList();
-            }
-          } else if (_selectedImpactTypeFilter != null) {
-            displayGrenades = grenades.where((g) => g.type == _selectedImpactTypeFilter).toList();
-          } else {
-            displayGrenades = grenades;
-          }
-          // 计算未分类道具
-          final unassignedGrenades = grenades.where((g) => g.impactGroupId == null).toList();
-          // 浏览模式下：只有一个分组且无未分类道具 -> 自动选中该分组
-          if (!isEditMode && 
-              customGroups.length == 1 && 
-              unassignedGrenades.isEmpty &&
-              _selectedImpactGroupId == null &&
-              _selectedImpactTypeFilter == null &&
-              _isImpactMode) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && _selectedImpactGroupId == null) {
-                setState(() {
-                  _selectedImpactGroupId = customGroups.first.id;
-                  _selectedImpactTypeFilter = customGroups.first.type;
+              // 计算当前显示的道具列表
+              List<Grenade> displayGrenades;
+              if (_selectedImpactGroupId != null) {
+                if (_selectedImpactGroupId == -1) {
+                  // 未分类：显示所有 impactGroupId 为 null 的投掷点
+                  displayGrenades =
+                      grenades.where((g) => g.impactGroupId == null).toList();
+                } else {
+                  // 自定义分组：显示属于该分组的投掷点
+                  displayGrenades = grenades
+                      .where((g) => g.impactGroupId == _selectedImpactGroupId)
+                      .toList();
+                }
+              } else if (_selectedImpactTypeFilter != null) {
+                displayGrenades = grenades
+                    .where((g) => g.type == _selectedImpactTypeFilter)
+                    .toList();
+              } else {
+                displayGrenades = grenades;
+              }
+              // 计算未分类道具
+              final unassignedGrenades =
+                  grenades.where((g) => g.impactGroupId == null).toList();
+              // 浏览模式下：只有一个分组且无未分类道具 -> 自动选中该分组
+              if (!isEditMode &&
+                  customGroups.length == 1 &&
+                  unassignedGrenades.isEmpty &&
+                  _selectedImpactGroupId == null &&
+                  _selectedImpactTypeFilter == null &&
+                  _isImpactMode) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _selectedImpactGroupId == null) {
+                    setState(() {
+                      _selectedImpactGroupId = customGroups.first.id;
+                      _selectedImpactTypeFilter = customGroups.first.type;
+                    });
+                  }
                 });
               }
-            });
-          }
-          final showTypeSelector = _isImpactMode && grenades.length > 1 && _selectedImpactTypeFilter == null && _selectedImpactGroupId == null;
-          return Column(
-            children: [
+              final showTypeSelector = _isImpactMode &&
+                  grenades.length > 1 &&
+                  _selectedImpactTypeFilter == null &&
+                  _selectedImpactGroupId == null;
+              return Column(
+                children: [
                   // 头部
                   Container(
                     padding:
@@ -3361,7 +3526,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     child: Row(
                       children: [
                         // 返回按钮（选择了类型或分组后显示）
-                        if ((_selectedImpactTypeFilter != null || _selectedImpactGroupId != null) && _isImpactMode)
+                        if ((_selectedImpactTypeFilter != null ||
+                                _selectedImpactGroupId != null) &&
+                            _isImpactMode)
                           IconButton(
                             onPressed: () {
                               setState(() {
@@ -3377,20 +3544,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             color: Colors.grey,
                             iconSize: 18,
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
                           ),
                         Text(
                           showTypeSelector
                               ? "该爆点共 ${grenades.length} 个道具"
                               : isMultiSelectMode
                                   ? "已选择 ${selectedIds.length} 个"
-                              : _selectedImpactGroupId != null
-                                  ? "${_selectedImpactGroupId == -1 ? "未分类" : (customGroups.any((g) => g.id == _selectedImpactGroupId) ? customGroups.firstWhere((g) => g.id == _selectedImpactGroupId).name : "未知分组")} (${displayGrenades.length})"
-                                  : _selectedImpactTypeFilter != null
-                                      ? "${_getTypeName(_selectedImpactTypeFilter!)} (${displayGrenades.length})"
-                                      : grenades.length == 1
-                                          ? (grenades.first.description ?? "未命名爆点")
-                                          : "该点位共 ${grenades.length} 个道具",
+                                  : _selectedImpactGroupId != null
+                                      ? "${_selectedImpactGroupId == -1 ? "未分类" : (customGroups.any((g) => g.id == _selectedImpactGroupId) ? customGroups.firstWhere((g) => g.id == _selectedImpactGroupId).name : "未知分组")} (${displayGrenades.length})"
+                                      : _selectedImpactTypeFilter != null
+                                          ? "${_getTypeName(_selectedImpactTypeFilter!)} (${displayGrenades.length})"
+                                          : grenades.length == 1
+                                              ? (grenades.first.description ??
+                                                  "未命名爆点")
+                                              : "该点位共 ${grenades.length} 个道具",
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -3596,7 +3765,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             tooltip: "添加爆点分组",
                             iconSize: 18,
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
                           ),
                         // 关闭按钮
                         IconButton(
@@ -3656,214 +3826,226 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   typeColor = Colors.white;
                               }
 
-                        final icon = _getTypeIcon(g.type);
-                        final isSelected = selectedIds.contains(g.id);
+                              final icon = _getTypeIcon(g.type);
+                              final isSelected = selectedIds.contains(g.id);
 
-                        // 左滑删除功能（编辑模式下）
-                        Widget listItem = ListTile(
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          leading: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // 多选模式显示复选框
-                              if (isMultiSelectMode)
-                                Checkbox(
-                                  value: isSelected,
-                                  onChanged: (val) {
-                                    setPanelState(() {
-                                      if (val == true) {
-                                        selectedIds.add(g.id);
-                                      } else {
-                                        selectedIds.remove(g.id);
-                                      }
-                                    });
-                                  },
-                                  activeColor: Colors.red,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              // 道具图标
-                              Container(
-                                width: 26,
-                                height: 26,
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                  border:
-                                      Border.all(color: typeColor, width: 2),
-                                ),
-                                child: Icon(icon, size: 14, color: typeColor),
-                              ),
-                            ],
-                          ),
-                          title: Text(
-                            g.title,
-                            style: TextStyle(
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            "${_getTypeName(g.type)} • ${_getTeamName(g.team)}",
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).textTheme.bodySmall?.color,
-                              fontSize: 10,
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (g.isFavorite)
-                                const Icon(Icons.star,
-                                    color: Colors.amber, size: 12),
-                              if (g.isNewImport)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 2),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 2, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                  child: const Text(
-                                    "NEW",
-                                    style: TextStyle(
-                                        fontSize: 6, color: Colors.white),
-                                  ),
-                                ),
-                              // 单独移动按钮
-                              if (isEditMode && !isMultiSelectMode)
-                                Row(
+                              // 左滑删除功能（编辑模式下）
+                              Widget listItem = ListTile(
+                                dense: true,
+                                visualDensity: VisualDensity.compact,
+                                leading: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // 移除 _isImpactMode 限制，使得普通模式下也可以移动爆点
-                                    IconButton(
-                                      onPressed: () {
-                                        _closeClusterPanel();
-                                        _startMoveSingleGrenadeImpact(g);
-                                      },
-                                      icon: const Icon(Icons.gps_fixed),
-                                      color: Colors.purpleAccent,
-                                      tooltip: "设置/移动爆点",
-                                      iconSize: 18,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
-                                          minWidth: 32, minHeight: 32),
+                                    // 多选模式显示复选框
+                                    if (isMultiSelectMode)
+                                      Checkbox(
+                                        value: isSelected,
+                                        onChanged: (val) {
+                                          setPanelState(() {
+                                            if (val == true) {
+                                              selectedIds.add(g.id);
+                                            } else {
+                                              selectedIds.remove(g.id);
+                                            }
+                                          });
+                                        },
+                                        activeColor: Colors.red,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    // 道具图标
+                                    Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: typeColor, width: 2),
+                                      ),
+                                      child: Icon(icon,
+                                          size: 14, color: typeColor),
                                     ),
-                                    // 绘制爆点区域按钮（仅在爆点模式下显示，且仅限烟雾和燃烧）
-                                    if (_isImpactMode && (g.type == GrenadeType.smoke || g.type == GrenadeType.molotov))
-                                      IconButton(
-                                        onPressed: () {
-                                          _closeClusterPanel();
-                                          _openImpactAreaDrawing(g, layerId);
-                                        },
-                                        icon: const Icon(Icons.brush),
-                                        color: Colors.amber,
-                                        tooltip: "绘制爆点区域",
-                                        iconSize: 18,
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                      ),
-                                    // 移动投掷点按钮（爆点模式下隐藏）
-                                    if (!_isImpactMode)
-                                      IconButton(
-                                        onPressed: () {
-                                          _closeClusterPanel();
-                                          _startMoveSingleGrenade(g);
-                                        },
-                                        icon: const Icon(Icons.open_with),
-                                        color: Colors.cyan,
-                                        tooltip: "移动投掷点",
-                                        iconSize: 18,
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(
-                                            minWidth: 32, minHeight: 32),
-                                      ),
                                   ],
                                 ),
-                              if (!isMultiSelectMode)
-                                const Icon(Icons.chevron_right,
-                                    color: Colors.grey, size: 16),
-                            ],
-                          ),
-                          onTap: isMultiSelectMode
-                              ? () {
-                                  setPanelState(() {
-                                    if (isSelected) {
-                                      selectedIds.remove(g.id);
-                                    } else {
-                                      selectedIds.add(g.id);
-                                    }
-                                  });
-                                }
-                              : () {
-                                  _closeClusterPanel();
-                                  _handleGrenadeTap(g, isEditing: isEditMode);
-                                },
-                        );
-
-                        // 编辑模式下添加左滑删除
-                        if (isEditMode && !isMultiSelectMode) {
-                          return Dismissible(
-                            key: Key('grenade_${g.id}'),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 16),
-                              color: Colors.red,
-                              child:
-                                  const Icon(Icons.delete, color: Colors.white),
-                            ),
-                            confirmDismiss: (_) async {
-                              return await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  backgroundColor:
-                                      Theme.of(ctx).colorScheme.surface,
-                                  title: Text("删除道具",
-                                      style: TextStyle(
-                                          color: Theme.of(ctx)
-                                              .textTheme
-                                              .bodyLarge
-                                              ?.color)),
-                                  content: Text("确定要删除 \"${g.title}\" 吗？",
-                                      style: TextStyle(
-                                          color: Theme.of(ctx)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.color)),
-                                  actions: [
-                                    TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, false),
-                                        child: const Text("取消")),
-                                    TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, true),
-                                        child: const Text("删除",
-                                            style:
-                                                TextStyle(color: Colors.red))),
+                                title: Text(
+                                  g.title,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.color,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  "${_getTypeName(g.type)} • ${_getTeamName(g.team)}",
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (g.isFavorite)
+                                      const Icon(Icons.star,
+                                          color: Colors.amber, size: 12),
+                                    if (g.isNewImport)
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 2, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius:
+                                              BorderRadius.circular(3),
+                                        ),
+                                        child: const Text(
+                                          "NEW",
+                                          style: TextStyle(
+                                              fontSize: 6, color: Colors.white),
+                                        ),
+                                      ),
+                                    // 单独移动按钮
+                                    if (isEditMode && !isMultiSelectMode)
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // 移除 _isImpactMode 限制，使得普通模式下也可以移动爆点
+                                          IconButton(
+                                            onPressed: () {
+                                              _closeClusterPanel();
+                                              _startMoveSingleGrenadeImpact(g);
+                                            },
+                                            icon: const Icon(Icons.gps_fixed),
+                                            color: Colors.purpleAccent,
+                                            tooltip: "设置/移动爆点",
+                                            iconSize: 18,
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(
+                                                minWidth: 32, minHeight: 32),
+                                          ),
+                                          // 绘制爆点区域按钮（仅在爆点模式下显示，且仅限烟雾和燃烧）
+                                          if (_isImpactMode &&
+                                              (g.type == GrenadeType.smoke ||
+                                                  g.type ==
+                                                      GrenadeType.molotov))
+                                            IconButton(
+                                              onPressed: () {
+                                                _closeClusterPanel();
+                                                _openImpactAreaDrawing(
+                                                    g, layerId);
+                                              },
+                                              icon: const Icon(Icons.brush),
+                                              color: Colors.amber,
+                                              tooltip: "绘制爆点区域",
+                                              iconSize: 18,
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 32, minHeight: 32),
+                                            ),
+                                          // 移动投掷点按钮（爆点模式下隐藏）
+                                          if (!_isImpactMode)
+                                            IconButton(
+                                              onPressed: () {
+                                                _closeClusterPanel();
+                                                _startMoveSingleGrenade(g);
+                                              },
+                                              icon: const Icon(Icons.open_with),
+                                              color: Colors.cyan,
+                                              tooltip: "移动投掷点",
+                                              iconSize: 18,
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 32, minHeight: 32),
+                                            ),
+                                        ],
+                                      ),
+                                    if (!isMultiSelectMode)
+                                      const Icon(Icons.chevron_right,
+                                          color: Colors.grey, size: 16),
                                   ],
                                 ),
+                                onTap: isMultiSelectMode
+                                    ? () {
+                                        setPanelState(() {
+                                          if (isSelected) {
+                                            selectedIds.remove(g.id);
+                                          } else {
+                                            selectedIds.add(g.id);
+                                          }
+                                        });
+                                      }
+                                    : () {
+                                        _closeClusterPanel();
+                                        _handleGrenadeTap(g,
+                                            isEditing: isEditMode);
+                                      },
                               );
-                            },
-                            onDismissed: (_) async {
-                              await _deleteGrenadesInBatch([g]);
-                              if (grenades.length <= 1) {
-                                _closeClusterPanel();
-                              }
-                            },
-                            child: listItem,
-                          );
-                        }
 
-                        return listItem;
-                      },
-                    ),
+                              // 编辑模式下添加左滑删除
+                              if (isEditMode && !isMultiSelectMode) {
+                                return Dismissible(
+                                  key: Key('grenade_${g.id}'),
+                                  direction: DismissDirection.endToStart,
+                                  background: Container(
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.only(right: 16),
+                                    color: Colors.red,
+                                    child: const Icon(Icons.delete,
+                                        color: Colors.white),
+                                  ),
+                                  confirmDismiss: (_) async {
+                                    return await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        backgroundColor:
+                                            Theme.of(ctx).colorScheme.surface,
+                                        title: Text("删除道具",
+                                            style: TextStyle(
+                                                color: Theme.of(ctx)
+                                                    .textTheme
+                                                    .bodyLarge
+                                                    ?.color)),
+                                        content: Text("确定要删除 \"${g.title}\" 吗？",
+                                            style: TextStyle(
+                                                color: Theme.of(ctx)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.color)),
+                                        actions: [
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: const Text("取消")),
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, true),
+                                              child: const Text("删除",
+                                                  style: TextStyle(
+                                                      color: Colors.red))),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  onDismissed: (_) async {
+                                    await _deleteGrenadesInBatch([g]);
+                                    if (grenades.length <= 1) {
+                                      _closeClusterPanel();
+                                    }
+                                  },
+                                  child: listItem,
+                                );
+                              }
+
+                              return listItem;
+                            },
+                          ),
                   ),
                 ],
               );
@@ -3875,11 +4057,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// 显示添加爆点分组对话框
-  void _showAddImpactGroupDialog(
-      BuildContext context,
-      GrenadeCluster cluster,
-      int layerId,
-      void Function(void Function()) setPanelState) {
+  void _showAddImpactGroupDialog(BuildContext context, GrenadeCluster cluster,
+      int layerId, void Function(void Function()) setPanelState) {
     final nameController = TextEditingController();
     int selectedType = GrenadeType.smoke;
     String? errorText;
@@ -3910,11 +4089,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               // 使用2x2网格布局
               Row(
                 children: [
-                  Expanded(child: _buildTypeChip(ctx, GrenadeType.smoke, selectedType, (type) {
+                  Expanded(
+                      child: _buildTypeChip(
+                          ctx, GrenadeType.smoke, selectedType, (type) {
                     setDialogState(() => selectedType = type);
                   })),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildTypeChip(ctx, GrenadeType.flash, selectedType, (type) {
+                  Expanded(
+                      child: _buildTypeChip(
+                          ctx, GrenadeType.flash, selectedType, (type) {
                     setDialogState(() => selectedType = type);
                   })),
                 ],
@@ -3922,11 +4105,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _buildTypeChip(ctx, GrenadeType.molotov, selectedType, (type) {
+                  Expanded(
+                      child: _buildTypeChip(
+                          ctx, GrenadeType.molotov, selectedType, (type) {
                     setDialogState(() => selectedType = type);
                   })),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildTypeChip(ctx, GrenadeType.he, selectedType, (type) {
+                  Expanded(
+                      child: _buildTypeChip(ctx, GrenadeType.he, selectedType,
+                          (type) {
                     setDialogState(() => selectedType = type);
                   })),
                 ],
@@ -4004,11 +4191,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final name = _getTypeName(type);
     Color typeColor;
     switch (type) {
-      case GrenadeType.smoke: typeColor = Colors.white; break;
-      case GrenadeType.he: typeColor = Colors.greenAccent; break;
-      case GrenadeType.molotov: typeColor = Colors.deepOrangeAccent; break;
-      case GrenadeType.flash: typeColor = Colors.yellowAccent; break;
-      default: typeColor = Colors.white;
+      case GrenadeType.smoke:
+        typeColor = Colors.white;
+        break;
+      case GrenadeType.he:
+        typeColor = Colors.greenAccent;
+        break;
+      case GrenadeType.molotov:
+        typeColor = Colors.deepOrangeAccent;
+        break;
+      case GrenadeType.flash:
+        typeColor = Colors.yellowAccent;
+        break;
+      default:
+        typeColor = Colors.white;
     }
 
     return GestureDetector(
@@ -4033,7 +4229,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             Text(name,
                 style: TextStyle(
                     color: typeColor,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 13)),
           ],
         ),
@@ -4043,8 +4240,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// 构建类型选择器（爆点模式下有多种类型时显示）
   Widget _buildTypeSelector(
-      Map<int, List<Grenade>> typeGroups,
-      Function(int) onTypeSelected,
+      Map<int, List<Grenade>> typeGroups, Function(int) onTypeSelected,
       {GrenadeCluster? cluster,
       int? layerId,
       bool isEditMode = false,
@@ -4054,10 +4250,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       builder: (context, snapshot) {
         final customGroups = snapshot.data ?? [];
         final allGrenades = typeGroups.values.expand((e) => e).toList();
-        
+
         // 计算未分类的投掷点
-        final unassignedGrenades = allGrenades.where((g) => g.impactGroupId == null).toList();
-        
+        final unassignedGrenades =
+            allGrenades.where((g) => g.impactGroupId == null).toList();
+
         if (customGroups.isEmpty && unassignedGrenades.isEmpty) {
           // 只有当没有自定义分组且没有未分类道具时才显示提示
           return Center(
@@ -4066,56 +4263,87 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.folder_open, size: 48, color: Colors.purpleAccent.withValues(alpha: 0.5)),
+                  Icon(Icons.folder_open,
+                      size: 48,
+                      color: Colors.purpleAccent.withValues(alpha: 0.5)),
                   const SizedBox(height: 12),
-                  Text("暂无分组和道具", style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 14)),
+                  Text("暂无分组和道具",
+                      style: TextStyle(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontSize: 14)),
                   const SizedBox(height: 8),
-                  Text("点击右上角 + 按钮创建分组或添加道具", style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6), fontSize: 12)),
+                  Text("点击右上角 + 按钮创建分组或添加道具",
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.color
+                              ?.withValues(alpha: 0.6),
+                          fontSize: 12)),
                 ],
               ),
             ),
           );
         }
-        
-        
+
         return ListView(
           padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
             // 未分类分组（始终显示在顶部，但仅当有未分类道具或没有自定义分组时显示）
             if (unassignedGrenades.isNotEmpty || customGroups.isEmpty)
-            ListTile(
-              leading: Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey, width: 2),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey, width: 2),
+                  ),
+                  child: const Icon(Icons.inbox, size: 20, color: Colors.grey),
                 ),
-                child: const Icon(Icons.inbox, size: 20, color: Colors.grey),
+                title: const Text("未分类",
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
+                subtitle: Text("${unassignedGrenades.length} 个投掷点",
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 12)),
+                trailing: Icon(Icons.chevron_right,
+                    color: Colors.grey.withValues(alpha: 0.7)),
+                onTap: () {
+                  // 选择未分类，显示所有未分配的投掷点
+                  setState(() {
+                    _selectedImpactGroupId = -1; // -1 表示未分类
+                    _selectedImpactTypeFilter = null;
+                  });
+                  setPanelState?.call(() {});
+                },
               ),
-              title: const Text("未分类", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 14)),
-              subtitle: Text("${unassignedGrenades.length} 个投掷点", style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
-              trailing: Icon(Icons.chevron_right, color: Colors.grey.withValues(alpha: 0.7)),
-              onTap: () {
-                // 选择未分类，显示所有未分配的投掷点
-                setState(() {
-                  _selectedImpactGroupId = -1; // -1 表示未分类
-                  _selectedImpactTypeFilter = null;
-                });
-                setPanelState?.call(() {});
-              },
-            ),
             // 分隔线
             if (customGroups.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
-                    Container(width: 20, height: 1, color: Colors.purpleAccent.withValues(alpha: 0.5)),
+                    Container(
+                        width: 20,
+                        height: 1,
+                        color: Colors.purpleAccent.withValues(alpha: 0.5)),
                     const SizedBox(width: 8),
-                    Text("自定义分组", style: TextStyle(color: Colors.purpleAccent.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text("自定义分组",
+                        style: TextStyle(
+                            color: Colors.purpleAccent.withValues(alpha: 0.8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500)),
                     const SizedBox(width: 8),
-                    Expanded(child: Container(height: 1, color: Colors.purpleAccent.withValues(alpha: 0.5))),
+                    Expanded(
+                        child: Container(
+                            height: 1,
+                            color: Colors.purpleAccent.withValues(alpha: 0.5))),
                   ],
                 ),
               ),
@@ -4124,18 +4352,30 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               final icon = _getTypeIcon(group.type);
               Color typeColor;
               switch (group.type) {
-                case GrenadeType.smoke: typeColor = Colors.white; break;
-                case GrenadeType.he: typeColor = Colors.greenAccent; break;
-                case GrenadeType.molotov: typeColor = Colors.deepOrangeAccent; break;
-                case GrenadeType.flash: typeColor = Colors.yellowAccent; break;
-                default: typeColor = Colors.white;
+                case GrenadeType.smoke:
+                  typeColor = Colors.white;
+                  break;
+                case GrenadeType.he:
+                  typeColor = Colors.greenAccent;
+                  break;
+                case GrenadeType.molotov:
+                  typeColor = Colors.deepOrangeAccent;
+                  break;
+                case GrenadeType.flash:
+                  typeColor = Colors.yellowAccent;
+                  break;
+                default:
+                  typeColor = Colors.white;
               }
               // 计算属于该分组的投掷点数量
-              final groupGrenades = allGrenades.where((g) => g.impactGroupId == group.id).toList();
+              final groupGrenades = allGrenades
+                  .where((g) => g.impactGroupId == group.id)
+                  .toList();
 
               return ListTile(
                 leading: Container(
-                  width: 40, height: 40,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: Colors.purpleAccent.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
@@ -4143,46 +4383,63 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                   child: Icon(icon, size: 20, color: typeColor),
                 ),
-                title: Text(group.name, style: const TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: Text("${_getTypeName(group.type)} · ${groupGrenades.length} 个投掷点", style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 12)),
+                title: Text(group.name,
+                    style: const TextStyle(
+                        color: Colors.purpleAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
+                subtitle: Text(
+                    "${_getTypeName(group.type)} · ${groupGrenades.length} 个投掷点",
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 12)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // 绘制爆点范围按钮（仅限烟雾和燃烧，且 layerId 不为空，且在编辑模式下）
-                    if ((group.type == GrenadeType.smoke || group.type == GrenadeType.molotov) && layerId != null && isEditMode)
+                    if ((group.type == GrenadeType.smoke ||
+                            group.type == GrenadeType.molotov) &&
+                        layerId != null &&
+                        isEditMode)
                       IconButton(
-                        onPressed: () => _openGroupImpactAreaDrawing(group, groupGrenades, layerId, setPanelState),
+                        onPressed: () => _openGroupImpactAreaDrawing(
+                            group, groupGrenades, layerId, setPanelState),
                         icon: const Icon(Icons.brush),
                         color: Colors.amber,
                         iconSize: 18,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
                         tooltip: "绘制分组爆点范围",
                       ),
                     // 分类投掷点按钮
                     if (isEditMode)
-                    IconButton(
-                      onPressed: () => _showAssignGrenadesToGroupDialog(
-                          context, group, allGrenades, setPanelState),
-                      icon: const Icon(Icons.playlist_add),
-                      color: Colors.amber,
-                      iconSize: 18,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      tooltip: "分类投掷点",
-                    ),
+                      IconButton(
+                        onPressed: () => _showAssignGrenadesToGroupDialog(
+                            context, group, allGrenades, setPanelState),
+                        icon: const Icon(Icons.playlist_add),
+                        color: Colors.amber,
+                        iconSize: 18,
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
+                        tooltip: "分类投掷点",
+                      ),
                     // 删除分组按钮
                     if (isEditMode)
-                    IconButton(
-                      onPressed: () => _deleteImpactGroup(group, setPanelState),
-                      icon: const Icon(Icons.delete_outline),
-                      color: Colors.red.withValues(alpha: 0.7),
-                      iconSize: 18,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      tooltip: "删除分组",
-                    ),
-                    Icon(Icons.chevron_right, color: Colors.purpleAccent.withValues(alpha: 0.7)),
+                      IconButton(
+                        onPressed: () =>
+                            _deleteImpactGroup(group, setPanelState),
+                        icon: const Icon(Icons.delete_outline),
+                        color: Colors.red.withValues(alpha: 0.7),
+                        iconSize: 18,
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 32, minHeight: 32),
+                        tooltip: "删除分组",
+                      ),
+                    Icon(Icons.chevron_right,
+                        color: Colors.purpleAccent.withValues(alpha: 0.7)),
                   ],
                 ),
                 onTap: () {
@@ -4205,11 +4462,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   int? _selectedImpactGroupId;
 
   /// 加载与当前爆点关联的自定义分组
-  Future<List<ImpactGroup>> _loadImpactGroups(GrenadeCluster? cluster, int? layerId) async {
+  Future<List<ImpactGroup>> _loadImpactGroups(
+      GrenadeCluster? cluster, int? layerId) async {
     if (cluster == null || layerId == null) return [];
     final isar = ref.read(isarProvider);
     // 加载该图层上的所有分组，然后按爆点坐标过滤
-    final allGroups = await isar.impactGroups.filter().layerIdEqualTo(layerId).findAll();
+    final allGroups =
+        await isar.impactGroups.filter().layerIdEqualTo(layerId).findAll();
     // 使用坐标匹配，阈值为 0.02（与聚合阈值一致）
     const threshold = 0.02;
     return allGroups.where((g) {
@@ -4226,9 +4485,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       List<Grenade> allGrenades,
       void Function(void Function())? setPanelState) {
     // 筛选同类型的投掷点
-    final eligibleGrenades = allGrenades.where((g) => g.type == group.type).toList();
+    final eligibleGrenades =
+        allGrenades.where((g) => g.type == group.type).toList();
     // 当前已分配到该组的投掷点ID
-    final assignedIds = eligibleGrenades.where((g) => g.impactGroupId == group.id).map((g) => g.id).toSet();
+    final assignedIds = eligibleGrenades
+        .where((g) => g.impactGroupId == group.id)
+        .map((g) => g.id)
+        .toSet();
     // 用于跟踪选中状态
     Set<int> selectedIds = Set.from(assignedIds);
 
@@ -4256,7 +4519,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: eligibleGrenades.isEmpty
                 ? Center(
                     child: Text("没有 ${_getTypeName(group.type)} 类型的投掷点",
-                        style: TextStyle(color: Theme.of(ctx).textTheme.bodySmall?.color)),
+                        style: TextStyle(
+                            color: Theme.of(ctx).textTheme.bodySmall?.color)),
                   )
                 : ListView.builder(
                     itemCount: eligibleGrenades.length,
@@ -4265,11 +4529,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       final isSelected = selectedIds.contains(g.id);
                       Color typeColor;
                       switch (g.type) {
-                        case GrenadeType.smoke: typeColor = Colors.white; break;
-                        case GrenadeType.he: typeColor = Colors.greenAccent; break;
-                        case GrenadeType.molotov: typeColor = Colors.deepOrangeAccent; break;
-                        case GrenadeType.flash: typeColor = Colors.yellowAccent; break;
-                        default: typeColor = Colors.white;
+                        case GrenadeType.smoke:
+                          typeColor = Colors.white;
+                          break;
+                        case GrenadeType.he:
+                          typeColor = Colors.greenAccent;
+                          break;
+                        case GrenadeType.molotov:
+                          typeColor = Colors.deepOrangeAccent;
+                          break;
+                        case GrenadeType.flash:
+                          typeColor = Colors.yellowAccent;
+                          break;
+                        default:
+                          typeColor = Colors.white;
                       }
 
                       return CheckboxListTile(
@@ -4292,13 +4565,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         subtitle: Text(_getTypeName(g.type),
                             style: TextStyle(color: typeColor, fontSize: 12)),
                         secondary: Container(
-                          width: 30, height: 30,
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
                             color: typeColor.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                             border: Border.all(color: typeColor, width: 1.5),
                           ),
-                          child: Icon(_getTypeIcon(g.type), size: 14, color: typeColor),
+                          child: Icon(_getTypeIcon(g.type),
+                              size: 14, color: typeColor),
                         ),
                         dense: true,
                       );
@@ -4340,16 +4615,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// 删除自定义分组
-  Future<void> _deleteImpactGroup(ImpactGroup group, void Function(void Function())? setPanelState) async {
+  Future<void> _deleteImpactGroup(
+      ImpactGroup group, void Function(void Function())? setPanelState) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(ctx).colorScheme.surface,
-        title: Text("删除分组", style: TextStyle(color: Theme.of(ctx).textTheme.bodyLarge?.color)),
+        title: Text("删除分组",
+            style: TextStyle(color: Theme.of(ctx).textTheme.bodyLarge?.color)),
         content: Text("确定要删除分组 \"${group.name}\" 吗？\n该分组下的投掷点不会被删除。",
             style: TextStyle(color: Theme.of(ctx).textTheme.bodySmall?.color)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("取消")),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("取消")),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text("删除", style: TextStyle(color: Colors.red)),
@@ -4360,7 +4639,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (confirm == true) {
       final isar = ref.read(isarProvider);
       // 将属于该分组的投掷点的 impactGroupId 设为 null
-      final grenades = await isar.grenades.filter().impactGroupIdEqualTo(group.id).findAll();
+      final grenades =
+          await isar.grenades.filter().impactGroupIdEqualTo(group.id).findAll();
       await isar.writeTxn(() async {
         for (final g in grenades) {
           g.impactGroupId = null;
@@ -4373,8 +4653,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  Future<void> _showRenameImpactPointDialog(
-      BuildContext context,
+  Future<void> _showRenameImpactPointDialog(BuildContext context,
       {ImpactGroup? group,
       Grenade? grenade,
       required VoidCallback onSuccess}) async {
@@ -4393,12 +4672,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("取消")),
+              onPressed: () => Navigator.pop(context), child: const Text("取消")),
           TextButton(
             onPressed: () async {
               final newName = controller.text.trim();
-              
+
               final isar = ref.read(isarProvider);
               await isar.writeTxn(() async {
                 if (isGroup) {
@@ -4528,8 +4806,9 @@ class _ImpactAreaPainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _drawStroke(Canvas canvas, List<Offset> points, double width,
-      bool isEraser, {bool isShape = false}) {
+  void _drawStroke(
+      Canvas canvas, List<Offset> points, double width, bool isEraser,
+      {bool isShape = false}) {
     if (points.isEmpty) return;
 
     final paint = Paint()
@@ -4539,7 +4818,8 @@ class _ImpactAreaPainter extends CustomPainter {
       ..strokeWidth = width
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..style = isShape && !isEraser ? PaintingStyle.fill : PaintingStyle.stroke;
+      ..style =
+          isShape && !isEraser ? PaintingStyle.fill : PaintingStyle.stroke;
 
     if (isEraser) {
       paint.blendMode = BlendMode.clear;
@@ -4558,7 +4838,7 @@ class _ImpactAreaPainter extends CustomPainter {
       final p = _limitPoint(points[i]);
       path.lineTo(p.dx, p.dy);
     }
-    
+
     // 如果是填充模式，需要闭合路径
     if (isShape && !isEraser) {
       path.close();

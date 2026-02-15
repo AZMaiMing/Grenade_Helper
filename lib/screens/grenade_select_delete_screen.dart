@@ -11,10 +11,12 @@ class GrenadeSelectDeleteScreen extends ConsumerStatefulWidget {
   const GrenadeSelectDeleteScreen({super.key});
 
   @override
-  ConsumerState<GrenadeSelectDeleteScreen> createState() => _GrenadeSelectDeleteScreenState();
+  ConsumerState<GrenadeSelectDeleteScreen> createState() =>
+      _GrenadeSelectDeleteScreenState();
 }
 
-class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteScreen> {
+class _GrenadeSelectDeleteScreenState
+    extends ConsumerState<GrenadeSelectDeleteScreen> {
   GameMap? _selectedMap;
   List<GameMap> _maps = [];
   List<Grenade> _grenades = [];
@@ -118,12 +120,12 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
     try {
       final isar = ref.read(isarProvider);
       int deletedCount = 0;
-      
+
       await isar.writeTxn(() async {
         for (final id in _selectedIds) {
           final grenade = await isar.grenades.get(id);
           if (grenade == null) continue;
-          
+
           await grenade.steps.load();
           for (final step in grenade.steps) {
             await step.medias.load();
@@ -141,7 +143,9 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已删除 $deletedCount 个道具'), backgroundColor: Colors.green),
+          SnackBar(
+              content: Text('已删除 $deletedCount 个道具'),
+              backgroundColor: Colors.green),
         );
         await _loadGrenades();
       }
@@ -159,7 +163,8 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => GrenadeDetailScreen(grenadeId: grenade.id, isEditing: false),
+        builder: (_) =>
+            GrenadeDetailScreen(grenadeId: grenade.id, isEditing: false),
       ),
     );
   }
@@ -174,10 +179,13 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
             TextButton.icon(
               onPressed: _selectAll,
               icon: Icon(
-                _selectedIds.length == _grenades.length ? Icons.deselect : Icons.select_all,
+                _selectedIds.length == _grenades.length
+                    ? Icons.deselect
+                    : Icons.select_all,
                 size: 20,
               ),
-              label: Text(_selectedIds.length == _grenades.length ? '取消全选' : '全选'),
+              label:
+                  Text(_selectedIds.length == _grenades.length ? '取消全选' : '全选'),
             ),
         ],
       ),
@@ -191,7 +199,8 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
               decoration: const InputDecoration(
                 labelText: '选择地图',
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               initialValue: _selectedMap,
               items: _maps.map((map) {
@@ -283,17 +292,18 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
     final typeIcon = _getTypeIcon(grenade.type);
     grenade.layer.loadSync();
     final layerName = grenade.layer.value?.name ?? '';
-    final hasImpact = grenade.impactXRatio != null && grenade.impactYRatio != null;
+    final hasImpact =
+        grenade.impactXRatio != null && grenade.impactYRatio != null;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      color: isSelected 
-          ? Colors.red.withValues(alpha: 0.15) 
+      color: isSelected
+          ? Colors.red.withValues(alpha: 0.15)
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: isSelected 
-            ? const BorderSide(color: Colors.red, width: 1.5) 
+        side: isSelected
+            ? const BorderSide(color: Colors.red, width: 1.5)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -329,7 +339,8 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
                         ),
                         if (hasImpact)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.green.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
@@ -337,9 +348,12 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.my_location, size: 10, color: Colors.green),
+                                Icon(Icons.my_location,
+                                    size: 10, color: Colors.green),
                                 SizedBox(width: 2),
-                                Text('爆点', style: TextStyle(fontSize: 10, color: Colors.green)),
+                                Text('爆点',
+                                    style: TextStyle(
+                                        fontSize: 10, color: Colors.green)),
                               ],
                             ),
                           ),
@@ -352,7 +366,8 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
                         const SizedBox(width: 4),
                         Text(
                           layerName,
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                         if (grenade.author != null) ...[
                           const SizedBox(width: 12),
@@ -361,7 +376,8 @@ class _GrenadeSelectDeleteScreenState extends ConsumerState<GrenadeSelectDeleteS
                           Flexible(
                             child: Text(
                               grenade.author!,
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[600]),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

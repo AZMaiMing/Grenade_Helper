@@ -107,7 +107,8 @@ class _TagColorPickerState extends State<TagColorPicker> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('当前颜色', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const Text('当前颜色',
+                style: TextStyle(fontSize: 12, color: Colors.grey)),
             Text(
               '#${_selectedColor.toRadixString(16).substring(2).toUpperCase()}',
               style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
@@ -152,7 +153,9 @@ class _TagColorPickerState extends State<TagColorPicker> {
                     ]
                   : null,
             ),
-            child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
+            child: isSelected
+                ? const Icon(Icons.check, color: Colors.white, size: 18)
+                : null,
           ),
         );
       }).toList(),
@@ -166,7 +169,9 @@ class _TagColorPickerState extends State<TagColorPicker> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            _showHSLPicker ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+            _showHSLPicker
+                ? Icons.keyboard_arrow_up
+                : Icons.keyboard_arrow_down,
             size: 18,
             color: Colors.grey,
           ),
@@ -201,10 +206,14 @@ class _TagColorPickerState extends State<TagColorPicker> {
     );
   }
 
-  Widget _buildSlider(String label, double value, double min, double max, ValueChanged<double> onChanged, Gradient gradient) {
+  Widget _buildSlider(String label, double value, double min, double max,
+      ValueChanged<double> onChanged, Gradient gradient) {
     return Row(
       children: [
-        SizedBox(width: 50, child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey))),
+        SizedBox(
+            width: 50,
+            child: Text(label,
+                style: const TextStyle(fontSize: 12, color: Colors.grey))),
         const SizedBox(width: 8),
         Expanded(
           child: Container(
@@ -238,7 +247,10 @@ class _TagColorPickerState extends State<TagColorPicker> {
 
   LinearGradient _buildHueGradient() {
     return LinearGradient(
-      colors: List.generate(7, (i) => HSLColor.fromAHSL(1, i * 60.0, _saturation, _lightness).toColor()),
+      colors: List.generate(
+          7,
+          (i) => HSLColor.fromAHSL(1, i * 60.0, _saturation, _lightness)
+              .toColor()),
     );
   }
 
@@ -263,7 +275,8 @@ class _TagColorPickerState extends State<TagColorPicker> {
 }
 
 /// 显示颜色选择器对话框
-Future<int?> showTagColorPickerDialog(BuildContext context, {int? initialColor}) async {
+Future<int?> showTagColorPickerDialog(BuildContext context,
+    {int? initialColor}) async {
   int selectedColor = initialColor ?? presetColors.first;
   return showDialog<int>(
     context: context,
@@ -274,8 +287,11 @@ Future<int?> showTagColorPickerDialog(BuildContext context, {int? initialColor})
         onColorSelected: (color) => selectedColor = color,
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-        ElevatedButton(onPressed: () => Navigator.pop(context, selectedColor), child: const Text('确定')),
+        TextButton(
+            onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        ElevatedButton(
+            onPressed: () => Navigator.pop(context, selectedColor),
+            child: const Text('确定')),
       ],
     ),
   );

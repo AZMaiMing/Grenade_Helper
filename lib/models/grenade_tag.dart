@@ -6,10 +6,10 @@ part 'grenade_tag.g.dart';
 @collection
 class GrenadeTag {
   Id id = Isar.autoIncrement;
-  
+
   @Index()
   int grenadeId;
-  
+
   @Index()
   int tagId;
 

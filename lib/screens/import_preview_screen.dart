@@ -14,7 +14,8 @@ class ImportPreviewScreen extends ConsumerStatefulWidget {
   const ImportPreviewScreen({super.key, required this.filePath});
 
   @override
-  ConsumerState<ImportPreviewScreen> createState() => _ImportPreviewScreenState();
+  ConsumerState<ImportPreviewScreen> createState() =>
+      _ImportPreviewScreenState();
 }
 
 class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
@@ -119,7 +120,8 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
     try {
       final isar = ref.read(isarProvider);
       final dataService = DataService(isar);
-      final result = await dataService.importFromPreview(_preview!, _selectedIds);
+      final result =
+          await dataService.importFromPreview(_preview!, _selectedIds);
 
       if (mounted) {
         Navigator.pop(context, result);
@@ -176,15 +178,17 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
             final mapName = _preview!.mapNames[index];
             final count = _preview!.grenadesByMap[mapName]?.length ?? 0;
             // 地图图标
-            final gameMap = isar.gameMaps.filter().nameEqualTo(mapName).findFirstSync();
-            
+            final gameMap =
+                isar.gameMaps.filter().nameEqualTo(mapName).findFirstSync();
+
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 leading: gameMap != null
                     ? SvgPicture.asset(gameMap.iconPath, width: 40, height: 40)
                     : const Icon(Icons.map, color: Colors.orange, size: 40),
-                title: Text(mapName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(mapName,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text("$count 个道具"),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => setState(() => _selectedMap = mapName),
@@ -202,7 +206,8 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
   Widget _buildGrenadeListScreen() {
     final grenades = _getCurrentGrenades();
     final currentIds = grenades.map((g) => g.uniqueId).toSet();
-    final selectedInCurrent = currentIds.where((id) => _selectedIds.contains(id)).length;
+    final selectedInCurrent =
+        currentIds.where((id) => _selectedIds.contains(id)).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -223,11 +228,13 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
           // 列表
           Expanded(
             child: grenades.isEmpty
-                ? const Center(child: Text("无匹配的道具", style: TextStyle(color: Colors.grey)))
+                ? const Center(
+                    child: Text("无匹配的道具", style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: grenades.length,
-                    itemBuilder: (context, index) => _buildGrenadeItem(grenades[index]),
+                    itemBuilder: (context, index) =>
+                        _buildGrenadeItem(grenades[index]),
                   ),
           ),
           // 底部按钮
@@ -260,7 +267,9 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
                 label: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(t.$3, size: 16, color: isSelected ? Colors.white : Colors.grey),
+                    Icon(t.$3,
+                        size: 16,
+                        color: isSelected ? Colors.white : Colors.grey),
                     const SizedBox(width: 4),
                     Text(t.$2),
                   ],
@@ -341,7 +350,8 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
           ],
         ),
         subtitle: grenade.author != null
-            ? Text("by: ${grenade.author}", style: TextStyle(fontSize: 12, color: Colors.grey[600]))
+            ? Text("by: ${grenade.author}",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]))
             : null,
         trailing: IconButton(
           icon: const Icon(Icons.visibility, color: Colors.blueAccent),
@@ -398,7 +408,8 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
             color: Colors.green.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: const Text("新增", style: TextStyle(fontSize: 10, color: Colors.green)),
+          child: const Text("新增",
+              style: TextStyle(fontSize: 10, color: Colors.green)),
         );
       case ImportStatus.update:
         return Container(
@@ -407,7 +418,8 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
             color: Colors.orange.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: const Text("更新", style: TextStyle(fontSize: 10, color: Colors.orange)),
+          child: const Text("更新",
+              style: TextStyle(fontSize: 10, color: Colors.orange)),
         );
       case ImportStatus.skip:
         return Container(
@@ -416,7 +428,8 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
             color: Colors.grey.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: const Text("跳过", style: TextStyle(fontSize: 10, color: Colors.grey)),
+          child: const Text("跳过",
+              style: TextStyle(fontSize: 10, color: Colors.grey)),
         );
     }
   }
@@ -448,11 +461,13 @@ class _ImportPreviewScreenState extends ConsumerState<ImportPreviewScreen> {
               ? const SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
                 )
               : Text(
                   "确认导入 (${_selectedIds.length} 个道具)",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
         ),
       ),

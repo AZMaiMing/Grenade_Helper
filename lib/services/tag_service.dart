@@ -6,14 +6,14 @@ import '../models.dart';
 
 class TagService {
   final Isar isar;
-  
+
   TagService(this.isar);
 
   /// 初始化地图的系统标签
   Future<void> initializeSystemTags(int mapId, String mapName) async {
     final existingTags = await isar.tags.filter().mapIdEqualTo(mapId).count();
     if (existingTags > 0) return;
-    
+
     await isar.writeTxn(() async {
       int order = 0;
       for (final entry in commonSystemTags.entries) {
@@ -50,7 +50,11 @@ class TagService {
 
   /// 获取地图的所有标签 (按维度分组)
   Future<Map<int, List<Tag>>> getTagsByDimension(int mapId) async {
-    final tags = await isar.tags.filter().mapIdEqualTo(mapId).sortBySortOrder().findAll();
+    final tags = await isar.tags
+        .filter()
+        .mapIdEqualTo(mapId)
+        .sortBySortOrder()
+        .findAll();
     final grouped = <int, List<Tag>>{};
     for (final tag in tags) {
       grouped.putIfAbsent(tag.dimension, () => []).add(tag);
@@ -60,12 +64,21 @@ class TagService {
 
   /// 获取地图的所有标签
   Future<List<Tag>> getAllTags(int mapId) async {
-    return await isar.tags.filter().mapIdEqualTo(mapId).sortBySortOrder().findAll();
+    return await isar.tags
+        .filter()
+        .mapIdEqualTo(mapId)
+        .sortBySortOrder()
+        .findAll();
   }
 
   /// 创建标签
-  Future<Tag> createTag(int mapId, String name, int color, {int dimension = TagDimension.custom}) async {
-    final maxOrder = await isar.tags.filter().mapIdEqualTo(mapId).sortBySortOrderDesc().findFirst();
+  Future<Tag> createTag(int mapId, String name, int color,
+      {int dimension = TagDimension.custom}) async {
+    final maxOrder = await isar.tags
+        .filter()
+        .mapIdEqualTo(mapId)
+        .sortBySortOrderDesc()
+        .findFirst();
     final tag = Tag(
       name: name,
       colorValue: color,
@@ -97,23 +110,35 @@ class TagService {
 
   /// 为道具添加标签
   Future<void> addTagToGrenade(int grenadeId, int tagId) async {
-    final exists = await isar.grenadeTags.filter().grenadeIdEqualTo(grenadeId).and().tagIdEqualTo(tagId).findFirst();
+    final exists = await isar.grenadeTags
+        .filter()
+        .grenadeIdEqualTo(grenadeId)
+        .and()
+        .tagIdEqualTo(tagId)
+        .findFirst();
     if (exists != null) return;
     await isar.writeTxn(() async {
-      await isar.grenadeTags.put(GrenadeTag(grenadeId: grenadeId, tagId: tagId));
+      await isar.grenadeTags
+          .put(GrenadeTag(grenadeId: grenadeId, tagId: tagId));
     });
   }
 
   /// 移除道具标签
   Future<void> removeTagFromGrenade(int grenadeId, int tagId) async {
     await isar.writeTxn(() async {
-      await isar.grenadeTags.filter().grenadeIdEqualTo(grenadeId).and().tagIdEqualTo(tagId).deleteAll();
+      await isar.grenadeTags
+          .filter()
+          .grenadeIdEqualTo(grenadeId)
+          .and()
+          .tagIdEqualTo(tagId)
+          .deleteAll();
     });
   }
 
   /// 获取道具的所有标签ID
   Future<Set<int>> getGrenadeTagIds(int grenadeId) async {
-    final grenadeTags = await isar.grenadeTags.filter().grenadeIdEqualTo(grenadeId).findAll();
+    final grenadeTags =
+        await isar.grenadeTags.filter().grenadeIdEqualTo(grenadeId).findAll();
     return grenadeTags.map((gt) => gt.tagId).toSet();
   }
 
@@ -130,7 +155,8 @@ class TagService {
   }
 
   /// 按标签筛选道具 (并集筛选 - 道具只需包含任一选中标签)
-  Future<List<Grenade>> filterByTags(List<Grenade> grenades, Set<int> selectedTagIds) async {
+  Future<List<Grenade>> filterByTags(
+      List<Grenade> grenades, Set<int> selectedTagIds) async {
     if (selectedTagIds.isEmpty) return grenades;
     final result = <Grenade>[];
     for (final grenade in grenades) {
@@ -143,7 +169,8 @@ class TagService {
   }
 
   /// 获取战术包 (相同标签组合的道具集合)
-  Future<Map<String, List<Grenade>>> getTacticalPackages(List<Grenade> grenades) async {
+  Future<Map<String, List<Grenade>>> getTacticalPackages(
+      List<Grenade> grenades) async {
     final packages = <String, List<Grenade>>{};
     for (final grenade in grenades) {
       final tagIds = await getGrenadeTagIds(grenade.id);
@@ -153,13 +180,14 @@ class TagService {
     }
     return packages;
   }
-  
+
   /// 批量设置道具标签
   Future<void> setGrenadeTags(int grenadeId, Set<int> tagIds) async {
     await isar.writeTxn(() async {
       await isar.grenadeTags.filter().grenadeIdEqualTo(grenadeId).deleteAll();
       for (final tagId in tagIds) {
-        await isar.grenadeTags.put(GrenadeTag(grenadeId: grenadeId, tagId: tagId));
+        await isar.grenadeTags
+            .put(GrenadeTag(grenadeId: grenadeId, tagId: tagId));
       }
     });
   }

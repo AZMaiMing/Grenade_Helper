@@ -68,7 +68,9 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
     if (!filePath.toLowerCase().endsWith('.cs2pkg')) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("请选择 .cs2pkg 格式的文件"), backgroundColor: Colors.orange),
+          const SnackBar(
+              content: Text("请选择 .cs2pkg 格式的文件"),
+              backgroundColor: Colors.orange),
         );
       }
       return;
@@ -88,7 +90,8 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(importResult),
-            backgroundColor: importResult.contains("成功") ? Colors.green : Colors.orange,
+            backgroundColor:
+                importResult.contains("成功") ? Colors.green : Colors.orange,
           ),
         );
       }
@@ -114,7 +117,8 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(importResult),
-                backgroundColor: importResult.contains("成功") ? Colors.green : Colors.orange,
+                backgroundColor:
+                    importResult.contains("成功") ? Colors.green : Colors.orange,
               ),
             );
           }
@@ -168,7 +172,8 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(importResult),
-            backgroundColor: importResult.contains('成功') ? Colors.green : Colors.orange,
+            backgroundColor:
+                importResult.contains('成功') ? Colors.green : Colors.orange,
           ),
         );
       }

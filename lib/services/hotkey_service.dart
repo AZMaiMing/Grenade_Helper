@@ -8,6 +8,9 @@ class HotkeyService {
   final SettingsService _settings;
   final Map<HotkeyAction, HotKey> _registeredHotkeys = {};
   final Map<HotkeyAction, void Function()> _handlers = {};
+  static const Set<HotkeyAction> _coreActions = {
+    HotkeyAction.toggleOverlay,
+  };
 
   // 悬浮窗热键
   final Map<HotkeyAction, HotKey> _overlayHotkeys = {};
@@ -34,16 +37,22 @@ class HotkeyService {
   /// 注册核心键
   Future<void> _registerCoreHotkeys() async {
     final hotkeys = _settings.getHotkeys();
-    // 核心键需修饰符
-    final coreActions = [
-      HotkeyAction.toggleOverlay,
-    ];
-    for (final action in coreActions) {
+    for (final action in _coreActions) {
       final config = hotkeys[action];
-      if (config != null && config.modifiers.isNotEmpty) {
-        await _registerHotkey(action, config, _registeredHotkeys);
+      if (config != null) {
+        await _registerHotkey(
+          action,
+          config,
+          _registeredHotkeys,
+          allowNoModifier: _allowNoModifierForCoreAction(action),
+        );
       }
     }
+  }
+
+  bool _allowNoModifierForCoreAction(HotkeyAction action) {
+    // toggleOverlay 允许设置为单键，满足“显示/隐藏悬浮窗”快捷方式自定义需求
+    return action == HotkeyAction.toggleOverlay;
   }
 
   /// 注册悬浮键
@@ -102,6 +111,26 @@ class HotkeyService {
     _overlayHotkeys.clear();
     _overlayHotkeysRegistered = false;
     debugPrint('Overlay hotkeys unregistered');
+  }
+
+  /// 从设置重新加载已注册的全局热键
+  Future<void> reloadFromSettings() async {
+    for (final hotKey in _registeredHotkeys.values) {
+      try {
+        await hotKeyManager.unregister(hotKey);
+      } catch (e) {
+        debugPrint('[HotkeyService] Failed to unregister core hotkey: $e');
+      }
+    }
+    _registeredHotkeys.clear();
+    await _registerCoreHotkeys();
+
+    if (_overlayHotkeysRegistered) {
+      await unregisterOverlayHotkeys();
+      await registerOverlayHotkeys();
+    }
+
+    debugPrint('[HotkeyService] Hotkeys reloaded from settings');
   }
 
   /// 注册单键
@@ -242,9 +271,9 @@ class HotkeyService {
   /// 更新单键
   Future<void> updateHotkey(HotkeyAction action, HotkeyConfig config) async {
     await _settings.saveHotkey(action, config);
-    
+
     // 检查是否是核心热键（如 toggleOverlay）
-    if (_registeredHotkeys.containsKey(action)) {
+    if (_coreActions.contains(action)) {
       // 注销旧热键
       final oldHotKey = _registeredHotkeys[action];
       if (oldHotKey != null) {
@@ -255,14 +284,17 @@ class HotkeyService {
         }
       }
       _registeredHotkeys.remove(action);
-      
+
       // 注册新热键
-      if (config.modifiers.isNotEmpty) {
-        await _registerHotkey(action, config, _registeredHotkeys);
-        debugPrint('[HotkeyService] Core hotkey updated: $action');
-      }
+      await _registerHotkey(
+        action,
+        config,
+        _registeredHotkeys,
+        allowNoModifier: _allowNoModifierForCoreAction(action),
+      );
+      debugPrint('[HotkeyService] Core hotkey updated: $action');
     }
-    
+
     // 检查是否是悬浮窗热键
     if (_overlayHotkeys.containsKey(action)) {
       await unregisterOverlayHotkeys();

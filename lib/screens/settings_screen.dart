@@ -15,12 +15,14 @@ import 'grenade_select_delete_screen.dart';
 /// 设置
 class SettingsScreen extends ConsumerStatefulWidget {
   final SettingsService? settingsService;
-  final void Function(HotkeyAction, HotkeyConfig)? onHotkeyChanged;
+  final Future<void> Function(HotkeyAction, HotkeyConfig)? onHotkeyChanged;
+  final Future<void> Function()? onHotkeysReset;
 
   const SettingsScreen({
     super.key,
     this.settingsService,
     this.onHotkeyChanged,
+    this.onHotkeysReset,
   });
 
   @override
@@ -28,6 +30,29 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  static const Map<HotkeyAction, String> _hotkeyActionLabels = {
+    HotkeyAction.toggleOverlay: '显示/隐藏悬浮窗',
+    HotkeyAction.navigateUp: '向上导航点位',
+    HotkeyAction.navigateDown: '向下导航点位',
+    HotkeyAction.navigateLeft: '向左导航点位',
+    HotkeyAction.navigateRight: '向右导航点位',
+    HotkeyAction.prevGrenade: '上一个道具',
+    HotkeyAction.nextGrenade: '下一个道具',
+    HotkeyAction.prevStep: '上一个步骤',
+    HotkeyAction.nextStep: '下一个步骤',
+    HotkeyAction.toggleSmoke: '烟雾弹过滤开关',
+    HotkeyAction.toggleFlash: '闪光弹过滤开关',
+    HotkeyAction.toggleMolotov: '燃烧弹过滤开关',
+    HotkeyAction.toggleHE: '手雷过滤开关',
+    HotkeyAction.toggleWallbang: '穿点过滤开关',
+    HotkeyAction.hideOverlay: '隐藏悬浮窗',
+    HotkeyAction.togglePlayPause: '悬浮窗播放/暂停视频',
+    HotkeyAction.increaseNavSpeed: '增加导航速度',
+    HotkeyAction.decreaseNavSpeed: '减少导航速度',
+    HotkeyAction.scrollUp: '向上滚动',
+    HotkeyAction.scrollDown: '向下滚动',
+  };
+
   late Map<HotkeyAction, HotkeyConfig> _hotkeys;
   late double _overlayOpacity;
   late int _overlaySize; // 悬浮窗尺寸
@@ -276,7 +301,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const GrenadeSelectDeleteScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const GrenadeSelectDeleteScreen()),
               ),
             ),
           ],
@@ -582,7 +608,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const GrenadeSelectDeleteScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const GrenadeSelectDeleteScreen()),
               ),
             ),
           ],
@@ -638,7 +665,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               DropdownButtonFormField<GameMap>(
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 hint: const Text('选择地图'),
                 initialValue: selectedMap,
@@ -680,10 +708,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: const Text('取消'),
             ),
             ElevatedButton(
-              onPressed: selectedMap == null ? null : () async {
-                Navigator.pop(ctx);
-                await _performDeleteMapGrenades(selectedMap!);
-              },
+              onPressed: selectedMap == null
+                  ? null
+                  : () async {
+                      Navigator.pop(ctx);
+                      await _performDeleteMapGrenades(selectedMap!);
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
@@ -884,6 +914,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       setState(() {
         _hotkeys = widget.settingsService!.getHotkeys();
       });
+      await widget.onHotkeysReset?.call();
 
       // 通知重载热键
       final hotkeysJson = <String, dynamic>{};
@@ -1011,21 +1042,63 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         label: label,
         currentConfig: _hotkeys[action],
         onSave: (newConfig) async {
-          setState(() => _hotkeys[action] = newConfig);
-          await widget.settingsService!.saveHotkey(action, newConfig);
-          widget.onHotkeyChanged?.call(action, newConfig);
-
-          // 通知悬浮窗重新加载热键配置，传递完整的热键配置
-          final hotkeys = widget.settingsService!.getHotkeys();
-          final hotkeysJson = <String, dynamic>{};
-          for (final entry in hotkeys.entries) {
-            hotkeysJson[entry.key.name] = entry.value.toJson();
+          final conflictAction = _findConflictingAction(action, newConfig);
+          if (conflictAction != null) {
+            final conflictLabel = _hotkeyLabel(conflictAction);
+            final conflictConfig = _hotkeys[conflictAction];
+            final display = conflictConfig?.toDisplayString() ?? '';
+            return display.isNotEmpty
+                ? '与“$conflictLabel”（$display）冲突，请更换按键'
+                : '与“$conflictLabel”冲突，请更换按键';
           }
-          sendOverlayCommand('reload_hotkeys', {'hotkeys': hotkeysJson});
-          debugPrint('[Settings] Hotkey changed, notified overlay to reload');
+
+          try {
+            await widget.settingsService!.saveHotkey(action, newConfig);
+            final hotkeys = widget.settingsService!.getHotkeys();
+
+            if (mounted) {
+              setState(() => _hotkeys = hotkeys);
+            } else {
+              _hotkeys = hotkeys;
+            }
+
+            if (widget.onHotkeyChanged != null) {
+              await widget.onHotkeyChanged!(action, newConfig);
+            }
+
+            final hotkeysJson = <String, dynamic>{};
+            for (final entry in hotkeys.entries) {
+              hotkeysJson[entry.key.name] = entry.value.toJson();
+            }
+            sendOverlayCommand('reload_hotkeys', {'hotkeys': hotkeysJson});
+            debugPrint('[Settings] Hotkey changed, notified overlay to reload');
+            return null;
+          } on HotkeyConflictException catch (e) {
+            return '与“${_hotkeyLabel(e.conflictingAction)}”冲突，请更换按键';
+          } catch (e) {
+            debugPrint('[Settings] Failed to save hotkey: $e');
+            return '保存失败，请重试';
+          }
         },
       ),
     );
+  }
+
+  HotkeyAction? _findConflictingAction(
+    HotkeyAction currentAction,
+    HotkeyConfig newConfig,
+  ) {
+    for (final entry in _hotkeys.entries) {
+      if (entry.key == currentAction) continue;
+      if (entry.value.conflictsWith(newConfig)) {
+        return entry.key;
+      }
+    }
+    return null;
+  }
+
+  String _hotkeyLabel(HotkeyAction action) {
+    return _hotkeyActionLabels[action] ?? action.name;
   }
 
   Widget _buildColorPickerRow() {
@@ -1087,7 +1160,7 @@ class _HotkeyEditorDialog extends StatefulWidget {
   final HotkeyAction action;
   final String label;
   final HotkeyConfig? currentConfig;
-  final void Function(HotkeyConfig) onSave;
+  final Future<String?> Function(HotkeyConfig) onSave;
 
   const _HotkeyEditorDialog({
     required this.action,
@@ -1104,6 +1177,8 @@ class _HotkeyEditorDialogState extends State<_HotkeyEditorDialog> {
   HotkeyConfig? _newConfig;
   final FocusNode _focusNode = FocusNode();
   bool _isListening = false;
+  bool _isSaving = false;
+  String? _errorText;
 
   @override
   void initState() {
@@ -1154,12 +1229,16 @@ class _HotkeyEditorDialogState extends State<_HotkeyEditorDialog> {
                     modifiers: modifiers,
                   );
                   _isListening = false;
+                  _errorText = null;
                 });
               }
             },
             child: GestureDetector(
               onTap: () {
-                setState(() => _isListening = true);
+                setState(() {
+                  _isListening = true;
+                  _errorText = null;
+                });
                 _focusNode.requestFocus();
               },
               child: Container(
@@ -1207,21 +1286,49 @@ class _HotkeyEditorDialogState extends State<_HotkeyEditorDialog> {
               ),
             ),
           ),
+          if (_errorText != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _errorText!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
         ],
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isSaving ? null : () => Navigator.pop(context),
           child: const Text('取消'),
         ),
         ElevatedButton(
-          onPressed: _newConfig != null
-              ? () {
-                  widget.onSave(_newConfig!);
-                  Navigator.pop(context);
+          onPressed: _newConfig != null && !_isSaving
+              ? () async {
+                  setState(() {
+                    _isSaving = true;
+                    _errorText = null;
+                  });
+
+                  final error = await widget.onSave(_newConfig!);
+                  if (!mounted) return;
+
+                  if (error == null) {
+                    Navigator.pop(context);
+                    return;
+                  }
+
+                  setState(() {
+                    _isSaving = false;
+                    _errorText = error;
+                  });
                 }
               : null,
-          child: const Text('保存'),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('保存'),
         ),
       ],
     );

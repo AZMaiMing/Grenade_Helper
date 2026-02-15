@@ -105,10 +105,12 @@ class AreaService {
   }
 
   /// 获取点所在的所有区域
-  Future<List<MapArea>> getAreasForPoint(int mapId, double x, double y, {int? layerId}) async {
+  Future<List<MapArea>> getAreasForPoint(int mapId, double x, double y,
+      {int? layerId}) async {
     final areas = await getAreas(mapId);
     return areas.where((area) {
-      if (layerId != null && area.layerId != null && area.layerId != layerId) return false;
+      if (layerId != null && area.layerId != null && area.layerId != layerId)
+        return false;
       return isPointInArea(x, y, area);
     }).toList();
   }
@@ -116,16 +118,18 @@ class AreaService {
   /// 自动为道具添加区域标签
   Future<void> autoTagGrenade(Grenade grenade, int mapId) async {
     final areas = await getAreasForPoint(mapId, grenade.xRatio, grenade.yRatio);
-    
+
     await isar.writeTxn(() async {
       for (final area in areas) {
         // 检查是否已有此标签
-        final existing = await isar.grenadeTags.filter()
+        final existing = await isar.grenadeTags
+            .filter()
             .grenadeIdEqualTo(grenade.id)
             .tagIdEqualTo(area.tagId)
             .findFirst();
         if (existing == null) {
-          await isar.grenadeTags.put(GrenadeTag(grenadeId: grenade.id, tagId: area.tagId));
+          await isar.grenadeTags
+              .put(GrenadeTag(grenadeId: grenade.id, tagId: area.tagId));
         }
       }
     });
@@ -137,11 +141,15 @@ class AreaService {
     if (areas.isEmpty) return 0;
 
     // 获取该地图所有道具
-    final layers = await isar.mapLayers.filter().map((q) => q.idEqualTo(mapId)).findAll();
+    final layers =
+        await isar.mapLayers.filter().map((q) => q.idEqualTo(mapId)).findAll();
     int count = 0;
-    
+
     for (final layer in layers) {
-      final grenades = await isar.grenades.filter().layer((q) => q.idEqualTo(layer.id)).findAll();
+      final grenades = await isar.grenades
+          .filter()
+          .layer((q) => q.idEqualTo(layer.id))
+          .findAll();
       for (final grenade in grenades) {
         await autoTagGrenade(grenade, mapId);
         count++;
@@ -156,7 +164,10 @@ class AreaService {
       final data = jsonDecode(json) as List;
       return data.map((stroke) {
         final points = stroke as List;
-        return points.map((p) => Offset((p['x'] as num).toDouble(), (p['y'] as num).toDouble())).toList();
+        return points
+            .map((p) =>
+                Offset((p['x'] as num).toDouble(), (p['y'] as num).toDouble()))
+            .toList();
       }).toList();
     } catch (e) {
       return [];
@@ -167,19 +178,21 @@ class AreaService {
   bool _isPointInPolygon(Offset point, List<Offset> polygon) {
     int intersections = 0;
     final n = polygon.length;
-    
+
     for (int i = 0; i < n; i++) {
       final p1 = polygon[i];
       final p2 = polygon[(i + 1) % n];
-      
-      if ((p1.dy <= point.dy && p2.dy > point.dy) || (p2.dy <= point.dy && p1.dy > point.dy)) {
-        final xIntersect = p1.dx + (point.dy - p1.dy) / (p2.dy - p1.dy) * (p2.dx - p1.dx);
+
+      if ((p1.dy <= point.dy && p2.dy > point.dy) ||
+          (p2.dy <= point.dy && p1.dy > point.dy)) {
+        final xIntersect =
+            p1.dx + (point.dy - p1.dy) / (p2.dy - p1.dy) * (p2.dx - p1.dx);
         if (point.dx < xIntersect) {
           intersections++;
         }
       }
     }
-    
+
     return intersections % 2 == 1;
   }
 }

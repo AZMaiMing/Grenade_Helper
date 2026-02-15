@@ -64,7 +64,8 @@ class SpringFestivalTheme extends SeasonalTheme {
       if (newYearDate == null) continue;
 
       final start = newYearDate.subtract(const Duration(days: 5));
-      final end = newYearDate.add(const Duration(days: 15, hours: 23, minutes: 59, seconds: 59));
+      final end = newYearDate
+          .add(const Duration(days: 15, hours: 23, minutes: 59, seconds: 59));
 
       if (!date.isBefore(start) && !date.isAfter(end)) return true;
     }

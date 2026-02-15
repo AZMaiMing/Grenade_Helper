@@ -57,7 +57,6 @@ class CloudPackage {
       };
 }
 
-
 /// 云端仓库索引
 class CloudPackageIndex {
   final int version;

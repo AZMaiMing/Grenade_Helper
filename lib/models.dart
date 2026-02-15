@@ -106,7 +106,7 @@ class Grenade {
   double? impactXRatio;
   double? impactYRatio;
   String? impactAreaStrokes;
-  
+
   /// 爆点分组ID（用于自定义分组筛选）
   int? impactGroupId;
 
@@ -143,7 +143,6 @@ class GrenadeStep {
   // 反向链接到 Grenade
   @Backlink(to: 'steps')
   final grenade = IsarLink<Grenade>();
-
 
   final medias = IsarLinks<StepMedia>();
 
@@ -204,18 +203,18 @@ class ImpactGroup {
   /// 分组名称
   @Index()
   String name;
-  
+
   /// 道具类型（GrenadeType）
   int type;
-  
+
   /// 关联的爆点坐标（用于限定分组范围）
   double impactXRatio;
   double impactYRatio;
-  
+
   /// 关联的图层ID
   @Index()
   int layerId;
-  
+
   /// 创建时间
   DateTime createdAt;
 

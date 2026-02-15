@@ -203,8 +203,14 @@ class HomeScreen extends ConsumerWidget {
                   MaterialPageRoute(
                     builder: (_) => SettingsScreen(
                       settingsService: globalSettingsService,
-                      onHotkeyChanged: (action, config) {
-                        globalHotkeyService?.updateHotkey(action, config);
+                      onHotkeyChanged: (action, config) async {
+                        if (globalHotkeyService != null) {
+                          await globalHotkeyService!
+                              .updateHotkey(action, config);
+                        }
+                      },
+                      onHotkeysReset: () async {
+                        await globalHotkeyService?.reloadFromSettings();
                       },
                     ),
                   ),

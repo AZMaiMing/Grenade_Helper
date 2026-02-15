@@ -109,7 +109,8 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   void _toggleSelectAllGrenades() {
     final currentGrenades = _getCurrentGrenades();
     final currentIds = currentGrenades.map((g) => g.id).toSet();
-    final allSelected = currentIds.every((id) => _selectedGrenadeIds.contains(id));
+    final allSelected =
+        currentIds.every((id) => _selectedGrenadeIds.contains(id));
 
     setState(() {
       if (allSelected) {
@@ -122,7 +123,8 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
 
   void _toggleSelectAllMaps() {
     final allMaps = _grenadesByMap.keys.toSet();
-    final allSelected = allMaps.every((name) => _selectedMapNames.contains(name));
+    final allSelected =
+        allMaps.every((name) => _selectedMapNames.contains(name));
 
     setState(() {
       if (allSelected) {
@@ -162,7 +164,8 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
       if (grenadesToExport.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("未选择任何道具"), backgroundColor: Colors.orange),
+            const SnackBar(
+                content: Text("未选择任何道具"), backgroundColor: Colors.orange),
           );
           setState(() => _isExporting = false);
         }
@@ -209,8 +212,10 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   }
 
   Widget _buildMapSelectScreen() {
-    final mapsWithGrenades = _maps.where((m) => _grenadesByMap.containsKey(m.name)).toList();
-    final allSelected = mapsWithGrenades.every((m) => _selectedMapNames.contains(m.name));
+    final mapsWithGrenades =
+        _maps.where((m) => _grenadesByMap.containsKey(m.name)).toList();
+    final allSelected =
+        mapsWithGrenades.every((m) => _selectedMapNames.contains(m.name));
     final selectedCount = _selectedMapNames.length;
 
     return Scaffold(
@@ -267,7 +272,9 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
                         SvgPicture.asset(map.iconPath, width: 32, height: 32),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(map.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text(map.name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -297,14 +304,16 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   }
 
   Widget _buildMapListForGrenadeSelect() {
-    final mapsWithGrenades = _maps.where((m) => _grenadesByMap.containsKey(m.name)).toList();
-    
+    final mapsWithGrenades =
+        _maps.where((m) => _grenadesByMap.containsKey(m.name)).toList();
+
     // 计算数量
     int totalGrenades = 0;
     for (final grenades in _grenadesByMap.values) {
       totalGrenades += grenades.length;
     }
-    final allSelected = totalGrenades > 0 && _selectedGrenadeIds.length == totalGrenades;
+    final allSelected =
+        totalGrenades > 0 && _selectedGrenadeIds.length == totalGrenades;
 
     return Scaffold(
       appBar: AppBar(title: const Text("选择地图")),
@@ -347,8 +356,11 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
               itemBuilder: (context, index) {
                 final map = mapsWithGrenades[index];
                 final grenades = _grenadesByMap[map.name] ?? [];
-                final selectedInMap = grenades.where((g) => _selectedGrenadeIds.contains(g.id)).length;
-                final allInMapSelected = grenades.isNotEmpty && selectedInMap == grenades.length;
+                final selectedInMap = grenades
+                    .where((g) => _selectedGrenadeIds.contains(g.id))
+                    .length;
+                final allInMapSelected =
+                    grenades.isNotEmpty && selectedInMap == grenades.length;
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -359,9 +371,11 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
                       onChanged: (val) {
                         setState(() {
                           if (allInMapSelected) {
-                            _selectedGrenadeIds.removeAll(grenades.map((g) => g.id));
+                            _selectedGrenadeIds
+                                .removeAll(grenades.map((g) => g.id));
                           } else {
-                            _selectedGrenadeIds.addAll(grenades.map((g) => g.id));
+                            _selectedGrenadeIds
+                                .addAll(grenades.map((g) => g.id));
                           }
                         });
                       },
@@ -372,7 +386,9 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
                         SvgPicture.asset(map.iconPath, width: 32, height: 32),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(map.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text(map.name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -396,7 +412,8 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   Widget _buildGrenadeListScreen() {
     final grenades = _getCurrentGrenades();
     final currentIds = grenades.map((g) => g.id).toSet();
-    final selectedInCurrent = currentIds.where((id) => _selectedGrenadeIds.contains(id)).length;
+    final selectedInCurrent =
+        currentIds.where((id) => _selectedGrenadeIds.contains(id)).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -419,8 +436,10 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
             child: Row(
               children: [
                 Checkbox(
-                  value: grenades.isNotEmpty && selectedInCurrent == grenades.length,
-                  tristate: selectedInCurrent > 0 && selectedInCurrent < grenades.length,
+                  value: grenades.isNotEmpty &&
+                      selectedInCurrent == grenades.length,
+                  tristate: selectedInCurrent > 0 &&
+                      selectedInCurrent < grenades.length,
                   onChanged: (_) => _toggleSelectAllGrenades(),
                   activeColor: Colors.orange,
                 ),
@@ -439,11 +458,13 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
           // 道具列表
           Expanded(
             child: grenades.isEmpty
-                ? const Center(child: Text("无匹配的道具", style: TextStyle(color: Colors.grey)))
+                ? const Center(
+                    child: Text("无匹配的道具", style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: grenades.length,
-                    itemBuilder: (context, index) => _buildGrenadeItem(grenades[index]),
+                    itemBuilder: (context, index) =>
+                        _buildGrenadeItem(grenades[index]),
                   ),
           ),
           // 导出按钮
@@ -476,7 +497,9 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
                 label: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(t.$3, size: 16, color: isSelected ? Colors.white : Colors.grey),
+                    Icon(t.$3,
+                        size: 16,
+                        color: isSelected ? Colors.white : Colors.grey),
                     const SizedBox(width: 4),
                     Text(t.$2),
                   ],
@@ -527,7 +550,8 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
           ],
         ),
         subtitle: grenade.author != null
-            ? Text("by: ${grenade.author}", style: TextStyle(fontSize: 12, color: Colors.grey[600]))
+            ? Text("by: ${grenade.author}",
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]))
             : null,
         trailing: IconButton(
           icon: const Icon(Icons.visibility, color: Colors.blueAccent),
@@ -536,7 +560,8 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => GrenadeDetailScreen(grenadeId: grenade.id, isEditing: false),
+                builder: (_) => GrenadeDetailScreen(
+                    grenadeId: grenade.id, isEditing: false),
               ),
             );
           },
@@ -558,7 +583,8 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
   Widget _buildExportButton(bool enabled) {
     int count;
     if (widget.mode == 1) {
-      count = _selectedMapNames.fold(0, (sum, name) => sum + (_grenadesByMap[name]?.length ?? 0));
+      count = _selectedMapNames.fold(
+          0, (sum, name) => sum + (_grenadesByMap[name]?.length ?? 0));
     } else {
       count = _selectedGrenadeIds.length;
     }
@@ -589,11 +615,13 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
               ? const SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
                 )
               : Text(
                   "分享 ($count 个道具)",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
         ),
       ),

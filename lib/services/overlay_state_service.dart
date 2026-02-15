@@ -44,20 +44,20 @@ class OverlayStateService extends ChangeNotifier {
 
   // 速度档位配置
   static const List<double> _speedLevels = [
-    0.0025, 
-    0.003, 
+    0.0025,
+    0.003,
     0.004, // 3档 - 当前默认
-    0.0045, 
-    0.005, 
+    0.0045,
+    0.005,
   ];
 
   // 吸附阈值配置
   static const List<double> _snapThresholdLevels = [
-    0.015, 
-    0.018, 
+    0.015,
+    0.018,
     0.02, // 3档 - 默认
-    0.022, 
-    0.025, 
+    0.022,
+    0.025,
   ];
 
   // 当前档位
@@ -138,7 +138,8 @@ class OverlayStateService extends ChangeNotifier {
 
   /// 强制重载
   void reloadData() {
-    debugPrint('[OverlayStateService] reloadData called, reloading grenades...');
+    debugPrint(
+        '[OverlayStateService] reloadData called, reloading grenades...');
     _loadGrenades(notify: true);
   }
 

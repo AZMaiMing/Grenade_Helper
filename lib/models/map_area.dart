@@ -6,24 +6,24 @@ part 'map_area.g.dart';
 @collection
 class MapArea {
   Id id = Isar.autoIncrement;
-  
+
   @Index()
   String name;
-  
+
   int colorValue;
-  
+
   /// 存储手绘笔画的JSON字符串
   String strokes;
-  
+
   @Index()
   int mapId;
-  
+
   /// 关联的楼层ID（可选，null表示所有楼层）
   int? layerId;
-  
+
   /// 自动创建的标签ID
   int tagId;
-  
+
   DateTime createdAt;
 
   MapArea({

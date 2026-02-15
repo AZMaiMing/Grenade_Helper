@@ -96,9 +96,11 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
         children: [
           const Icon(Icons.checklist, size: 80, color: Colors.blueAccent),
           const SizedBox(height: 20),
-          Text("数据库中共有 ${_grenades.length} 个道具", style: const TextStyle(fontSize: 18)),
+          Text("数据库中共有 ${_grenades.length} 个道具",
+              style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 8),
-          Text("分布在 ${mapStats.length} 张地图中", style: TextStyle(color: Colors.grey[600])),
+          Text("分布在 ${mapStats.length} 张地图中",
+              style: TextStyle(color: Colors.grey[600])),
           const SizedBox(height: 40),
           ElevatedButton.icon(
             onPressed: () {
@@ -151,9 +153,11 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
         children: [
           const Icon(Icons.map, size: 80, color: Colors.orange),
           const SizedBox(height: 20),
-          Text("共有 $mapsWithDataCount 张地图包含道具", style: const TextStyle(fontSize: 18)),
+          Text("共有 $mapsWithDataCount 张地图包含道具",
+              style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 8),
-          Text("总计 ${_grenades.length} 个道具", style: TextStyle(color: Colors.grey[600])),
+          Text("总计 ${_grenades.length} 个道具",
+              style: TextStyle(color: Colors.grey[600])),
           const SizedBox(height: 40),
           ElevatedButton.icon(
             onPressed: () {

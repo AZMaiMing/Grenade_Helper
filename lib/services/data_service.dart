@@ -306,7 +306,8 @@ class DataService {
       }
 
       // 获取道具关联的标签ID
-      final grenadeTags = await isar.grenadeTags.filter().grenadeIdEqualTo(g.id).findAll();
+      final grenadeTags =
+          await isar.grenadeTags.filter().grenadeIdEqualTo(g.id).findAll();
       final tagIds = grenadeTags.map((gt) => gt.tagId).toList();
 
       exportList.add({
@@ -448,7 +449,8 @@ class DataService {
       }
 
       // 获取道具关联的标签ID
-      final grenadeTags = await isar.grenadeTags.filter().grenadeIdEqualTo(g.id).findAll();
+      final grenadeTags =
+          await isar.grenadeTags.filter().grenadeIdEqualTo(g.id).findAll();
       final tagIds = grenadeTags.map((gt) => gt.tagId).toList();
 
       exportList.add({
@@ -957,7 +959,7 @@ class DataService {
       await step.medias.save();
     }
     await g.steps.save();
-    
+
     // 导入标签关联
     final tagIds = item['tagIds'] as List?;
     if (tagIds != null && tagIds.isNotEmpty) {
@@ -972,7 +974,7 @@ class DataService {
         }
       }
     }
-    
+
     return g; // 返回创建的道具
   }
 

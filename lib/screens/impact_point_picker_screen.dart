@@ -10,11 +10,11 @@ import '../providers.dart';
 /// 爆点选择/绘制页面
 class ImpactPointPickerScreen extends ConsumerStatefulWidget {
   final int grenadeId;
-  final double? initialX; 
-  final double? initialY; 
-  final double throwX; 
-  final double throwY; 
-  final int layerId; 
+  final double? initialX;
+  final double? initialY;
+  final double throwX;
+  final double throwY;
+  final int layerId;
   final bool isDrawingMode;
   final String? existingStrokes; // 现有笔画 JSON
   final int grenadeType; // 道具类型（用于颜色）
@@ -69,7 +69,8 @@ class _ImpactPointPickerScreenState
     _loadLayer();
 
     // 解析笔画（绘制模式或只读模式都需要解析）
-    if ((widget.isDrawingMode || widget.readOnly) && widget.existingStrokes != null) {
+    if ((widget.isDrawingMode || widget.readOnly) &&
+        widget.existingStrokes != null) {
       try {
         final parsed = jsonDecode(widget.existingStrokes!) as List;
         _drawingStrokes =
@@ -261,7 +262,7 @@ class _ImpactPointPickerScreenState
     if (shapeIndex == -1) return;
 
     final shape = _drawingStrokes[shapeIndex];
-    
+
     // 计算中心
     Offset center;
     if (shape['center'] != null) {
@@ -271,10 +272,11 @@ class _ImpactPointPickerScreenState
     } else {
       final pointsData = shape['points'] as List;
       if (pointsData.isEmpty) return;
-      
+
       final points = pointsData.map((p) {
         final pointList = p as List;
-        return Offset((pointList[0] as num).toDouble(), (pointList[1] as num).toDouble());
+        return Offset(
+            (pointList[0] as num).toDouble(), (pointList[1] as num).toDouble());
       }).toList();
 
       double minX = points.first.dx;
@@ -288,13 +290,13 @@ class _ImpactPointPickerScreenState
         if (p.dy < minY) minY = p.dy;
         if (p.dy > maxY) maxY = p.dy;
       }
-      
+
       center = Offset((minX + maxX) / 2, (minY + maxY) / 2);
       shape['center'] = [center.dx, center.dy];
     }
 
     final type = shape['shapeType'] as int;
-    
+
     // 匹配类型更新
     // if (type != _selectedShapeType) return;
 
@@ -317,17 +319,18 @@ class _ImpactPointPickerScreenState
     if (shapeIndex == -1) return;
 
     final shape = _drawingStrokes[shapeIndex];
-    
+
     Offset center;
     if (shape['center'] != null) {
       final centerList = shape['center'] as List;
       center = Offset(
           (centerList[0] as num).toDouble(), (centerList[1] as num).toDouble());
     } else {
-      _updateActiveShapeSize(); 
+      _updateActiveShapeSize();
       if (shape['center'] != null) {
         final centerList = shape['center'] as List;
-        center = Offset((centerList[0] as num).toDouble(), (centerList[1] as num).toDouble());
+        center = Offset((centerList[0] as num).toDouble(),
+            (centerList[1] as num).toDouble());
       } else {
         return;
       }
@@ -370,8 +373,8 @@ class _ImpactPointPickerScreenState
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(widget.readOnly 
-            ? '查看爆点位置' 
+        title: Text(widget.readOnly
+            ? '查看爆点位置'
             : (widget.isDrawingMode ? '绘制爆点区域' : '选择爆点位置')),
         centerTitle: true,
         actions: [
@@ -414,53 +417,57 @@ class _ImpactPointPickerScreenState
           Expanded(
             child: ClipRect(
               child: LayoutBuilder(
-              builder: (context, constraints) {
-                final imageBounds = _getImageBounds(
-                    constraints.maxWidth, constraints.maxHeight);
+                builder: (context, constraints) {
+                  final imageBounds = _getImageBounds(
+                      constraints.maxWidth, constraints.maxHeight);
 
-                return Listener(
-                  onPointerSignal: (event) {
-                    if (event is PointerScrollEvent) {
-                      _handleMouseWheelZoom(event, constraints);
-                    }
-                  },
-                  child: PhotoView.customChild(
-                    controller: _photoViewController,
-                    backgroundDecoration:
-                        const BoxDecoration(color: Colors.black),
-                    minScale: PhotoViewComputedScale.contained * 0.8,
-                    maxScale: PhotoViewComputedScale.covered * 3,
-                    initialScale: PhotoViewComputedScale.contained,
-                    child: StreamBuilder<PhotoViewControllerValue>(
-                      stream: _photoViewController.outputStateStream,
-                      builder: (context, snapshot) {
-                        final double scale = snapshot.data?.scale ?? 1.0;
-                        final double markerScale = 1.0 / scale;
+                  return Listener(
+                    onPointerSignal: (event) {
+                      if (event is PointerScrollEvent) {
+                        _handleMouseWheelZoom(event, constraints);
+                      }
+                    },
+                    child: PhotoView.customChild(
+                      controller: _photoViewController,
+                      backgroundDecoration:
+                          const BoxDecoration(color: Colors.black),
+                      minScale: PhotoViewComputedScale.contained * 0.8,
+                      maxScale: PhotoViewComputedScale.covered * 3,
+                      initialScale: PhotoViewComputedScale.contained,
+                      child: StreamBuilder<PhotoViewControllerValue>(
+                        stream: _photoViewController.outputStateStream,
+                        builder: (context, snapshot) {
+                          final double scale = snapshot.data?.scale ?? 1.0;
+                          final double markerScale = 1.0 / scale;
 
-                        return Stack(
-                          key: _stackKey,
-                          children: [
-                            GestureDetector(
-                                onTapUp: (widget.isDrawingMode || widget.readOnly) ? null : _handleTap,
-                                child: Image.asset(
-                                  _layer!.assetPath,
-                                  width: constraints.maxWidth,
-                                  height: constraints.maxHeight,
-                                  fit: BoxFit.contain,
-                                )),
-                            if (widget.isDrawingMode)
-                              ..._buildDrawingLayers(constraints, imageBounds, markerScale)
-                            else
-                              ..._buildPickerLayers(constraints, imageBounds, markerScale),
-                            
-                          ],
-                        );
-                      },
+                          return Stack(
+                            key: _stackKey,
+                            children: [
+                              GestureDetector(
+                                  onTapUp:
+                                      (widget.isDrawingMode || widget.readOnly)
+                                          ? null
+                                          : _handleTap,
+                                  child: Image.asset(
+                                    _layer!.assetPath,
+                                    width: constraints.maxWidth,
+                                    height: constraints.maxHeight,
+                                    fit: BoxFit.contain,
+                                  )),
+                              if (widget.isDrawingMode)
+                                ..._buildDrawingLayers(
+                                    constraints, imageBounds, markerScale)
+                              else
+                                ..._buildPickerLayers(
+                                    constraints, imageBounds, markerScale),
+                            ],
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
             ),
           ),
           if (!widget.readOnly)
@@ -480,7 +487,7 @@ class _ImpactPointPickerScreenState
     double markerScale,
   ) {
     final color = _getTypeColor();
-    
+
     return [
       _buildThrowPointMarker(imageBounds, markerScale),
       if (_selectedX != null && _selectedY != null)
@@ -681,10 +688,12 @@ class _ImpactPointPickerScreenState
     double markerScale,
   ) {
     const double baseHalfSize = 10.0;
-    final left =
-        imageBounds.offsetX + widget.initialX! * imageBounds.width - baseHalfSize;
-    final top =
-        imageBounds.offsetY + widget.initialY! * imageBounds.height - baseHalfSize;
+    final left = imageBounds.offsetX +
+        widget.initialX! * imageBounds.width -
+        baseHalfSize;
+    final top = imageBounds.offsetY +
+        widget.initialY! * imageBounds.height -
+        baseHalfSize;
 
     return Positioned(
       left: left,
@@ -701,7 +710,8 @@ class _ImpactPointPickerScreenState
               shape: BoxShape.circle,
               border: Border.all(color: Colors.purpleAccent, width: 2),
             ),
-            child: const Icon(Icons.close, size: 12, color: Colors.purpleAccent),
+            child:
+                const Icon(Icons.close, size: 12, color: Colors.purpleAccent),
           ),
         ),
       ),
@@ -738,7 +748,8 @@ class _ImpactPointPickerScreenState
                 _buildToolButton(
                   icon: Icons.brush,
                   label: "笔刷",
-                  isSelected: _isPenMode && _selectedShapeType == 0 && !_isEraserMode,
+                  isSelected:
+                      _isPenMode && _selectedShapeType == 0 && !_isEraserMode,
                   color: color,
                   onTap: () => setState(() {
                     _isPenMode = true;
@@ -809,8 +820,8 @@ class _ImpactPointPickerScreenState
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 4,
-                          thumbShape:
-                              const RoundSliderThumbShape(enabledThumbRadius: 8),
+                          thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8),
                         ),
                         child: _selectedShapeType > 0
                             ? Slider(
@@ -827,7 +838,8 @@ class _ImpactPointPickerScreenState
                                 value: _brushSize,
                                 min: 5,
                                 max: 30,
-                                activeColor: _isEraserMode ? Colors.grey : color,
+                                activeColor:
+                                    _isEraserMode ? Colors.grey : color,
                                 onChanged: (val) =>
                                     setState(() => _brushSize = val),
                               ),
@@ -853,8 +865,10 @@ class _ImpactPointPickerScreenState
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     // 浅色主题下，如果选中色太浅则使用深色版本
-    final displayColor = isSelected 
-        ? (isDark ? color : HSLColor.fromColor(color).withLightness(0.4).toColor())
+    final displayColor = isSelected
+        ? (isDark
+            ? color
+            : HSLColor.fromColor(color).withLightness(0.4).toColor())
         : Colors.grey;
 
     return GestureDetector(
@@ -862,10 +876,12 @@ class _ImpactPointPickerScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color:
+              isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? displayColor : Colors.grey.withValues(alpha: 0.4),
+            color:
+                isSelected ? displayColor : Colors.grey.withValues(alpha: 0.4),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -888,13 +904,15 @@ class _ImpactPointPickerScreenState
     );
   }
 
-
-
   // 选择模式标记
 
   Widget _buildThrowPointMarker(
-      ({double width, double height, double offsetX, double offsetY})
-          imageBounds,
+      ({
+        double width,
+        double height,
+        double offsetX,
+        double offsetY
+      }) imageBounds,
       double markerScale) {
     const double baseHalfSize = 10.0;
     final left =
@@ -930,8 +948,12 @@ class _ImpactPointPickerScreenState
   }
 
   Widget _buildImpactMarker(
-      ({double width, double height, double offsetX, double offsetY})
-          imageBounds,
+      ({
+        double width,
+        double height,
+        double offsetX,
+        double offsetY
+      }) imageBounds,
       double markerScale) {
     const double baseHalfSize = 10.0;
     final left =
@@ -967,8 +989,12 @@ class _ImpactPointPickerScreenState
   }
 
   Widget _buildConnectionLine(
-      ({double width, double height, double offsetX, double offsetY})
-          imageBounds) {
+      ({
+        double width,
+        double height,
+        double offsetX,
+        double offsetY
+      }) imageBounds) {
     final startX = imageBounds.offsetX + widget.throwX * imageBounds.width;
     final startY = imageBounds.offsetY + widget.throwY * imageBounds.height;
     final endX = imageBounds.offsetX + _selectedX! * imageBounds.width;
@@ -999,8 +1025,12 @@ class _ImpactAreaPainter extends CustomPainter {
   final bool isCurrentEraser;
   final Color color;
   final double opacity;
-  final ({double width, double height, double offsetX, double offsetY})
-      imageBounds;
+  final ({
+    double width,
+    double height,
+    double offsetX,
+    double offsetY
+  }) imageBounds;
 
   _ImpactAreaPainter({
     required this.strokes,
@@ -1027,7 +1057,8 @@ class _ImpactAreaPainter extends CustomPainter {
     }
 
     if (currentStroke.isNotEmpty) {
-      _drawStroke(canvas, currentStroke, currentStrokeWidth, isCurrentEraser, false);
+      _drawStroke(
+          canvas, currentStroke, currentStrokeWidth, isCurrentEraser, false);
     }
 
     canvas.restore();

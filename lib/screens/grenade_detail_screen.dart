@@ -211,10 +211,10 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     if (team != null) grenade!.team = team;
     if (isFavorite != null) grenade!.isFavorite = isFavorite;
     if (author != null) grenade!.author = author.isEmpty ? null : author;
-    if (sourceUrl != null){
+    if (sourceUrl != null) {
       grenade!.sourceUrl = sourceUrl.isEmpty ? null : sourceUrl;
     }
-    if (sourceNote != null){
+    if (sourceNote != null) {
       grenade!.sourceNote = sourceNote.isEmpty ? null : sourceNote;
     }
 
@@ -1740,7 +1740,8 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                             return;
                           }
 
-                          final result = await Navigator.push<Map<String, dynamic>>(
+                          final result =
+                              await Navigator.push<Map<String, dynamic>>(
                             context,
                             MaterialPageRoute(
                               builder: (_) => ImpactPointPickerScreen(
@@ -1762,7 +1763,8 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
                             await isar.writeTxn(() async {
                               final g = await isar.grenades.get(grenade!.id);
                               if (g != null) {
-                                g.impactAreaStrokes = result['strokes'] as String;
+                                g.impactAreaStrokes =
+                                    result['strokes'] as String;
                                 g.updatedAt = DateTime.now();
                                 await isar.grenades.put(g);
                               }
@@ -1817,7 +1819,8 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 1),
+        border: Border.all(
+            color: Colors.blueAccent.withValues(alpha: 0.3), width: 1),
       ),
       child: GrenadeTagEditor(
         grenadeId: grenade!.id,
@@ -1832,9 +1835,12 @@ class _GrenadeDetailScreenState extends ConsumerState<GrenadeDetailScreen> {
     final steps = grenade!.steps.toList();
     steps.sort((a, b) => a.stepIndex.compareTo(b.stepIndex));
 
-    final hasImpactPoint = grenade!.impactXRatio != null && grenade!.impactYRatio != null;
+    final hasImpactPoint =
+        grenade!.impactXRatio != null && grenade!.impactYRatio != null;
     // 编辑模式：非穿点类型显示；非编辑模式：有爆点时显示
-    final showImpactCard = (isEditing && grenade!.type != GrenadeType.wallbang) || (!isEditing && hasImpactPoint);
+    final showImpactCard =
+        (isEditing && grenade!.type != GrenadeType.wallbang) ||
+            (!isEditing && hasImpactPoint);
 
     if (steps.isEmpty && !showImpactCard) {
       return const Center(

@@ -78,6 +78,39 @@ class HotkeyConfig {
           .toSet(),
     );
   }
+
+  /// 判断两个快捷键配置是否冲突（同主键 + 同修饰键集合）
+  bool conflictsWith(HotkeyConfig other) {
+    if (key.keyId != other.key.keyId) return false;
+    final currentModifiers = _normalizedModifierIds();
+    final otherModifiers = other._normalizedModifierIds();
+    return currentModifiers.length == otherModifiers.length &&
+        currentModifiers.containsAll(otherModifiers);
+  }
+
+  Set<int> _normalizedModifierIds() {
+    final result = <int>{};
+
+    final hasCtrl = modifiers.contains(LogicalKeyboardKey.control) ||
+        modifiers.contains(LogicalKeyboardKey.controlLeft) ||
+        modifiers.contains(LogicalKeyboardKey.controlRight);
+    final hasAlt = modifiers.contains(LogicalKeyboardKey.alt) ||
+        modifiers.contains(LogicalKeyboardKey.altLeft) ||
+        modifiers.contains(LogicalKeyboardKey.altRight);
+    final hasShift = modifiers.contains(LogicalKeyboardKey.shift) ||
+        modifiers.contains(LogicalKeyboardKey.shiftLeft) ||
+        modifiers.contains(LogicalKeyboardKey.shiftRight);
+    final hasMeta = modifiers.contains(LogicalKeyboardKey.meta) ||
+        modifiers.contains(LogicalKeyboardKey.metaLeft) ||
+        modifiers.contains(LogicalKeyboardKey.metaRight);
+
+    if (hasCtrl) result.add(LogicalKeyboardKey.control.keyId);
+    if (hasAlt) result.add(LogicalKeyboardKey.alt.keyId);
+    if (hasShift) result.add(LogicalKeyboardKey.shift.keyId);
+    if (hasMeta) result.add(LogicalKeyboardKey.meta.keyId);
+
+    return result;
+  }
 }
 
 /// 动作类型
@@ -102,6 +135,22 @@ enum HotkeyAction {
   decreaseNavSpeed, // 减少导航速度
   scrollUp, // 向上滚动
   scrollDown, // 向下滚动
+}
+
+class HotkeyConflictException implements Exception {
+  final HotkeyAction action;
+  final HotkeyAction conflictingAction;
+  final HotkeyConfig config;
+
+  HotkeyConflictException({
+    required this.action,
+    required this.conflictingAction,
+    required this.config,
+  });
+
+  @override
+  String toString() =>
+      'Hotkey conflict: $action conflicts with $conflictingAction (${config.toDisplayString()})';
 }
 
 /// 设置服务
@@ -356,6 +405,18 @@ class SettingsService {
   /// 保存快捷键
   Future<void> saveHotkey(HotkeyAction action, HotkeyConfig config) async {
     final hotkeys = getHotkeys();
+
+    for (final entry in hotkeys.entries) {
+      if (entry.key == action) continue;
+      if (entry.value.conflictsWith(config)) {
+        throw HotkeyConflictException(
+          action: action,
+          conflictingAction: entry.key,
+          config: config,
+        );
+      }
+    }
+
     hotkeys[action] = config;
 
     final json = <String, dynamic>{};
