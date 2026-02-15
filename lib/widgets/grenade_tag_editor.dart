@@ -74,10 +74,11 @@ class _GrenadeTagEditorState extends State<GrenadeTagEditor> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading)
+    if (_isLoading) {
       return const SizedBox(
           height: 60,
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

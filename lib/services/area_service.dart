@@ -109,8 +109,9 @@ class AreaService {
       {int? layerId}) async {
     final areas = await getAreas(mapId);
     return areas.where((area) {
-      if (layerId != null && area.layerId != null && area.layerId != layerId)
+      if (layerId != null && area.layerId != null && area.layerId != layerId) {
         return false;
+      }
       return isPointInArea(x, y, area);
     }).toList();
   }

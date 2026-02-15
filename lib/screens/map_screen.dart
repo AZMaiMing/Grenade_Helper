@@ -2739,8 +2739,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           final query = textEditingValue.text.toLowerCase();
                           return allMapGrenades.where((g) {
                             // 匹配标题
-                            if (g.title.toLowerCase().contains(query))
+                            if (g.title.toLowerCase().contains(query)) {
                               return true;
+                            }
                             // 匹配标签名
                             final grenadeTags = isar.grenadeTags
                                 .filter()
@@ -2749,8 +2750,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             for (final gt in grenadeTags) {
                               final tag = isar.tags.getSync(gt.tagId);
                               if (tag != null &&
-                                  tag.name.toLowerCase().contains(query))
+                                  tag.name.toLowerCase().contains(query)) {
                                 return true;
+                              }
                             }
                             return false;
                           });
@@ -2954,13 +2956,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                               if (_selectedImpactTypeFilter !=
                                                       null &&
                                                   g.type !=
-                                                      _selectedImpactTypeFilter)
+                                                      _selectedImpactTypeFilter) {
                                                 return false;
+                                              }
                                               if (_selectedImpactGroupId !=
                                                       null &&
                                                   g.impactGroupId !=
-                                                      _selectedImpactGroupId)
+                                                      _selectedImpactGroupId) {
                                                 return false;
+                                              }
                                               return true;
                                             });
 
@@ -3034,13 +3038,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                               if (_selectedImpactTypeFilter !=
                                                       null &&
                                                   g.type !=
-                                                      _selectedImpactTypeFilter)
+                                                      _selectedImpactTypeFilter) {
                                                 return false;
+                                              }
                                               if (_selectedImpactGroupId !=
                                                       null &&
                                                   g.impactGroupId !=
-                                                      _selectedImpactGroupId)
+                                                      _selectedImpactGroupId) {
                                                 return false;
+                                              }
                                               return true;
                                             });
                                             widgets.addAll(lineGrenades
@@ -3114,13 +3120,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                               if (_selectedImpactTypeFilter !=
                                                       null &&
                                                   g.type !=
-                                                      _selectedImpactTypeFilter)
+                                                      _selectedImpactTypeFilter) {
                                                 return false;
+                                              }
                                               if (_selectedImpactGroupId !=
                                                       null &&
                                                   g.impactGroupId !=
-                                                      _selectedImpactGroupId)
+                                                      _selectedImpactGroupId) {
                                                 return false;
+                                              }
                                               return true;
                                             }).toList();
                                             widgets.addAll(displayGrenades.map(
