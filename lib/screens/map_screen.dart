@@ -12,6 +12,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../models.dart';
 import '../providers.dart';
 import '../main.dart';
+import '../config/feature_flags.dart';
 import '../spawn_point_data.dart';
 import '../widgets/joystick_widget.dart';
 import '../services/data_service.dart';
@@ -2492,6 +2493,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// 显示标签筛选底部弹窗
   void _showTagFilterSheet(int layerId) async {
+    if (!kEnableGrenadeTags) return;
     final isar = ref.read(isarProvider);
     final tagService = TagService(isar);
     await tagService.initializeSystemTags(
@@ -3338,16 +3340,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   bottom: !isEditMode ? 80 : 30,
                   child: Column(
                     children: [
-                      // 标签筛选按钮
-                      FloatingActionButton.small(
-                        heroTag: "btn_tag_filter",
-                        backgroundColor: Colors.blueGrey,
-                        onPressed: () => _showTagFilterSheet(currentLayer.id),
-                        child: const Icon(Icons.label_outline,
-                            color: Colors.white),
-                      ),
+                      if (kEnableGrenadeTags)
+                        FloatingActionButton.small(
+                          heroTag: "btn_tag_filter",
+                          backgroundColor: Colors.blueGrey,
+                          onPressed: () => _showTagFilterSheet(currentLayer.id),
+                          child: const Icon(Icons.label_outline,
+                              color: Colors.white),
+                        ),
                       if (layers.length > 1) ...[
-                        const SizedBox(height: 16),
+                        SizedBox(height: kEnableGrenadeTags ? 16 : 0),
                         FloatingActionButton.small(
                             heroTag: "btn_up",
                             backgroundColor: layerIndex < layers.length - 1
