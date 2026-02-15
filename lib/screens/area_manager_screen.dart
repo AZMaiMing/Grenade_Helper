@@ -46,6 +46,7 @@ class _AreaManagerScreenState extends ConsumerState<AreaManagerScreen> {
     final layer =
         layers.length == 1 ? layers.first : await _selectLayer(layers);
     if (layer == null) return;
+    if (!mounted) return;
 
     final result = await Navigator.push<bool>(
       context,

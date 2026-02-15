@@ -4673,7 +4673,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(isGroup ? "重命名分组" : "重命名爆点"),
         content: TextField(
           controller: controller,
@@ -4682,7 +4682,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text("取消")),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("取消")),
           TextButton(
             onPressed: () async {
               final newName = controller.text.trim();
@@ -4698,7 +4699,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 }
               });
               onSuccess();
-              Navigator.pop(context);
+              if (!dialogContext.mounted) return;
+              Navigator.pop(dialogContext);
             },
             child: const Text("保存"),
           ),

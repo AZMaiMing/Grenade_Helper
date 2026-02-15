@@ -22,7 +22,7 @@ class ImportScreen extends ConsumerStatefulWidget {
 class _ImportScreenState extends ConsumerState<ImportScreen>
     with SingleTickerProviderStateMixin {
   bool _isDragging = false;
-  bool _isImporting = false;
+  final bool _isImporting = false;
   bool _isUrlImporting = false;
   DataService? _dataService;
   List<ImportHistory> _histories = [];
@@ -66,36 +66,33 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
 
     final filePath = result.files.single.path!;
     if (!filePath.toLowerCase().endsWith('.cs2pkg')) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("请选择 .cs2pkg 格式的文件"),
-              backgroundColor: Colors.orange),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("请选择 .cs2pkg 格式的文件"), backgroundColor: Colors.orange),
+      );
       return;
     }
 
     // 跳转预览
-    if (mounted) {
-      final importResult = await Navigator.push<String>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ImportPreviewScreen(filePath: filePath),
-        ),
-      );
+    if (!mounted) return;
+    final importResult = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ImportPreviewScreen(filePath: filePath),
+      ),
+    );
 
-      if (importResult != null && mounted) {
-        await _loadHistories();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(importResult),
-            backgroundColor:
-                importResult.contains("成功") ? Colors.green : Colors.orange,
-          ),
-        );
-      }
-    }
+    if (importResult == null) return;
+    await _loadHistories();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(importResult),
+        backgroundColor:
+            importResult.contains("成功") ? Colors.green : Colors.orange,
+      ),
+    );
   }
 
   Future<void> _handleFileDrop(List<String> filePaths) async {
@@ -104,25 +101,24 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
     for (final filePath in filePaths) {
       if (filePath.toLowerCase().endsWith('.cs2pkg')) {
         // 跳转预览
-        if (mounted) {
-          final importResult = await Navigator.push<String>(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ImportPreviewScreen(filePath: filePath),
-            ),
-          );
+        if (!mounted) return;
+        final importResult = await Navigator.push<String>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ImportPreviewScreen(filePath: filePath),
+          ),
+        );
 
-          if (importResult != null && mounted) {
-            await _loadHistories();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(importResult),
-                backgroundColor:
-                    importResult.contains("成功") ? Colors.green : Colors.orange,
-              ),
-            );
-          }
-        }
+        if (importResult == null) continue;
+        await _loadHistories();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(importResult),
+            backgroundColor:
+                importResult.contains("成功") ? Colors.green : Colors.orange,
+          ),
+        );
       }
     }
   }
@@ -159,6 +155,7 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
       }
 
       // 跳转到预览界面
+      if (!mounted) return;
       final importResult = await Navigator.push<String>(
         context,
         MaterialPageRoute(
@@ -166,17 +163,17 @@ class _ImportScreenState extends ConsumerState<ImportScreen>
         ),
       );
 
-      if (importResult != null && mounted) {
-        await _loadHistories();
-        _urlController.clear();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(importResult),
-            backgroundColor:
-                importResult.contains('成功') ? Colors.green : Colors.orange,
-          ),
-        );
-      }
+      if (importResult == null) return;
+      await _loadHistories();
+      if (!mounted) return;
+      _urlController.clear();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(importResult),
+          backgroundColor:
+              importResult.contains('成功') ? Colors.green : Colors.orange,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

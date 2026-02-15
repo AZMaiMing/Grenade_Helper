@@ -1,6 +1,5 @@
 import '../models/tag.dart';
 
-/// 地图区域预设
 const Map<String, List<String>> mapAreaPresets = {
   'dust2': [
     'A大',
@@ -71,7 +70,6 @@ const Map<String, List<String>> mapAreaPresets = {
   'anubis': ['A包点', 'A运河', 'B包点', 'B通', '中路', '连接', '匪家', '警家'],
 };
 
-/// 通用系统标签预设
 const Map<int, List<String>> commonSystemTags = {
   TagDimension.role: ['T方', 'CT方', '通用'],
   TagDimension.phase: ['开局', '中期', '残局', '回防'],
@@ -79,7 +77,6 @@ const Map<int, List<String>> commonSystemTags = {
   TagDimension.purpose: ['封烟', '爆闪', '火封', '迷惑', '压制', '信息'],
 };
 
-/// 维度颜色
 const Map<int, int> dimensionColors = {
   TagDimension.role: 0xFF9C27B0,
   TagDimension.area: 0xFF4CAF50,

@@ -55,7 +55,6 @@ class _AboutScreenState extends State<AboutScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // 图标名称
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(

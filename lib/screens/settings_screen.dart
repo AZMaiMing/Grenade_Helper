@@ -1309,7 +1309,7 @@ class _HotkeyEditorDialogState extends State<_HotkeyEditorDialog> {
                   });
 
                   final error = await widget.onSave(_newConfig!);
-                  if (!mounted) return;
+                  if (!mounted || !context.mounted) return;
 
                   if (error == null) {
                     Navigator.pop(context);

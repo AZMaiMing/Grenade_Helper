@@ -140,6 +140,7 @@ class _ExportSelectScreenState extends ConsumerState<ExportSelectScreen> {
 
     // 延时更新UI
     await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
 
     try {
       final isar = ref.read(isarProvider);

@@ -16,7 +16,6 @@ const List<int> presetColors = [
   0xFF9E9E9E, // Grey
 ];
 
-/// 标签颜色选择器
 class TagColorPicker extends StatefulWidget {
   final int initialColor;
   final ValueChanged<int> onColorSelected;
@@ -58,7 +57,7 @@ class _TagColorPickerState extends State<TagColorPicker> {
   void _updateColorFromHSL() {
     final hslColor = HSLColor.fromAHSL(1.0, _hue, _saturation, _lightness);
     setState(() {
-      _selectedColor = hslColor.toColor().value;
+      _selectedColor = hslColor.toColor().toARGB32();
     });
     widget.onColorSelected(_selectedColor);
   }
@@ -274,7 +273,6 @@ class _TagColorPickerState extends State<TagColorPicker> {
   }
 }
 
-/// 显示颜色选择器对话框
 Future<int?> showTagColorPickerDialog(BuildContext context,
     {int? initialColor}) async {
   int selectedColor = initialColor ?? presetColors.first;

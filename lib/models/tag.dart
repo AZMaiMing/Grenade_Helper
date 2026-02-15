@@ -2,7 +2,7 @@ import 'package:isar_community/isar.dart';
 
 part 'tag.g.dart';
 
-/// 标签维度枚举值
+// 标签维度枚举值
 class TagDimension {
   static const int role = 0; // 角色 (T/CT)
   static const int area = 1; // 区域
@@ -54,7 +54,7 @@ class TagDimension {
   static Map<int, String> getCustomNames() => Map.from(_customNames);
 }
 
-/// 标签数据模型
+// 标签数据模型
 @collection
 class Tag {
   Id id = Isar.autoIncrement;
